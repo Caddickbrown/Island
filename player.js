@@ -54,10 +54,14 @@ export class PlayerController {
     this.isMoving = false;
 
     // Jump / gravity
-    this.velocityY = 0;
-    this.isOnGround = true;
-    this.GRAVITY = -30;
-    this.JUMP_IMPULSE = 11;
+    this.velocityY   = 0;
+    this.isOnGround  = true;
+    this.GRAVITY        = -30;
+    this.JUMP_IMPULSE   = 9;   // base impulse — gives a short hop on quick tap
+    this.JUMP_HOLD_BOOST = 22; // extra upward force applied while Space is held
+    this.JUMP_HOLD_MAX   = 0.25; // max seconds the boost lasts
+    this.jumpHeld     = false;
+    this.jumpHoldTime = 0;
 
     // Collision
     this.colliders = []; // set externally via setColliders()
@@ -193,9 +197,12 @@ export class PlayerController {
       case 'ShiftLeft': case 'ShiftRight': this.keys.sprint = pressed; break;
       case 'Space':
         if (pressed && this.isOnGround) {
-          this.velocityY = this.JUMP_IMPULSE;
-          this.isOnGround = false;
+          this.velocityY    = this.JUMP_IMPULSE;
+          this.isOnGround   = false;
+          this.jumpHeld     = true;
+          this.jumpHoldTime = 0;
         }
+        if (!pressed) this.jumpHeld = false;
         e.preventDefault();
         break;
     }
@@ -231,6 +238,17 @@ export class PlayerController {
 
     // --- Jump & gravity ---
     this.velocityY += this.GRAVITY * delta;
+
+    // Variable jump: while Space held + still rising, partially counteract gravity
+    if (this.jumpHeld && this.velocityY > 0) {
+      this.jumpHoldTime += delta;
+      if (this.jumpHoldTime < this.JUMP_HOLD_MAX) {
+        this.velocityY += this.JUMP_HOLD_BOOST * delta;
+      } else {
+        this.jumpHeld = false; // boost window expired
+      }
+    }
+
     this.player.position.y += this.velocityY * delta;
 
     // Ground check — terrain is the floor
