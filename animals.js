@@ -49,6 +49,7 @@ class Sheep {
       const l = new THREE.Mesh(legG, legM); l.position.set(lx, ly, lz); this.group.add(l);
     });
 
+    this.group.scale.setScalar(2.5);
     this.group.position.set(x, getHeight(x, z), z);
     scene.add(this.group);
   }
@@ -73,7 +74,7 @@ class Sheep {
       if (dist > 0.4) {
         const s = 1.2 * delta;
         p.x += (dx/dist)*s; p.z += (dz/dist)*s;
-        this.group.rotation.y = Math.atan2(dx, dz);
+        this.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
       }
       // Gentle hop while walking
       this.phase += delta * 5;
@@ -134,6 +135,7 @@ class Pig {
       const l = new THREE.Mesh(legG, pinkM); l.position.set(lx, ly, lz); this.group.add(l);
     });
 
+    this.group.scale.setScalar(2.2);
     this.group.position.set(x, getHeight(x, z), z);
     scene.add(this.group);
   }
@@ -153,7 +155,7 @@ class Pig {
       const dist = Math.sqrt(dx*dx+dz*dz);
       if (dist > 0.3) {
         const s = 1.5 * delta; p.x += (dx/dist)*s; p.z += (dz/dist)*s;
-        this.group.rotation.y = Math.atan2(dx, dz);
+        this.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
       }
     }
     this.group.position.y = getHeight(this.group.position.x, this.group.position.z);
@@ -222,7 +224,7 @@ class Cow {
     const tailTuft = new THREE.Mesh(new THREE.SphereGeometry(0.06, 5, 4), patchM);
     tailTuft.position.set(0, 0.28, 0.94); this.group.add(tailTuft);
 
-    this.group.scale.setScalar(1.5);
+    this.group.scale.setScalar(2.0);
     this.group.position.set(x, getHeight(x, z), z);
     scene.add(this.group);
   }
@@ -242,7 +244,7 @@ class Cow {
       const dist = Math.sqrt(dx*dx+dz*dz);
       if (dist > 0.5) {
         const s = 1.8 * delta; p.x += (dx/dist)*s; p.z += (dz/dist)*s;
-        this.group.rotation.y = Math.atan2(dx, dz);
+        this.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
       }
     }
     this.group.position.y = getHeight(this.group.position.x, this.group.position.z);

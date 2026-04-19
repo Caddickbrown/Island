@@ -215,10 +215,16 @@ class NPC {
     eyeR.position.set(0.12, 2.05, 0.26);
     this.group.add(eyeR);
 
+    // Store head reference for animation
+    this._head = head;
+
+    // Job-specific hat / accessory
+    this._addAccessory(job);
+
     // Label sprite — two-line format: "Name the Job" / activity
     this.labelText = '';
     this.label = this._createLabel(name, job, '');
-    this.label.position.y = 3.0;
+    this.label.position.y = 3.2;
     this.label.visible = false;
     this.group.add(this.label);
 
@@ -228,6 +234,94 @@ class NPC {
     this.group.position.set(startPos.x, getHeight(startPos.x, startPos.z), startPos.z);
     this._currentArea = entry.area;
     this._currentActivity = entry.activity;
+  }
+
+  _addAccessory(job) {
+    const m = color => new THREE.MeshLambertMaterial({ color });
+    switch (job) {
+      case 'Baker': {
+        // White chef's toque
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.10, 10), m(0xfcfcfc));
+        brim.position.set(0, 2.30, 0); this.group.add(brim);
+        const toque = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.30, 0.44, 10), m(0xfcfcfc));
+        toque.position.set(0, 2.54, 0); this.group.add(toque);
+        break;
+      }
+      case 'Postman': {
+        // Red peaked cap
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.36, 0.14, 10), m(0xcc1111));
+        cap.position.set(0, 2.29, 0); this.group.add(cap);
+        const peak = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.05, 0.22), m(0xaa0000));
+        peak.position.set(0, 2.21, 0.30); this.group.add(peak);
+        break;
+      }
+      case 'Farmer': {
+        // Wide-brim straw hat
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.58, 0.07, 10), m(0xc8942e));
+        brim.position.set(0, 2.26, 0); this.group.add(brim);
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.30, 0.28, 10), m(0xb8841e));
+        crown.position.set(0, 2.42, 0); this.group.add(crown);
+        break;
+      }
+      case 'Librarian': {
+        // Round glasses
+        const gm = m(0x333333);
+        [-0.13, 0.13].forEach(ox => {
+          const frame = new THREE.Mesh(new THREE.TorusGeometry(0.072, 0.018, 5, 10), gm);
+          frame.position.set(ox, 2.04, 0.28);
+          frame.rotation.y = Math.PI / 2;
+          this.group.add(frame);
+        });
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.012, 0.012), gm);
+        bridge.position.set(0, 2.04, 0.28); this.group.add(bridge);
+        break;
+      }
+      case 'Fisherman': {
+        // Yellow sou'wester
+        const sowBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.50, 0.07, 10), m(0xf0c020));
+        sowBrim.position.set(0, 2.25, 0); this.group.add(sowBrim);
+        const sowCap = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.32, 0.20, 10), m(0xf0c020));
+        sowCap.position.set(0, 2.36, 0); this.group.add(sowCap);
+        const flap = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.20, 0.12), m(0xe8b818));
+        flap.position.set(0, 2.27, 0.28); this.group.add(flap);
+        break;
+      }
+      case 'Barkeeper': {
+        // Dark flat cap
+        const flatCap = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.36, 0.12, 10), m(0x3a3a3a));
+        flatCap.position.set(0, 2.28, 0); this.group.add(flatCap);
+        const flatBrim = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.05, 0.20), m(0x2a2a2a));
+        flatBrim.position.set(0.02, 2.21, 0.28); this.group.add(flatBrim);
+        break;
+      }
+      case 'Barista': {
+        // Coffee-shop visor
+        const visorRing = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.35, 0.10, 10), m(0x2d1a0e));
+        visorRing.position.set(0, 2.27, 0); this.group.add(visorRing);
+        const visorBrim = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.05, 0.20), m(0x2d1a0e));
+        visorBrim.position.set(0, 2.21, 0.30); this.group.add(visorBrim);
+        break;
+      }
+      case 'Teacher': {
+        // Mortarboard
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.32, 0.14, 8), m(0x1a1a2e));
+        base.position.set(0, 2.33, 0); this.group.add(base);
+        const board = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.06, 0.72), m(0x1a1a2e));
+        board.position.set(0, 2.45, 0); this.group.add(board);
+        const tassel = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.01, 0.20, 4), m(0xd4a853));
+        tassel.position.set(0.20, 2.37, 0.20); this.group.add(tassel);
+        break;
+      }
+      case 'Shopkeeper': {
+        // Flower hair decoration
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.10, 4), m(0x2ecc71));
+        stem.position.set(0.24, 2.18, -0.06); this.group.add(stem);
+        const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.10, 6, 5), m(0xff6eb4));
+        bloom.position.set(0.24, 2.26, -0.06); this.group.add(bloom);
+        break;
+      }
+      default: break;
+    }
   }
 
   _createLabel(name, job, activity) {
@@ -304,46 +398,47 @@ class NPC {
 
     const areaCenter = AREAS[entry.area];
     const pos = this.group.position;
-
-    // Smaller wander radius when sleeping at home
     const isSleeping = entry.area.toLowerCase().includes('home');
-    const wanderR = isSleeping ? SLEEP_WANDER_RADIUS : WANDER_RADIUS;
-
-    // Pick a wander sub-target when we arrive or timer expires
-    this._wanderTimer -= delta;
     const distToCenter = Math.sqrt((pos.x - areaCenter.x) ** 2 + (pos.z - areaCenter.z) ** 2);
-    if (!this._wanderTarget || this._wanderTimer <= 0 || distToCenter > wanderR * 1.5) {
-      const angle = Math.random() * Math.PI * 2;
-      const r = wanderR * 0.3 + Math.random() * wanderR * 0.7;
-      this._wanderTarget = {
-        x: areaCenter.x + Math.cos(angle) * r,
-        z: areaCenter.z + Math.sin(angle) * r,
-      };
-      // Sleep longer between position changes when at home
-      this._wanderTimer = isSleeping
-        ? 8 + Math.random() * 8
-        : 3 + Math.random() * 5;
-    }
 
-    const dir = new THREE.Vector3(this._wanderTarget.x - pos.x, 0, this._wanderTarget.z - pos.z);
-    const dist = dir.length();
-
-    if (dist > IDLE_THRESHOLD) {
-      // Walk toward wander sub-target
-      dir.normalize();
-      pos.x += dir.x * this.speed * delta;
-      pos.z += dir.z * this.speed * delta;
-      this.group.rotation.y = Math.atan2(dir.x, dir.z);
-      this.idleTime = 0;
-    } else {
-      // Idle — gentle bobbing
+    if (isSleeping && distToCenter < 4) {
+      // Arrived home — nod head and stand still
       this.idleTime += delta;
-      // When sleeping, tilt head forward gently
-      if (isSleeping) {
-        this.group.children[1].rotation.x = 0.4 + Math.sin(this.idleTime * 0.5) * 0.05;
+      this._head.rotation.x = 0.38 + Math.sin(this.idleTime * 0.5) * 0.06;
+      this._head.position.y = 2.0;
+    } else if (isSleeping) {
+      // Walk directly to home centre (no wander sub-targets while sleeping)
+      const hDir = new THREE.Vector3(areaCenter.x - pos.x, 0, areaCenter.z - pos.z).normalize();
+      pos.x += hDir.x * this.speed * delta;
+      pos.z += hDir.z * this.speed * delta;
+      this.group.rotation.y = Math.atan2(hDir.x, hDir.z);
+      this._head.rotation.x = 0;
+    } else {
+      // Normal wander behaviour
+      this._head.rotation.x = 0;
+      this._wanderTimer -= delta;
+      if (!this._wanderTarget || this._wanderTimer <= 0 || distToCenter > WANDER_RADIUS * 1.5) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = WANDER_RADIUS * 0.3 + Math.random() * WANDER_RADIUS * 0.7;
+        this._wanderTarget = {
+          x: areaCenter.x + Math.cos(angle) * r,
+          z: areaCenter.z + Math.sin(angle) * r,
+        };
+        this._wanderTimer = 3 + Math.random() * 5;
+      }
+
+      const dir = new THREE.Vector3(this._wanderTarget.x - pos.x, 0, this._wanderTarget.z - pos.z);
+      const dist = dir.length();
+
+      if (dist > IDLE_THRESHOLD) {
+        dir.normalize();
+        pos.x += dir.x * this.speed * delta;
+        pos.z += dir.z * this.speed * delta;
+        this.group.rotation.y = Math.atan2(dir.x, dir.z);
+        this.idleTime = 0;
       } else {
-        this.group.children[1].rotation.x = 0;
-        this.group.children[1].position.y = 2.0 + Math.sin(this.idleTime * 2) * 0.05;
+        this.idleTime += delta;
+        this._head.position.y = 2.0 + Math.sin(this.idleTime * 2) * 0.05;
       }
     }
 
