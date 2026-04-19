@@ -50,7 +50,7 @@
 <div id="title">Island Town</div>
 <div id="hud">
   <div id="pos">Position: 0, 0</div>
-  <div class="hint">WASD / Space to run &middot; click to lock mouse &middot; ESC to release</div>
+  <div class="hint">WASD to move &middot; Shift to sprint &middot; Space to jump &middot; click to lock mouse</div>
 </div>
 
 <script type="importmap">
@@ -104,10 +104,11 @@
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1500);
 
   // --- Build world ---
-  const { windmill, clouds } = buildScene(scene);
+  const { windmill, clouds, campfire, colliders } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
+  playerCtrl.setColliders(colliders);
 
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
@@ -154,6 +155,18 @@
     // Windmill blade rotation
     if (windmill?.userData?.spinner) {
       windmill.userData.spinner.rotation.z += 0.55 * delta;
+    }
+
+    // Campfire flicker — scale + sway flames, vary light intensity
+    if (campfire?.userData?.flames) {
+      const ft = clock.getElapsedTime();
+      const flicker = 0.9 + Math.sin(ft * 9.1) * 0.07 + Math.sin(ft * 13.7) * 0.04;
+      campfire.userData.flames.scale.setScalar(flicker);
+      campfire.userData.flames.position.x = Math.sin(ft * 7.3) * 0.04;
+      campfire.userData.flames.position.z = Math.sin(ft * 5.9) * 0.04;
+      if (campfire.userData.fireLight) {
+        campfire.userData.fireLight.intensity = 1.8 + Math.sin(ft * 11.0) * 0.4 + Math.sin(ft * 7.0) * 0.2;
+      }
     }
 
     // Cloud drift
