@@ -14,12 +14,21 @@ try {
 // ---------------------------------------------------------------------------
 // OBB (oriented bounding box) collision — push player out of a rotated rect
 // { cx, cz, hw, hd, rot }
+//
+// Three.js rotation.y = θ transforms local → world as:
+//   wx = cos(θ)*lx + sin(θ)*lz
+//   wz = -sin(θ)*lx + cos(θ)*lz
+//
+// Inverse (world → local):
+//   lx = cos(θ)*dx - sin(θ)*dz
+//   lz = sin(θ)*dx + cos(θ)*dz
 // ---------------------------------------------------------------------------
 function resolveOBB(px, pz, obb) {
-  const cos = Math.cos(-obb.rot), sin = Math.sin(-obb.rot);
+  const cosR = Math.cos(obb.rot), sinR = Math.sin(obb.rot);
   const dx = px - obb.cx, dz = pz - obb.cz;
-  const lx = cos * dx - sin * dz;
-  const lz = sin * dx + cos * dz;
+  // World → local (rotate by -θ)
+  const lx =  cosR * dx - sinR * dz;
+  const lz =  sinR * dx + cosR * dz;
   const margin = 0.55; // player collision radius
   const ex = obb.hw + margin, ez = obb.hd + margin;
   if (Math.abs(lx) >= ex || Math.abs(lz) >= ez) return [px, pz]; // outside
@@ -27,9 +36,9 @@ function resolveOBB(px, pz, obb) {
   let pushLX = 0, pushLZ = 0;
   if (ox < oz) pushLX = lx < 0 ? -ox : ox;
   else         pushLZ = lz < 0 ? -oz : oz;
-  const iCos = Math.cos(obb.rot), iSin = Math.sin(obb.rot);
-  return [px + iCos * pushLX - iSin * pushLZ,
-          pz + iSin * pushLX + iCos * pushLZ];
+  // Local → world (rotate by +θ)
+  return [px + cosR * pushLX + sinR * pushLZ,
+          pz - sinR * pushLX + cosR * pushLZ];
 }
 
 export class PlayerController {
