@@ -692,23 +692,14 @@ function makeCampfire() {
   const flames = new THREE.Group();
   flames.position.y = 0.35;
   // Outer base — red
-  flames.add(Object.assign(
-    new THREE.Mesh(new THREE.ConeGeometry(0.62, 0.55, 8),
-      new THREE.MeshBasicMaterial({ color: 0xcc2200 })),
-    { position: new THREE.Vector3(0, 0.27, 0) }
-  ));
+  const flameBase = new THREE.Mesh(new THREE.ConeGeometry(0.62, 0.55, 8), new THREE.MeshBasicMaterial({ color: 0xcc2200 }));
+  flameBase.position.set(0, 0.27, 0); flames.add(flameBase);
   // Mid — orange
-  flames.add(Object.assign(
-    new THREE.Mesh(new THREE.ConeGeometry(0.48, 1.0, 8),
-      new THREE.MeshBasicMaterial({ color: 0xff6600 })),
-    { position: new THREE.Vector3(0, 0.5, 0) }
-  ));
+  const flameMid = new THREE.Mesh(new THREE.ConeGeometry(0.48, 1.0, 8), new THREE.MeshBasicMaterial({ color: 0xff6600 }));
+  flameMid.position.set(0, 0.5, 0); flames.add(flameMid);
   // Tip — yellow
-  flames.add(Object.assign(
-    new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.4, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffdd44 })),
-    { position: new THREE.Vector3(0, 0.7, 0) }
-  ));
+  const flameTip = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.4, 8), new THREE.MeshBasicMaterial({ color: 0xffdd44 }));
+  flameTip.position.set(0, 0.7, 0); flames.add(flameTip);
   group.add(flames);
   group.userData.flames = flames;
 
@@ -742,20 +733,14 @@ function makeOpenGarage() {
   group.add(floor);
 
   // Left wall
-  group.add(Object.assign(
-    new THREE.Mesh(new THREE.BoxGeometry(T, GH, GD), wallMat),
-    { position: new THREE.Vector3(-GW/2, GH/2, 0) }
-  ));
+  const gWallL = new THREE.Mesh(new THREE.BoxGeometry(T, GH, GD), wallMat);
+  gWallL.position.set(-GW/2, GH/2, 0); group.add(gWallL);
   // Right wall
-  group.add(Object.assign(
-    new THREE.Mesh(new THREE.BoxGeometry(T, GH, GD), wallMat),
-    { position: new THREE.Vector3( GW/2, GH/2, 0) }
-  ));
+  const gWallR = new THREE.Mesh(new THREE.BoxGeometry(T, GH, GD), wallMat);
+  gWallR.position.set(GW/2, GH/2, 0); group.add(gWallR);
   // Back wall
-  group.add(Object.assign(
-    new THREE.Mesh(new THREE.BoxGeometry(GW + T, GH, T), wallMat),
-    { position: new THREE.Vector3(0, GH/2, GD/2) }
-  ));
+  const gWallB = new THREE.Mesh(new THREE.BoxGeometry(GW + T, GH, T), wallMat);
+  gWallB.position.set(0, GH/2, GD/2); group.add(gWallB);
 
   // Roof (with front overhang)
   const roof = new THREE.Mesh(new THREE.BoxGeometry(GW + 1.5, 0.55, GD + 3.5), roofMat);
@@ -877,20 +862,14 @@ function makeLibraryBuilding() {
 
   // ── Walls (DoubleSide so inside faces are visible) ──
   // Left wall (-x)
-  group.add(Object.assign(
-    new THREE.Mesh(new THREE.BoxGeometry(T, LH, LD), wallMat),
-    { position: new THREE.Vector3(-LW/2, LH/2, 0) }
-  ));
+  const lWallL = new THREE.Mesh(new THREE.BoxGeometry(T, LH, LD), wallMat);
+  lWallL.position.set(-LW/2, LH/2, 0); group.add(lWallL);
   // Right wall (+x)
-  group.add(Object.assign(
-    new THREE.Mesh(new THREE.BoxGeometry(T, LH, LD), wallMat),
-    { position: new THREE.Vector3(LW/2, LH/2, 0) }
-  ));
+  const lWallR = new THREE.Mesh(new THREE.BoxGeometry(T, LH, LD), wallMat);
+  lWallR.position.set(LW/2, LH/2, 0); group.add(lWallR);
   // Back wall (+z face, solid — window decor only)
-  group.add(Object.assign(
-    new THREE.Mesh(new THREE.BoxGeometry(LW + T, LH, T), wallMat),
-    { position: new THREE.Vector3(0, LH/2, LD/2) }
-  ));
+  const lWallB = new THREE.Mesh(new THREE.BoxGeometry(LW + T, LH, T), wallMat);
+  lWallB.position.set(0, LH/2, LD/2); group.add(lWallB);
   // Front wall (-z face) — TWO panels flanking door + lintel
   const sideW = (LW - DOOR_W) / 2;
   [-1, 1].forEach(side => {
