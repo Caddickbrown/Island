@@ -71,6 +71,7 @@ export const AREAS = {
   PUB:            { x: -30,  z: -70,  label: 'The Anchor' },
   SCHOOL:         { x: 40,   z: -70,  label: 'School' },
   SOUTH_QUARTER:  { x: 8,    z: -68,  label: 'South Quarter' },
+  AQUARIUM:       { x: 150,  z: -80,  label: "Elliot's Aquarium" },
 };
 
 // ---------------------------------------------------------------------------
@@ -658,6 +659,110 @@ function makeSunDisc(scene) {
   group.position.set(280, 270, 200); // matches sunLight direction
   group.renderOrder = -1;
   scene.add(group);
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Elliot's Aquarium — blue-glass building with fish tanks and a small pond
+// ---------------------------------------------------------------------------
+
+function makeAquarium() {
+  const group = new THREE.Group();
+  const AW = 20, AH = 9, AD = 15;
+
+  // Main walls — ocean blue
+  const wallMat = new THREE.MeshLambertMaterial({ color: 0x1a6fa8 });
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(AW, AH, AD), wallMat);
+  walls.position.y = AH / 2;
+  group.add(walls);
+
+  // Teal roof with slight overhang
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x0097a7 });
+  const roofH = AH * 0.25;
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(AW + 1.2, roofH, AD + 1.2), roofMat);
+  roof.position.y = AH + roofH / 2 - 0.2;
+  group.add(roof);
+
+  // Decorative roof ridge — white stripe
+  const ridgeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(AW + 1.4, 0.25, 1.0), ridgeMat);
+  ridge.position.y = AH + roofH - 0.05;
+  group.add(ridge);
+
+  // Large aqua glass window panels (semi-transparent) — left and right sides
+  const glassMat = new THREE.MeshLambertMaterial({ color: 0x4dd0e1, transparent: true, opacity: 0.55 });
+  for (const sx of [-1, 1]) {
+    const win = new THREE.Mesh(new THREE.BoxGeometry(0.18, AH * 0.55, AD * 0.6), glassMat);
+    win.position.set(sx * (AW / 2 + 0.05), AH * 0.38, 0);
+    group.add(win);
+  }
+  // Front window panes (flanking door)
+  for (const fx of [-5.5, 5.5]) {
+    const fwin = new THREE.Mesh(new THREE.BoxGeometry(4.5, AH * 0.5, 0.18), glassMat);
+    fwin.position.set(fx, AH * 0.38, AD / 2 + 0.05);
+    group.add(fwin);
+  }
+
+  // Fish inside the side tanks (small ellipsoid meshes, various colours)
+  const fishColors = [0xff6b6b, 0xffd93d, 0x6bcb77, 0x4d96ff, 0xf97316, 0xa855f7, 0xec4899, 0x06b6d4];
+  const fishPositions = [
+    [-8, 2.5, -3], [-8, 4.0, 1], [-8, 3.2, 4], [-8, 5.5, -1],
+    [ 8, 2.8, 2], [ 8, 4.5, -2], [ 8, 3.0, 3.5], [ 8, 5.2, 0],
+    [-2, 2.5, -4], [ 3, 3.8, -5], [0, 4.5, -6], [-4, 5.0, 3],
+  ];
+  fishPositions.forEach(([fx, fy, fz], i) => {
+    const fishMat = new THREE.MeshLambertMaterial({ color: fishColors[i % fishColors.length] });
+    const fishGeo = new THREE.SphereGeometry(0.22, 6, 4);
+    fishGeo.scale(2.2, 0.65, 1.0); // flatten into fish shape
+    const fish = new THREE.Mesh(fishGeo, fishMat);
+    fish.position.set(fx, fy, fz);
+    fish.rotation.y = Math.random() * Math.PI;
+    group.add(fish);
+    // Tiny tail
+    const tailMat = new THREE.MeshLambertMaterial({ color: fishColors[i % fishColors.length] });
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.28, 4), tailMat);
+    tail.rotation.z = -Math.PI / 2;
+    tail.position.set(fx - 0.36, fy, fz);
+    group.add(tail);
+  });
+
+  // Door (centred on front face)
+  const doorMat = new THREE.MeshLambertMaterial({ color: 0x005f73 });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(2.2, 4.0, 0.22), doorMat);
+  door.position.set(0, 2.0, AD / 2 + 0.1);
+  group.add(door);
+
+  // Door arch — teal semicircle above door
+  const archGeo = new THREE.TorusGeometry(1.3, 0.22, 6, 12, Math.PI);
+  const arch = new THREE.Mesh(archGeo, new THREE.MeshLambertMaterial({ color: 0x0097a7 }));
+  arch.rotation.z = Math.PI;
+  arch.position.set(0, 4.1, AD / 2 + 0.1);
+  group.add(arch);
+
+  // "🐟 Elliot's Aquarium" canvas sign
+  const signCanvas = document.createElement('canvas');
+  signCanvas.width = 512; signCanvas.height = 96;
+  const sctx = signCanvas.getContext('2d');
+  sctx.fillStyle = '#003d4d';
+  sctx.fillRect(0, 0, 512, 96);
+  sctx.font = 'bold 40px sans-serif';
+  sctx.fillStyle = '#4dd0e1';
+  sctx.textAlign = 'center';
+  sctx.fillText('🐟  Elliot\'s Aquarium', 256, 62);
+  const signTex = new THREE.CanvasTexture(signCanvas);
+  const signMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(7, 1.3),
+    new THREE.MeshBasicMaterial({ map: signTex, transparent: true })
+  );
+  signMesh.position.set(0, AH * 0.85, AD / 2 + 0.15);
+  group.add(signMesh);
+
+  // Warm blue interior light
+  const aquaLight = new THREE.PointLight(0x4dd0e1, 1.1, 22);
+  aquaLight.position.set(0, 5, 0);
+  group.add(aquaLight);
+
+  group.userData.label = "Elliot's Aquarium";
   return group;
 }
 
@@ -1699,6 +1804,34 @@ export function buildScene(scene) {
   makePath(scene, 5, -55, 40, -70, 3);
 
   // =====================================================================
+  // ELLIOT'S AQUARIUM (150, -80)
+  // =====================================================================
+  const aquarium = makeAquarium();
+  placeOnTerrain(aquarium, 150, -80);
+  aquarium.rotation.y = -0.6;  // faces roughly toward town
+  scene.add(aquarium);
+
+  // Small decorative pond outside aquarium entrance
+  const pondGeo = new THREE.CircleGeometry(3.5, 14);
+  pondGeo.rotateX(-Math.PI / 2);
+  const pond = new THREE.Mesh(pondGeo, mat(C.water));
+  placeOnTerrain(pond, 163, -92, 0.15);
+  scene.add(pond);
+
+  // Potted sea-plants flanking aquarium entrance
+  for (const [px, pz] of [[158, -94], [168, -90]]) {
+    const potA = cylinder(0.55, 0.65, 0.85, 0x1a6fa8, 8);
+    placeOnTerrain(potA, px, pz, 0.42);
+    scene.add(potA);
+    const topA = new THREE.Mesh(new THREE.SphereGeometry(0.7, 6, 5), mat(0x4dd0e1));
+    placeOnTerrain(topA, px, pz, 1.35);
+    scene.add(topA);
+  }
+
+  // Path: Post Office → Aquarium
+  makePath(scene, 60, -40, 150, -80, 3);
+
+  // =====================================================================
   // HOME PLAQUES — nameplate sign next to each NPC's front door
   // =====================================================================
   const homePlaqueData = [
@@ -1750,6 +1883,8 @@ export function buildScene(scene) {
     { cx: -160, cz: 90, hw: 5,   hd: 7,   rot: 0.2  },
     // Windmill tower (-100, -180)  approx radius 3.5
     { cx: -100, cz: -180, hw: 3.5, hd: 3.5, rot: 0  },
+    // Elliot's Aquarium (150, -80)  20×15, rot -0.6
+    { cx: 150,  cz: -80,  hw: 10,  hd: 7.5, rot: -0.6 },
 
     // Library — per-wall colliders (hollow building, player enters through door gap)
     // Local positions transformed to world using Three.js rotation.y = 1.1:
