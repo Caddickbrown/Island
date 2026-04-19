@@ -54,6 +54,7 @@ const AREAS = {
   sukiHome:    { x: -5,   z: -63  },
   claraHome:   { x: 52,   z: -82  },
   rexHome:     { x: 56,   z: -60  },
+  ottoHome:    { x: -94,  z: 28   },
 };
 
 // ---------------------------------------------------------------------------
@@ -145,6 +146,14 @@ const SCHEDULES = {
     [15, 17, 'workshop',    'Woodwork club 🔨'],
     [17, 20, 'pub',         'After-school pint 🍺'],
     [20, 8,  'rexHome',     'Sleeping 💤'],
+  ],
+  Otto: [
+    [6,  7,  'workshop',    'Early start 🌄'],
+    [7,  12, 'workshop',    'Working on the truck 🔧'],
+    [12, 13, 'townSquare',  'Lunch break 🥪'],
+    [13, 18, 'workshop',    'Welding ⚙️'],
+    [18, 20, 'pub',         'Evening pint 🍺'],
+    [20, 6,  'ottoHome',    'Sleeping 💤'],
   ],
 };
 
@@ -320,6 +329,16 @@ class NPC {
         bloom.position.set(0.24, 2.26, -0.06); this.group.add(bloom);
         break;
       }
+      case 'Engineer': {
+        // Yellow hard hat
+        const hardHat = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.16, 10), m(0xf6c90e));
+        hardHat.position.set(0, 2.30, 0); this.group.add(hardHat);
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), m(0xf6c90e));
+        dome.position.set(0, 2.38, 0); this.group.add(dome);
+        const brim = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.05, 0.28), m(0xf6c90e));
+        brim.position.set(0, 2.24, 0.28); this.group.add(brim);
+        break;
+      }
       default: break;
     }
   }
@@ -470,6 +489,7 @@ const NPC_DEFS = [
   { name: 'Suki',   job: 'Barista',     color: 0xf4c77e, schedule: SCHEDULES.Suki   },
   { name: 'Clara',  job: 'Teacher',     color: 0x74b9e8, schedule: SCHEDULES.Clara  },
   { name: 'Rex',    job: 'Teacher',     color: 0x6ec97b, schedule: SCHEDULES.Rex    },
+  { name: 'Otto',   job: 'Engineer',    color: 0xe17055, schedule: SCHEDULES.Otto   },
 ];
 
 export class NPCManager {
