@@ -1751,19 +1751,21 @@ export function buildScene(scene) {
     // Windmill tower (-100, -180)  approx radius 3.5
     { cx: -100, cz: -180, hw: 3.5, hd: 3.5, rot: 0  },
 
-    // Library — per-wall colliders so player must use the door gap
-    // Library world pos (80, 40), rot 1.1. Walls in local space transformed:
-    // cos(1.1)≈0.4536, sin(1.1)≈0.8912
-    // Left wall local (-14, 0) → world (73.65, 27.52)
-    { cx: 73.65, cz: 27.52, hw: 0.3, hd: 12,   rot: 1.1 },
-    // Right wall local (14, 0) → world (86.35, 52.48)
-    { cx: 86.35, cz: 52.48, hw: 0.3, hd: 12,   rot: 1.1 },
-    // Back wall local (0, 12) → world (69.31, 45.44)
-    { cx: 69.31, cz: 45.44, hw: 14.5, hd: 0.3, rot: 1.1 },
-    // Front-left panel local (-8.25, -12) → world (86.95, 27.21)
-    { cx: 86.95, cz: 27.21, hw: 5.8,  hd: 0.3, rot: 1.1 },
-    // Front-right panel local (8.25, -12) → world (94.43, 41.91)
-    { cx: 94.43, cz: 41.91, hw: 5.8,  hd: 0.3, rot: 1.1 },
+    // Library — per-wall colliders (hollow building, player enters through door gap)
+    // Local positions transformed to world using Three.js rotation.y = 1.1:
+    //   wx = libX + cos(rot)*lx + sin(rot)*lz
+    //   wz = libZ - sin(rot)*lx + cos(rot)*lz
+    // cos(1.1)≈0.4536, sin(1.1)≈0.8912, libX=80, libZ=40
+    // Left wall local (-14, 0):   wx=73.650, wz=52.477
+    { cx: 73.65, cz: 52.48, hw: 0.3, hd: 12,  rot: 1.1 },
+    // Right wall local (14, 0):   wx=86.350, wz=27.523
+    { cx: 86.35, cz: 27.52, hw: 0.3, hd: 12,  rot: 1.1 },
+    // Back wall local (0, 12):    wx=90.694, wz=45.443
+    { cx: 90.69, cz: 45.44, hw: 14.5, hd: 0.3, rot: 1.1 },
+    // Front-left panel local (-8.25, -12):  wx=65.564, wz=41.909
+    { cx: 65.56, cz: 41.91, hw: 5.8, hd: 0.3, rot: 1.1 },
+    // Front-right panel local (8.25, -12):  wx=73.048, wz=27.205
+    { cx: 73.05, cz: 27.21, hw: 5.8, hd: 0.3, rot: 1.1 },
   ];
 
   return { windmill: windmillGroup, clouds: cloudList, campfire, colliders };
