@@ -226,10 +226,11 @@ function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = fa
     ctx.textBaseline = 'middle';
     ctx.fillText(signText, 256, 64);
     const tex = new THREE.CanvasTexture(canvas);
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
-    sprite.scale.set(signW, signH, 1);
-    sprite.position.set(0, signY, signZ + 0.09);
-    group.add(sprite);
+    // Use a PlaneGeometry (not Sprite) so the sign rotates with the building
+    const planeMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.FrontSide });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(signW, signH), planeMat);
+    plane.position.set(0, signY, signZ + 0.09);
+    group.add(plane);
   }
 
   group.userData.label = label;
@@ -285,6 +286,28 @@ function makeWindmill() {
     group.add(pivot);
   }
 
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Postbox — classic red British pillar box
+// ---------------------------------------------------------------------------
+
+function makePostbox() {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.5, 10), mat(0xcc1111));
+  body.position.y = 0.75;
+  group.add(body);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.55, 0.35, 10), mat(0xaa0000));
+  top.position.y = 1.68;
+  group.add(top);
+  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.08), mat(0x333333));
+  slot.position.set(0, 1.0, 0.48);
+  group.add(slot);
+  // Royal cipher plate
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.06), mat(0xbb0000));
+  plate.position.set(0, 0.55, 0.5);
+  group.add(plate);
   return group;
 }
 
@@ -736,16 +759,27 @@ export function buildScene(scene) {
   flagStripe.position.set(68.6, poBase + 8.6, -37);
   scene.add(flagStripe);
 
-  // Red postbox (classic pillar box shape)
-  const pbBody = cylinder(0.55, 0.55, 1.5, 0xcc1111, 10);
-  pbBody.position.set(52, poBase + 0.75, -36);
-  scene.add(pbBody);
-  const pbTop = cylinder(0.58, 0.55, 0.35, 0xaa0000, 10);
-  pbTop.position.set(52, poBase + 1.68, -36);
-  scene.add(pbTop);
-  const pbSlot = box(0.6, 0.1, 0.08, 0x333333);
-  pbSlot.position.set(52, poBase + 1.0, -35.4);
-  scene.add(pbSlot);
+  // Postboxes scattered around the island — Gus's delivery route
+  const postboxSpots = [
+    [52,  -36],   // Post Office (existing spot)
+    [-52, -36],   // Bakery side
+    [0,   12],    // Town Square north
+    [-12, -8],    // Town Square west
+    [80,  50],    // Library
+    [-80, 52],    // Workshop
+    [-175, 72],   // Farm entrance
+    [5,   215],   // Dock
+    [-25, -215],  // South Beach
+    [25,  -68],   // Residential east
+    [-35, -72],   // Residential west
+    [35,  18],    // Near post office path junction
+  ];
+  for (const [px, pz] of postboxSpots) {
+    const pb = makePostbox();
+    placeOnTerrain(pb, px, pz);
+    pb.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(pb);
+  }
 
   // =====================================================================
   // LIBRARY (80, 40)
@@ -800,7 +834,7 @@ export function buildScene(scene) {
   // THE DOCK (0, 220)
   // =====================================================================
   const dock = makeDock();
-  placeOnTerrain(dock, 0, 235, 0);
+  dock.position.set(0, 0, 235); // force to sea level, not terrain height
   dock.rotation.y = 0;
   scene.add(dock);
 

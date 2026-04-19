@@ -69,6 +69,16 @@ export class PlayerController {
     head.castShadow = true;
     group.add(head);
 
+    // Eyes
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const eyeGeo = new THREE.SphereGeometry(0.065, 7, 6);
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.12, 1.95, 0.26);
+    group.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.12, 1.95, 0.26);
+    group.add(eyeR);
+
     // Feet — two small spheres for a bottom cap look
     const footGeo = new THREE.SphereGeometry(0.35, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
     const footMat = bodyMat;

@@ -64,12 +64,13 @@ const SCHEDULES = {
   ],
   Gus: [
     [6,  7,  'postOffice',  'Sorting mail 📮'],
-    [7,  9,  'bakery',      'Delivering 📬'],
+    [7,  9,  'townSquare',  'Delivering 📬'],
     [9,  11, 'library',     'Delivering 📬'],
     [11, 13, 'farm',        'Delivering 📬'],
-    [13, 15, 'dock',        'Lunch break 🎣'],
-    [15, 18, 'postOffice',  'Working 📮'],
-    [18, 22, 'workshop',    'Tinkering 🔧'],
+    [13, 14, 'dock',        'Lunch break 🎣'],
+    [14, 16, 'workshop',    'Delivering 📬'],
+    [16, 18, 'postOffice',  'Back at base 📮'],
+    [18, 22, 'bakery',      'Off-duty coffee ☕'],
     [22, 6,  'gusHome',     'Sleeping 💤'],
   ],
   Fern: [
@@ -115,6 +116,8 @@ const MOVE_SPEED = 4; // units per second
 const IDLE_THRESHOLD = 5; // distance to target to start idling
 const LABEL_DISTANCE = 12; // show label when player within this range
 
+const WANDER_RADIUS = 12; // roam within this many units of the area centre
+
 class NPC {
   constructor(name, job, color, schedule) {
     this.name = name;
@@ -122,6 +125,10 @@ class NPC {
     this.schedule = schedule;
     this.speed = MOVE_SPEED;
     this.idleTime = 0;
+
+    // Wander state: pick a nearby sub-target to loiter around
+    this._wanderTarget = null;
+    this._wanderTimer = 0;
 
     // Mesh group
     this.group = new THREE.Group();
@@ -142,6 +149,16 @@ class NPC {
     );
     head.position.y = 2.0;
     this.group.add(head);
+
+    // Eyes
+    const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const eyeGeo = new THREE.SphereGeometry(0.065, 6, 5);
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.12, 2.05, 0.26);
+    this.group.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.12, 2.05, 0.26);
+    this.group.add(eyeR);
 
     // Label sprite (will be updated dynamically)
     this.labelText = '';
@@ -240,20 +257,34 @@ class NPC {
     this._currentArea = entry.area;
     this._currentActivity = entry.activity;
 
-    const target = AREAS[entry.area];
+    const areaCenter = AREAS[entry.area];
     const pos = this.group.position;
-    const dir = new THREE.Vector3(target.x - pos.x, 0, target.z - pos.z);
+
+    // Pick a wander sub-target when we arrive or timer expires
+    this._wanderTimer -= delta;
+    const distToCenter = Math.sqrt((pos.x - areaCenter.x) ** 2 + (pos.z - areaCenter.z) ** 2);
+    if (!this._wanderTarget || this._wanderTimer <= 0 || distToCenter > WANDER_RADIUS * 1.5) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = WANDER_RADIUS * 0.3 + Math.random() * WANDER_RADIUS * 0.7;
+      this._wanderTarget = {
+        x: areaCenter.x + Math.cos(angle) * r,
+        z: areaCenter.z + Math.sin(angle) * r,
+      };
+      this._wanderTimer = 3 + Math.random() * 5; // hold position 3-8 s then re-wander
+    }
+
+    const dir = new THREE.Vector3(this._wanderTarget.x - pos.x, 0, this._wanderTarget.z - pos.z);
     const dist = dir.length();
 
     if (dist > IDLE_THRESHOLD) {
-      // Walk toward target
+      // Walk toward wander sub-target
       dir.normalize();
       pos.x += dir.x * this.speed * delta;
       pos.z += dir.z * this.speed * delta;
       this.group.rotation.y = Math.atan2(dir.x, dir.z);
       this.idleTime = 0;
     } else {
-      // Idle — gentle bobbing
+      // Idle — gentle bobbing, occasionally look around
       this.idleTime += delta;
       this.group.children[1].position.y = 2.0 + Math.sin(this.idleTime * 2) * 0.05;
     }
