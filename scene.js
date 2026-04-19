@@ -828,7 +828,8 @@ function makeAquarium() {
     new THREE.PlaneGeometry(7.5, 1.4),
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signCanvas), transparent: true })
   );
-  signMesh.position.set(0, AH - 0.6, AD/2 + 0.2);
+  signMesh.position.set(0, AH - HEAD/2, AD/2 + 0.35);
+  signMesh.renderOrder = 1;
   group.add(signMesh);
 
   // Interior lighting — blue-tinted warm glow
