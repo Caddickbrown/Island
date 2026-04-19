@@ -104,7 +104,7 @@
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1500);
 
   // --- Build world ---
-  const { windmill, clouds, campfire, colliders } = buildScene(scene);
+  const { windmill, clouds, campfire, colliders, fish } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
@@ -167,6 +167,23 @@
       if (campfire.userData.fireLight) {
         campfire.userData.fireLight.intensity = 1.8 + Math.sin(ft * 11.0) * 0.4 + Math.sin(ft * 7.0) * 0.2;
       }
+    }
+
+    // Fish swim — lazy elliptical orbits, tail wag, face direction of travel
+    for (const f of fish) {
+      const d = f.userData;
+      d.t += delta * d.spd;
+      const t = d.t;
+      const nx = d.hx + Math.sin(t          ) * d.rX;
+      const ny = d.hy + Math.sin(t * 0.53 + d.phase * 0.7) * d.rY;
+      const nz = d.hz + Math.cos(t          ) * d.rZ;
+      f.position.set(nx, ny, nz);
+      // Velocity xz → facing angle
+      const vx = Math.cos(t) * d.rX;
+      const vz = -Math.sin(t) * d.rZ;
+      f.rotation.y = Math.atan2(vx, vz);
+      // Tail wag side-to-side
+      d.tail.rotation.y = Math.sin(t * 7) * 0.40;
     }
 
     // Cloud drift
