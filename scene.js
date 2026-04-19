@@ -129,7 +129,7 @@ export function getHeight(x, z) {
     h *= (1 - beachFade * 0.85);
   }
 
-  return h;
+  return Math.max(0, h); // never below sea level
 }
 
 // ---------------------------------------------------------------------------

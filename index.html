@@ -66,6 +66,7 @@
   import { buildScene, AREAS } from './scene.js';
   import { PlayerController } from './player.js';
   import { NPCManager } from './npcs.js';
+  import { WildlifeManager } from './wildlife.js';
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -110,6 +111,9 @@
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
 
+  // --- Wildlife ---
+  const wildlifeManager = new WildlifeManager(scene);
+
   // --- HUD ---
   const posEl = document.getElementById('pos');
   const titleEl = document.getElementById('title');
@@ -140,6 +144,7 @@
 
     playerCtrl.update(delta);
     npcManager.update(delta, playerCtrl.player.position);
+    wildlifeManager.update(delta);
 
     // Update HUD
     const p = playerCtrl.player.position;
