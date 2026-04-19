@@ -40,6 +40,8 @@ const AREAS = {
   hilltop:     { x: -100, z: -180 },
   forestPath:  { x: 180,  z: 120  },
   pub:         { x: -30,  z: -70  },
+  cafe:        { x: 5,    z: -55  },
+  school:      { x: 40,   z: -70  },
   // Homes — near each NPC's primary workplace
   mabelHome:   { x: -72,  z: -58  },
   gusHome:     { x: 72,   z: -58  },
@@ -49,6 +51,9 @@ const AREAS = {
   jackHome:    { x: 30,   z: 200  },
   peteHome:    { x: -195, z: 65   },
   barneyHome:  { x: -42,  z: -78  },
+  sukiHome:    { x: -5,   z: -63  },
+  claraHome:   { x: 52,   z: -82  },
+  rexHome:     { x: 56,   z: -60  },
 };
 
 // ---------------------------------------------------------------------------
@@ -118,6 +123,28 @@ const SCHEDULES = {
     [14, 23, 'pub',         'Running The Anchor ⚓'],
     [23, 1,  'pub',         'Closing up 🍺'],
     [1,  10, 'barneyHome',  'Sleeping 💤'],
+  ],
+  Suki: [
+    [5,  8,  'cafe',        'Opening up ☕'],
+    [8,  14, 'cafe',        'Making coffee ☕'],
+    [14, 15, 'townSquare',  'Lunch break 🥗'],
+    [15, 19, 'cafe',        'Afternoon rush ☕'],
+    [19, 21, 'library',     'Reading 📚'],
+    [21, 5,  'sukiHome',    'Sleeping 💤'],
+  ],
+  Clara: [
+    [7,  9,  'cafe',        'Morning coffee ☕'],
+    [9,  15, 'school',      'Teaching 📐'],
+    [15, 18, 'library',     'Marking work 📝'],
+    [18, 20, 'townSquare',  'Evening stroll 🌇'],
+    [20, 7,  'claraHome',   'Sleeping 💤'],
+  ],
+  Rex: [
+    [8,  9,  'townSquare',  'Morning walk 🌅'],
+    [9,  15, 'school',      'Teaching 🔬'],
+    [15, 17, 'workshop',    'Woodwork club 🔨'],
+    [17, 20, 'pub',         'After-school pint 🍺'],
+    [20, 8,  'rexHome',     'Sleeping 💤'],
   ],
 };
 
@@ -345,6 +372,9 @@ const NPC_DEFS = [
   { name: 'Jack',   job: 'Fisherman',   color: 0xc47d52, schedule: SCHEDULES.Jack   },
   { name: 'Pete',   job: 'Farmer',      color: 0x8db87a, schedule: SCHEDULES.Pete   },
   { name: 'Barney', job: 'Barkeeper',   color: 0xd4a853, schedule: SCHEDULES.Barney },
+  { name: 'Suki',   job: 'Barista',     color: 0xf4c77e, schedule: SCHEDULES.Suki   },
+  { name: 'Clara',  job: 'Teacher',     color: 0x74b9e8, schedule: SCHEDULES.Clara  },
+  { name: 'Rex',    job: 'Teacher',     color: 0x6ec97b, schedule: SCHEDULES.Rex    },
 ];
 
 export class NPCManager {

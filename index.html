@@ -104,7 +104,7 @@
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1500);
 
   // --- Build world ---
-  buildScene(scene);
+  const { windmill, clouds } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
@@ -150,6 +150,21 @@
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
+
+    // Windmill blade rotation
+    if (windmill?.userData?.spinner) {
+      windmill.userData.spinner.rotation.z += 0.55 * delta;
+    }
+
+    // Cloud drift
+    for (const cloud of clouds) {
+      cloud.position.x += cloud.userData.vx * delta;
+      cloud.position.z += cloud.userData.vz * delta;
+      if (cloud.position.x >  420) cloud.position.x = -420;
+      if (cloud.position.x < -420) cloud.position.x =  420;
+      if (cloud.position.z >  420) cloud.position.z = -420;
+      if (cloud.position.z < -420) cloud.position.z =  420;
+    }
 
     // Update HUD
     const p = playerCtrl.player.position;

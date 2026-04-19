@@ -57,18 +57,20 @@ const C = {
 // Areas — named locations NPCs and player navigate between
 // ---------------------------------------------------------------------------
 export const AREAS = {
-  TOWN_SQUARE:  { x: 0,    z: 0,    label: 'Town Square' },
-  BAKERY:       { x: -60,  z: -40,  label: 'Bakery' },
-  POST_OFFICE:  { x: 60,   z: -40,  label: 'Post Office' },
-  DOCK:         { x: 0,    z: 262,  label: 'The Dock' },
-  FARM:         { x: -180, z: 80,   label: 'The Farm' },
-  FOREST:       { x: 180,  z: 120,  label: 'Forest Path' },
-  HILLTOP:      { x: -100, z: -180, label: 'The Hilltop' },
-  BEACH_SOUTH:  { x: 0,    z: -220, label: 'South Beach' },
-  LIBRARY:      { x: 80,   z: 40,   label: 'Library' },
-  WORKSHOP:     { x: -80,  z: 40,   label: 'Workshop' },
-  PUB:          { x: -30,  z: -70,  label: 'The Anchor' },
-  SCHOOL:       { x: 40,   z: -70,  label: 'School' },
+  TOWN_SQUARE:    { x: 0,    z: 0,    label: 'Town Square' },
+  BAKERY:         { x: -60,  z: -40,  label: 'Bakery' },
+  POST_OFFICE:    { x: 60,   z: -40,  label: 'Post Office' },
+  CAFE:           { x: 5,    z: -55,  label: 'The Café' },
+  DOCK:           { x: 0,    z: 262,  label: 'The Dock' },
+  FARM:           { x: -180, z: 80,   label: 'The Farm' },
+  FOREST:         { x: 180,  z: 120,  label: 'Forest Path' },
+  HILLTOP:        { x: -100, z: -180, label: 'The Hilltop' },
+  BEACH_SOUTH:    { x: 0,    z: -220, label: 'South Beach' },
+  LIBRARY:        { x: 80,   z: 40,   label: 'Library' },
+  WORKSHOP:       { x: -80,  z: 40,   label: 'Workshop' },
+  PUB:            { x: -30,  z: -70,  label: 'The Anchor' },
+  SCHOOL:         { x: 40,   z: -70,  label: 'School' },
+  SOUTH_QUARTER:  { x: 8,    z: -68,  label: 'South Quarter' },
 };
 
 // ---------------------------------------------------------------------------
@@ -278,15 +280,19 @@ function makeWindmill() {
   hub.rotation.x = Math.PI / 2;
   group.add(hub);
 
+  // All blades share one spinner group — rotate the spinner for animation
+  const spinner = new THREE.Group();
+  spinner.position.set(0, 14, 2.3);
   for (let i = 0; i < 4; i++) {
     const blade = box(1, 7, 0.15, C.blade);
     blade.position.set(0, 3.5, 0);
     const pivot = new THREE.Group();
     pivot.add(blade);
     pivot.rotation.z = (Math.PI / 2) * i;
-    pivot.position.set(0, 14, 2.3);
-    group.add(pivot);
+    spinner.add(pivot);
   }
+  group.add(spinner);
+  group.userData.spinner = spinner;
 
   return group;
 }
@@ -525,6 +531,133 @@ function makeBench() {
   const leg2 = box(0.2, 0.8, 0.2, C.trunk);
   leg2.position.set(1.2, 0.4, 0);
   group.add(leg2);
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Café table — round pedestal with 2 chairs
+// ---------------------------------------------------------------------------
+
+function makeCafeTable() {
+  const group = new THREE.Group();
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.08, 10), mat(0xd4a870));
+  top.position.y = 1.05;
+  group.add(top);
+  const leg = cylinder(0.07, 0.1, 1.0, C.trunk, 6);
+  leg.position.y = 0.5;
+  group.add(leg);
+  for (let i = 0; i < 2; i++) {
+    const a = (i / 2) * Math.PI * 2;
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.08, 0.65), mat(0xa87050));
+    seat.position.set(Math.cos(a) * 1.0, 0.75, Math.sin(a) * 1.0);
+    group.add(seat);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.6, 0.07), mat(0xa87050));
+    back.position.set(Math.cos(a) * 1.25, 1.15, Math.sin(a) * 1.25);
+    back.rotation.y = a;
+    group.add(back);
+  }
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Home nameplate — short post with a painted name plaque
+// ---------------------------------------------------------------------------
+
+function makeHomePlaque(name) {
+  const group = new THREE.Group();
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.9, 5), mat(C.fence));
+  post.position.y = 0.45;
+  group.add(post);
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fde8c9';
+  ctx.fillRect(0, 0, 256, 64);
+  ctx.strokeStyle = '#8b6914';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 252, 60);
+  ctx.fillStyle = '#4a2800';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`🏠 ${name}`, 128, 32);
+  const tex = new THREE.CanvasTexture(canvas);
+  const planeMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.35), planeMat);
+  plane.position.y = 1.02;
+  group.add(plane);
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Cloud system — drifting fluffy puffs (adapted from Laila's World)
+// ---------------------------------------------------------------------------
+
+function buildClouds(scene) {
+  const cloudMat = new THREE.MeshLambertMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.88,
+    depthWrite: false,
+  });
+  const cloudList = [];
+  for (let i = 0; i < 22; i++) {
+    const group = new THREE.Group();
+    const puffs = 3 + Math.floor(Math.random() * 5);
+    const scaleX = 0.7 + Math.random() * 1.4;
+    const scaleZ = 0.5 + Math.random() * 0.8;
+    for (let j = 0; j < puffs; j++) {
+      const r = 7 + Math.random() * 12;
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 5), cloudMat);
+      mesh.position.set(
+        j === 0 ? 0 : (Math.random() - 0.5) * 32 * scaleX,
+        (Math.random() - 0.5) * 5,
+        (Math.random() - 0.5) * 14 * scaleZ,
+      );
+      group.add(mesh);
+    }
+    group.position.set(
+      (Math.random() - 0.5) * 700,
+      90 + Math.random() * 45,
+      (Math.random() - 0.5) * 700,
+    );
+    const speed = 4 + Math.random() * 7;
+    const angle = (Math.random() - 0.5) * 0.6;
+    group.userData.vx = Math.cos(angle) * speed;
+    group.userData.vz = Math.sin(angle) * speed;
+    scene.add(group);
+    cloudList.push(group);
+  }
+  return cloudList;
+}
+
+// ---------------------------------------------------------------------------
+// Sun disc — warm glowing orb (adapted from Laila's World)
+// ---------------------------------------------------------------------------
+
+function makeSunDisc(scene) {
+  const group = new THREE.Group();
+  const coreMat = new THREE.MeshBasicMaterial({
+    color: 0xfff8b0,
+    fog: false,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0xffcc44,
+    transparent: true,
+    opacity: 0.22,
+    fog: false,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const core = new THREE.Mesh(new THREE.SphereGeometry(7, 16, 12), coreMat);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(13, 16, 12), glowMat);
+  group.add(core, glow);
+  group.position.set(280, 270, 200); // matches sunLight direction
+  group.renderOrder = -1;
+  scene.add(group);
   return group;
 }
 
@@ -843,6 +976,52 @@ export function buildScene(scene) {
   library.rotation.y = -0.4;
   scene.add(library);
 
+  // Library: semi-transparent walls to reveal cosy interior
+  library.children[0].material = new THREE.MeshLambertMaterial({ color: C.library, transparent: true, opacity: 0.28 });
+
+  // Interior bookshelves — children of library group so they rotate with it
+  const shelfWood = new THREE.MeshLambertMaterial({ color: 0x7b4d2a });
+  const libBookColors = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6, 0x1abc9c, 0xe67e22, 0x2c3e50, 0xc0392b, 0x27ae60];
+  for (let sx = -1; sx <= 1; sx++) {
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(4, 5.5, 0.55), shelfWood);
+    shelf.position.set(sx * 4.5, 4.5, -5.2);
+    library.add(shelf);
+    for (let b = 0; b < 9; b++) {
+      const bm = new THREE.MeshLambertMaterial({ color: libBookColors[(b + sx * 3 + 13) % 10] });
+      const book = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.5, 0.5), bm);
+      book.position.set(sx * 4.5 - 1.6 + b * 0.4, 4.5, -4.95);
+      library.add(book);
+    }
+  }
+  // Side shelf (left wall)
+  for (let row = 0; row < 3; row++) {
+    const sideShelf = new THREE.Mesh(new THREE.BoxGeometry(0.55, 4, 3.2), shelfWood);
+    sideShelf.position.set(-6.5, 4.5, -2 + row * 3.2);
+    library.add(sideShelf);
+  }
+  // Reading tables
+  const tblMat = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
+  for (let t = 0; t < 2; t++) {
+    const tbl = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.12, 2), tblMat);
+    tbl.position.set(-1.5 + t * 4, 3.5, 2.5);
+    library.add(tbl);
+    for (let c = -1; c <= 1; c += 2) {
+      const ch = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.7), new THREE.MeshLambertMaterial({ color: 0x8b4513 }));
+      ch.position.set(-1.5 + t * 4, 2.8, 2.5 + c * 1.5);
+      library.add(ch);
+    }
+  }
+  // Floor lamp
+  const lampPost2 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 5.5, 6), new THREE.MeshLambertMaterial({ color: 0x999999 }));
+  lampPost2.position.set(3, 2.8, 0);
+  library.add(lampPost2);
+  const lampShade2 = new THREE.Mesh(new THREE.ConeGeometry(0.85, 1.1, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff8d0, side: THREE.BackSide }));
+  lampShade2.position.set(3, 5.8, 0);
+  library.add(lampShade2);
+  const libLight = new THREE.PointLight(0xfff8d0, 0.9, 20);
+  libLight.position.set(3, 6, 0);
+  library.add(libLight);
+
   // Reading garden
   const readingGarden = makeGarden(4);
   placeOnTerrain(readingGarden, 92, 50);
@@ -989,9 +1168,9 @@ export function buildScene(scene) {
   // =====================================================================
   // THE HILLTOP (-100, -180)
   // =====================================================================
-  const windmill = makeWindmill();
-  placeOnTerrain(windmill, -100, -180);
-  scene.add(windmill);
+  const windmillGroup = makeWindmill();
+  placeOnTerrain(windmillGroup, -100, -180);
+  scene.add(windmillGroup);
 
   // Viewpoint bench
   const hilltopBench = makeBench();
@@ -1135,4 +1314,68 @@ export function buildScene(scene) {
   placeOnTerrain(school, 40, -70);
   school.rotation.y = -0.15;
   scene.add(school);
+
+  // =====================================================================
+  // THE CAFÉ (5, -55)
+  // =====================================================================
+  const cafeBuilding = makeBuilding(10, 6, 8, 0xf0e6d3, 0x5c3d1e, {
+    solarPanels: false,
+    label: 'The Café',
+    signText: '☕ The Café',
+    signBg: 0x2d1a0e,
+    signColor: 0xffd700,
+  });
+  placeOnTerrain(cafeBuilding, 5, -55);
+  cafeBuilding.rotation.y = 0.15;
+  scene.add(cafeBuilding);
+
+  // Outdoor café seating
+  for (const [tx, tz] of [[14, -50], [16, -56], [14, -62]]) {
+    const ct = makeCafeTable();
+    placeOnTerrain(ct, tx, tz);
+    scene.add(ct);
+  }
+  // Potted plants flanking café door
+  for (const [px, pz] of [[9, -52], [2, -52]]) {
+    const pot = cylinder(0.5, 0.6, 0.8, 0x8b6914, 8);
+    placeOnTerrain(pot, px, pz, 0.4);
+    scene.add(pot);
+    const plant = new THREE.Mesh(new THREE.SphereGeometry(0.65, 6, 5), mat(C.foliage));
+    placeOnTerrain(plant, px, pz, 1.3);
+    scene.add(plant);
+  }
+  // Café paths
+  makePath(scene, 0, 0, 5, -55, 3);
+  makePath(scene, 5, -55, -30, -70, 3);
+  makePath(scene, 5, -55, 40, -70, 3);
+
+  // =====================================================================
+  // HOME PLAQUES — nameplate sign next to each NPC's front door
+  // =====================================================================
+  const homePlaqueData = [
+    [-71, -56, "Mabel's"],
+    [73,  -56, "Gus's"],
+    [-194, 92, "Fern's"],
+    [-11,  10, "Olive's"],
+    [91,   56, "Rosa's"],
+    [31,  202, "Jack's"],
+    [-194, 67, "Pete's"],
+    [-40, -76, "Barney's"],
+    [-4,  -61, "Suki's"],
+    [53,  -80, "Clara's"],
+    [57,  -58, "Rex's"],
+  ];
+  for (const [px, pz, name] of homePlaqueData) {
+    const plaque = makeHomePlaque(name);
+    placeOnTerrain(plaque, px, pz);
+    scene.add(plaque);
+  }
+
+  // =====================================================================
+  // CLOUDS & SUN
+  // =====================================================================
+  const cloudList = buildClouds(scene);
+  makeSunDisc(scene);
+
+  return { windmill: windmillGroup, clouds: cloudList };
 }
