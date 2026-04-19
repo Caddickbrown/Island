@@ -526,6 +526,69 @@ function buildTerrain(scene) {
 }
 
 // ---------------------------------------------------------------------------
+// Hanging sign factory — canvas text on a flat board
+// ---------------------------------------------------------------------------
+
+function makeHangingSign(text, bgColor, textColorHex) {
+  const group = new THREE.Group();
+
+  // Board
+  const boardW = 3.5;
+  const boardH = 0.9;
+  const board = box(boardW, boardH, 0.15, bgColor);
+  group.add(board);
+
+  // Border frame
+  const frame = box(boardW + 0.22, boardH + 0.22, 0.1, textColorHex);
+  frame.position.z = -0.05;
+  group.add(frame);
+
+  // Canvas text sprite above the board
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  const r = (bgColor >> 16) & 0xff;
+  const g = (bgColor >> 8)  & 0xff;
+  const b =  bgColor        & 0xff;
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(0, 0, 512, 128);
+
+  // Text
+  const tr = (textColorHex >> 16) & 0xff;
+  const tg = (textColorHex >> 8)  & 0xff;
+  const tb =  textColorHex        & 0xff;
+  ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
+  ctx.font = 'bold 52px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 64);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(boardW, boardH * 0.9, 1);
+  sprite.position.z = 0.12;
+  group.add(sprite);
+
+  // Hanging chains (thin cylinders)
+  for (const sx of [-boardW / 2 + 0.2, boardW / 2 - 0.2]) {
+    const chain = cylinder(0.04, 0.04, 0.55, 0xaaaaaa, 4);
+    chain.position.set(sx, boardH / 2 + 0.28, 0);
+    group.add(chain);
+  }
+
+  // Crossbar
+  const bar = box(boardW + 0.5, 0.1, 0.1, 0x8b6914);
+  bar.position.y = boardH / 2 + 0.55;
+  group.add(bar);
+
+  return group;
+}
+
+// ---------------------------------------------------------------------------
 // Main scene builder
 // ---------------------------------------------------------------------------
 
@@ -639,6 +702,39 @@ export function buildScene(scene) {
   bakery.rotation.y = 0.3;
   scene.add(bakery);
 
+  // Bakery chimney — tall brick stack with animated smoke handled in main loop
+  const bakeryBase = getHeight(-60, -40);
+  const chimneyStack = cylinder(0.45, 0.55, 6, 0x8b4513, 8);
+  chimneyStack.position.set(-57.5, bakeryBase + 8 + 3, -43);
+  scene.add(chimneyStack);
+  const chimneyTop = cylinder(0.6, 0.45, 0.6, 0x6b3410, 8);
+  chimneyTop.position.set(-57.5, bakeryBase + 11.3, -43);
+  scene.add(chimneyTop);
+
+  // Bakery awning — wide striped canopy over door
+  const awningL = box(6.5, 0.18, 2.2, 0xe17055);
+  awningL.position.set(-60, bakeryBase + 5.2, -35.6);
+  awningL.rotation.x = -0.35;
+  scene.add(awningL);
+  // Awning stripes (white)
+  for (let i = -2; i <= 2; i++) {
+    const stripe = box(0.6, 0.19, 2.2, 0xffffff);
+    stripe.position.set(-60 + i * 1.1, bakeryBase + 5.22, -35.6);
+    stripe.rotation.x = -0.35;
+    scene.add(stripe);
+  }
+  // Awning support poles
+  for (const sx of [-62.5, -57.5]) {
+    const pole = cylinder(0.1, 0.1, 1.8, 0x8b6914, 5);
+    pole.position.set(sx, bakeryBase + 4.3, -36.4);
+    scene.add(pole);
+  }
+
+  // Bakery hanging sign
+  const bakerySign = makeHangingSign('🍞 BAKERY', 0xfde8c9, 0x8b4513);
+  bakerySign.position.set(-60, bakeryBase + 7.2, -35.2);
+  scene.add(bakerySign);
+
   // Small awning / outdoor seating
   const bakeryBench = makeBench();
   placeOnTerrain(bakeryBench, -52, -36);
@@ -657,10 +753,34 @@ export function buildScene(scene) {
   postOffice.rotation.y = -0.2;
   scene.add(postOffice);
 
-  // Mailbox
-  const mailbox = box(1, 1.5, 1, 0x2d3436);
-  placeOnTerrain(mailbox, 52, -38, 0.75);
-  scene.add(mailbox);
+  // Post Office hanging sign
+  const poBase = getHeight(60, -40);
+  const poSign = makeHangingSign('📮 POST OFFICE', 0xffffff, 0x2d5fa3);
+  poSign.position.set(60, poBase + 6.8, -35.8);
+  scene.add(poSign);
+
+  // Flagpole
+  const flagPole = cylinder(0.12, 0.12, 9, 0xd0d0d0, 6);
+  flagPole.position.set(67, poBase + 4.5, -37);
+  scene.add(flagPole);
+  // Flag — red/white
+  const flagMain = box(3.2, 1.8, 0.08, 0xdd2233);
+  flagMain.position.set(68.6, poBase + 8.4, -37);
+  scene.add(flagMain);
+  const flagStripe = box(3.2, 0.55, 0.09, 0xffffff);
+  flagStripe.position.set(68.6, poBase + 8.6, -37);
+  scene.add(flagStripe);
+
+  // Red postbox (classic pillar box shape)
+  const pbBody = cylinder(0.55, 0.55, 1.5, 0xcc1111, 10);
+  pbBody.position.set(52, poBase + 0.75, -36);
+  scene.add(pbBody);
+  const pbTop = cylinder(0.58, 0.55, 0.35, 0xaa0000, 10);
+  pbTop.position.set(52, poBase + 1.68, -36);
+  scene.add(pbTop);
+  const pbSlot = box(0.6, 0.1, 0.08, 0x333333);
+  pbSlot.position.set(52, poBase + 1.0, -35.4);
+  scene.add(pbSlot);
 
   // =====================================================================
   // LIBRARY (80, 40)
