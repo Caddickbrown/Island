@@ -199,7 +199,7 @@ function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = fa
   if (signText) {
     const signW = Math.min(w * 0.72, 5.5);
     const signH = 0.85;
-    const signY = doorH + (h - doorH) * 0.5; // between door top and roof, centred
+    const signY = h * 0.8; // well above door, safely below roofline
     const signZ = d / 2 + 0.12;
 
     // Backing board
@@ -563,68 +563,6 @@ function buildTerrain(scene) {
 }
 
 // ---------------------------------------------------------------------------
-// Hanging sign factory — canvas text on a flat board
-// ---------------------------------------------------------------------------
-
-function makeHangingSign(text, bgColor, textColorHex) {
-  const group = new THREE.Group();
-
-  // Board
-  const boardW = 3.5;
-  const boardH = 0.9;
-  const board = box(boardW, boardH, 0.15, bgColor);
-  group.add(board);
-
-  // Border frame
-  const frame = box(boardW + 0.22, boardH + 0.22, 0.1, textColorHex);
-  frame.position.z = -0.05;
-  group.add(frame);
-
-  // Canvas text sprite above the board
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-
-  // Background
-  const r = (bgColor >> 16) & 0xff;
-  const g = (bgColor >> 8)  & 0xff;
-  const b =  bgColor        & 0xff;
-  ctx.fillStyle = `rgb(${r},${g},${b})`;
-  ctx.fillRect(0, 0, 512, 128);
-
-  // Text
-  const tr = (textColorHex >> 16) & 0xff;
-  const tg = (textColorHex >> 8)  & 0xff;
-  const tb =  textColorHex        & 0xff;
-  ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
-  ctx.font = 'bold 52px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, 256, 64);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(boardW, boardH * 0.9, 1);
-  sprite.position.z = 0.12;
-  group.add(sprite);
-
-  // Hanging chains (thin cylinders)
-  for (const sx of [-boardW / 2 + 0.2, boardW / 2 - 0.2]) {
-    const chain = cylinder(0.04, 0.04, 0.55, 0xaaaaaa, 4);
-    chain.position.set(sx, boardH / 2 + 0.28, 0);
-    group.add(chain);
-  }
-
-  // Crossbar
-  const bar = box(boardW + 0.5, 0.1, 0.1, 0x8b6914);
-  bar.position.y = boardH / 2 + 0.55;
-  group.add(bar);
-
-  return group;
-}
-
 // ---------------------------------------------------------------------------
 // Main scene builder
 // ---------------------------------------------------------------------------
@@ -748,22 +686,20 @@ export function buildScene(scene) {
   chimneyTop.position.set(-57.5, bakeryBase + 11.3, -43);
   scene.add(chimneyTop);
 
-  // Bakery awning — wide striped canopy over door
+  // Bakery awning — wide striped canopy over door (kept low, below sign)
   const awningL = box(6.5, 0.18, 2.2, 0xe17055);
-  awningL.position.set(-60, bakeryBase + 5.2, -35.6);
-  awningL.rotation.x = -0.35;
+  awningL.position.set(-60, bakeryBase + 3.8, -35.6);
+  awningL.rotation.x = -0.28;
   scene.add(awningL);
-  // Awning stripes (white)
   for (let i = -2; i <= 2; i++) {
     const stripe = box(0.6, 0.19, 2.2, 0xffffff);
-    stripe.position.set(-60 + i * 1.1, bakeryBase + 5.22, -35.6);
-    stripe.rotation.x = -0.35;
+    stripe.position.set(-60 + i * 1.1, bakeryBase + 3.82, -35.6);
+    stripe.rotation.x = -0.28;
     scene.add(stripe);
   }
-  // Awning support poles
   for (const sx of [-62.5, -57.5]) {
-    const pole = cylinder(0.1, 0.1, 1.8, 0x8b6914, 5);
-    pole.position.set(sx, bakeryBase + 4.3, -36.4);
+    const pole = cylinder(0.1, 0.1, 1.5, 0x8b6914, 5);
+    pole.position.set(sx, bakeryBase + 3.05, -36.4);
     scene.add(pole);
   }
 

@@ -29,6 +29,7 @@ export class PlayerController {
     this.cameraDistance = 10;
     this.cameraHeight = 5;
     this.isDragging = false;
+    this.pointerLocked = false;
     this.mouseSensitivity = 0.003;
     this.pitchMin = -1.3;
     this.pitchMax = 1.5;
@@ -84,23 +85,30 @@ export class PlayerController {
     window.addEventListener('keydown', (e) => this._onKey(e, true));
     window.addEventListener('keyup', (e) => this._onKey(e, false));
 
-    // Mouse look
+    // Mouse look — click to lock pointer, ESC to release
     const canvas = this.renderer.domElement;
 
+    canvas.addEventListener('click', () => {
+      canvas.requestPointerLock();
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      this.pointerLocked = document.pointerLockElement === canvas;
+    });
+
+    // Fallback: drag to look when not pointer-locked
     canvas.addEventListener('mousedown', (e) => {
-      if (e.button === 0) this.isDragging = true;
+      if (e.button === 0 && !this.pointerLocked) this.isDragging = true;
     });
-    window.addEventListener('mouseup', () => {
-      this.isDragging = false;
-    });
+    window.addEventListener('mouseup', () => { this.isDragging = false; });
+
     window.addEventListener('mousemove', (e) => {
-      if (!this.isDragging) return;
+      if (!this.pointerLocked && !this.isDragging) return;
       this.yaw -= e.movementX * this.mouseSensitivity;
       this.pitch += e.movementY * this.mouseSensitivity;
       this.pitch = Math.max(this.pitchMin, Math.min(this.pitchMax, this.pitch));
     });
 
-    // Pointer lock alternative (right-click)
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // Touch support (basic)
