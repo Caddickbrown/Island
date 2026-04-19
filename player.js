@@ -263,14 +263,16 @@ export class PlayerController {
     }
     const bobOffset = this.isMoving ? Math.sin(this.bobTime) * this.bobAmount : 0;
 
-    // Third-person camera: position behind and above player
+    // Third-person camera: stays at ground level so jumping looks correct
+    // Camera height is anchored to terrain, not to the player's airborne y
+    const camGroundY = getHeight(this.player.position.x, this.player.position.z);
     const camX = this.player.position.x + Math.sin(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
     const camZ = this.player.position.z + Math.cos(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
-    const camY = this.player.position.y + this.cameraHeight + this.cameraDistance * Math.sin(this.pitch) + bobOffset;
+    const camY = camGroundY + this.cameraHeight + this.cameraDistance * Math.sin(this.pitch) + bobOffset;
 
     this.camera.position.set(camX, camY, camZ);
 
-    // Look at player (slightly above feet)
+    // Look at the player's actual position (including jump height) so we tilt up to follow
     this.camera.lookAt(
       this.player.position.x,
       this.player.position.y + 1.2,
