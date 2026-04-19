@@ -761,43 +761,49 @@ function makeAquarium() {
   ridge.position.y = AH + roofH - 0.06;
   group.add(ridge);
 
-  // ── Fish inside — visible through glass walls ──────────────────────────
-  const fishDefs = [
-    // [x, y, z, color, ry]  — spread through interior, away from centre path
-    [-6,  2.8,  4,  0xff6b6b,  0.4],
-    [-6,  4.5, -3,  0xffd93d,  2.8],
-    [-5,  3.5,  0,  0x4d96ff,  1.2],
-    [-7,  6.0,  2,  0xf97316, -0.8],
-    [-5,  5.2, -5,  0xa855f7,  0.0],
-    [ 6,  3.0, -4,  0x6bcb77,  3.5],
-    [ 6,  4.8,  3,  0xec4899,  2.0],
-    [ 7,  2.5,  0,  0x06b6d4,  4.0],
-    [ 5,  5.8, -2,  0xff6b6b, -1.5],
-    [ 6,  3.8,  5,  0xffd93d,  1.8],
-    [ 0,  3.2, -5,  0x4d96ff,  3.0],
-    [-3,  6.5,  4,  0xf97316,  0.6],
-    [ 3,  4.0,  6,  0x6bcb77,  2.4],
-    [-8,  3.5, -6,  0x26c6da,  1.0],
-    [ 8,  5.0,  6,  0xff8a65,  3.8],
+  // ── Animated Fish ─────────────────────────────────────────────────────
+  // Each fish is a Group (body + tail children) so they can be moved as one.
+  // Positions are in aquarium local space.  rangeX/Y/Z control orbit size.
+  // [homeX, homeY, homeZ, color, rangeX, rangeY, rangeZ, speed, phase]
+  const fishData = [
+    [-5,  3.5,  3,  0xff6b6b, 2.5, 0.6, 2.0, 0.80, 0.0],
+    [-5,  5.0, -2,  0xffd93d, 2.0, 0.5, 2.5, 0.60, 1.0],
+    [-6,  4.0,  0,  0x4d96ff, 3.0, 0.8, 1.5, 0.90, 2.1],
+    [-5,  6.2,  2,  0xf97316, 1.5, 0.4, 2.0, 0.70, 3.5],
+    [-5,  3.0, -4,  0xa855f7, 2.5, 0.7, 1.8, 1.10, 0.8],
+    [ 5,  3.5, -3,  0x6bcb77, 2.0, 0.6, 2.2, 0.80, 4.2],
+    [ 5,  5.0,  3,  0xec4899, 2.5, 0.5, 2.0, 0.70, 1.5],
+    [ 6,  3.0,  0,  0x06b6d4, 2.0, 0.8, 2.5, 1.00, 2.8],
+    [ 5,  6.0, -1,  0xff6b6b, 1.8, 0.4, 1.5, 0.60, 5.0],
+    [ 5,  4.0,  4,  0xffd93d, 2.2, 0.7, 2.0, 0.90, 3.2],
+    [ 0,  3.5, -4,  0x4d96ff, 2.0, 0.6, 1.5, 0.80, 1.8],
+    [-2,  6.0,  3,  0xf97316, 1.5, 0.5, 2.0, 0.60, 0.5],
+    [ 2,  4.5,  5,  0x6bcb77, 2.0, 0.6, 1.5, 0.70, 4.0],
+    [-6,  3.5, -5,  0x26c6da, 1.8, 0.5, 1.5, 0.80, 2.5],
+    [ 6,  5.5,  5,  0xff8a65, 2.2, 0.7, 1.8, 0.90, 1.2],
   ];
-  fishDefs.forEach(([fx, fy, fz, col, ry]) => {
+  const fishList = [];
+  fishData.forEach(([hx, hy, hz, col, rX, rY, rZ, spd, phase]) => {
     const fm = new THREE.MeshLambertMaterial({ color: col });
-    // Body — scaled sphere for fish silhouette
-    const bodyGeo = new THREE.SphereGeometry(0.25, 7, 5);
-    const body = new THREE.Mesh(bodyGeo, fm);
-    body.scale.set(2.0, 0.7, 1.0);
-    body.position.set(fx, fy, fz);
-    body.rotation.y = ry;
-    group.add(body);
-    // Tail — small cone behind body
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 4), fm);
-    tail.rotation.z = -Math.PI / 2;
-    // offset in fish's local -x direction
-    const bx = fx - Math.sin(ry) * 0.55;
-    const bz = fz - Math.cos(ry) * 0.55;
-    tail.position.set(bx, fy, bz);
-    group.add(tail);
+    const fishGroup = new THREE.Group();
+    fishGroup.position.set(hx, hy, hz);
+
+    // Body — elongated along local +z (the facing direction)
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.25, 7, 5), fm);
+    body.scale.set(1.0, 0.7, 2.0);
+    fishGroup.add(body);
+
+    // Tail — cone in local -z (behind body), flat end at body
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.20, 0.38, 4), fm);
+    tail.rotation.x = -Math.PI / 2; // tip points -z away from body
+    tail.position.set(0, 0, -0.62);
+    fishGroup.add(tail);
+
+    fishGroup.userData = { hx, hy, hz, rX, rY, rZ, spd, phase, t: phase, tail };
+    group.add(fishGroup);
+    fishList.push(fishGroup);
   });
+  group.userData.fish = fishList;
 
   // Door — teal panel at front gap
   const doorMat = new THREE.MeshLambertMaterial({ color: 0x004d5e });
@@ -1978,5 +1984,6 @@ export function buildScene(scene) {
     { cx: 73.05, cz: 27.21, hw: 5.8, hd: 0.3, rot: 1.1 },
   ];
 
-  return { windmill: windmillGroup, clouds: cloudList, campfire, colliders };
+  const fish = aquarium.userData.fish || [];
+  return { windmill: windmillGroup, clouds: cloudList, campfire, colliders, fish };
 }
