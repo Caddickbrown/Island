@@ -11,6 +11,27 @@ try {
   getHeight = () => 0;
 }
 
+// ---------------------------------------------------------------------------
+// OBB (oriented bounding box) collision — push player out of a rotated rect
+// { cx, cz, hw, hd, rot }
+// ---------------------------------------------------------------------------
+function resolveOBB(px, pz, obb) {
+  const cos = Math.cos(-obb.rot), sin = Math.sin(-obb.rot);
+  const dx = px - obb.cx, dz = pz - obb.cz;
+  const lx = cos * dx - sin * dz;
+  const lz = sin * dx + cos * dz;
+  const margin = 0.55; // player collision radius
+  const ex = obb.hw + margin, ez = obb.hd + margin;
+  if (Math.abs(lx) >= ex || Math.abs(lz) >= ez) return [px, pz]; // outside
+  const ox = ex - Math.abs(lx), oz = ez - Math.abs(lz);
+  let pushLX = 0, pushLZ = 0;
+  if (ox < oz) pushLX = lx < 0 ? -ox : ox;
+  else         pushLZ = lz < 0 ? -oz : oz;
+  const iCos = Math.cos(obb.rot), iSin = Math.sin(obb.rot);
+  return [px + iCos * pushLX - iSin * pushLZ,
+          pz + iSin * pushLX + iCos * pushLZ];
+}
+
 export class PlayerController {
   constructor(scene, camera, renderer) {
     this.scene = scene;
@@ -18,10 +39,19 @@ export class PlayerController {
     this.renderer = renderer;
 
     // Movement state
-    this.keys = { forward: false, backward: false, left: false, right: false, run: false };
+    this.keys = { forward: false, backward: false, left: false, right: false, sprint: false };
     this.moveSpeed = 8;    // units per second (walk)
-    this.runSpeed  = 20;   // units per second (run)
+    this.runSpeed  = 20;   // units per second (sprint)
     this.isMoving = false;
+
+    // Jump / gravity
+    this.velocityY = 0;
+    this.isOnGround = true;
+    this.GRAVITY = -30;
+    this.JUMP_IMPULSE = 11;
+
+    // Collision
+    this.colliders = []; // set externally via setColliders()
 
     // Camera state
     this.yaw = 0;
@@ -48,6 +78,11 @@ export class PlayerController {
     this._moveDir = new THREE.Vector3();
 
     this._bindInput();
+  }
+
+  /** Call after buildScene() to pass building colliders. */
+  setColliders(colliders) {
+    this.colliders = colliders;
   }
 
   _createPlayerMesh() {
@@ -146,7 +181,14 @@ export class PlayerController {
       case 'KeyS': case 'ArrowDown':  this.keys.backward = pressed; break;
       case 'KeyA': case 'ArrowLeft':  this.keys.left     = pressed; break;
       case 'KeyD': case 'ArrowRight': this.keys.right    = pressed; break;
-      case 'Space': this.keys.run = pressed; e.preventDefault(); break;
+      case 'ShiftLeft': case 'ShiftRight': this.keys.sprint = pressed; break;
+      case 'Space':
+        if (pressed && this.isOnGround) {
+          this.velocityY = this.JUMP_IMPULSE;
+          this.isOnGround = false;
+        }
+        e.preventDefault();
+        break;
     }
   }
 
@@ -172,27 +214,42 @@ export class PlayerController {
 
     if (this.isMoving) {
       this._moveDir.normalize();
-
-      const speed = this.keys.run ? this.runSpeed : this.moveSpeed;
+      const speed = this.keys.sprint ? this.runSpeed : this.moveSpeed;
       this.player.position.addScaledVector(this._moveDir, speed * delta);
-
       // Face movement direction
       this.player.rotation.y = Math.atan2(this._moveDir.x, this._moveDir.z);
     }
 
-    // Keep player on ground (follow terrain height)
-    this.player.position.y = getHeight(this.player.position.x, this.player.position.z);
+    // --- Jump & gravity ---
+    this.velocityY += this.GRAVITY * delta;
+    this.player.position.y += this.velocityY * delta;
+
+    // Ground check — terrain is the floor
+    const groundY = getHeight(this.player.position.x, this.player.position.z);
+    if (this.player.position.y <= groundY) {
+      this.player.position.y = groundY;
+      this.velocityY = 0;
+      this.isOnGround = true;
+    } else {
+      this.isOnGround = false;
+    }
 
     // Clamp to island bounds
     const b = ISLAND_BOUNDS;
     this.player.position.x = Math.max(b.minX, Math.min(b.maxX, this.player.position.x));
     this.player.position.z = Math.max(b.minZ, Math.min(b.maxZ, this.player.position.z));
 
-    // Camera bob
+    // --- Building collision ---
+    for (const col of this.colliders) {
+      const [nx, nz] = resolveOBB(this.player.position.x, this.player.position.z, col);
+      this.player.position.x = nx;
+      this.player.position.z = nz;
+    }
+
+    // --- Camera bob ---
     if (this.isMoving) {
-      this.bobTime += delta * this.bobSpeed;
+      this.bobTime += delta * this.bobSpeed * (this.keys.sprint ? 1.5 : 1);
     } else {
-      // Ease bob back to zero
       this.bobTime += delta * 2;
     }
     const bobOffset = this.isMoving ? Math.sin(this.bobTime) * this.bobAmount : 0;
