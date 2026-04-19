@@ -662,6 +662,228 @@ function makeSunDisc(scene) {
 }
 
 // ---------------------------------------------------------------------------
+// Explorable library — hollow building with door gap, rich interior
+// Door is on the -z face so after rotation y=1.1 it faces the town path
+// ---------------------------------------------------------------------------
+
+function makeLibraryBuilding() {
+  const LW = 28, LH = 10, LD = 24;
+  const DOOR_W = 5, DOOR_H = 4.8;
+  const T = 0.5;
+  const group = new THREE.Group();
+
+  const wallMat  = new THREE.MeshLambertMaterial({ color: C.library, side: THREE.DoubleSide });
+  const roofMat  = new THREE.MeshLambertMaterial({ color: C.roofDark });
+  const shelfMat = new THREE.MeshLambertMaterial({ color: 0x7b4d2a });
+  const floorMat = new THREE.MeshLambertMaterial({ color: 0xc09060 });
+  const deskMat  = new THREE.MeshLambertMaterial({ color: 0x8b5e3c });
+  const frameMat = new THREE.MeshLambertMaterial({ color: 0x6b3d1a });
+  const bookCols = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6,
+                    0x1abc9c, 0xe67e22, 0x2c3e50, 0xc0392b, 0x27ae60,
+                    0xd35400, 0x2980b9, 0x8e44ad, 0x16a085];
+
+  // Floor
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(LW - T, LD - T), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = 0.06;
+  group.add(floor);
+
+  // ── Walls (DoubleSide so inside faces are visible) ──
+  // Left wall (-x)
+  group.add(Object.assign(
+    new THREE.Mesh(new THREE.BoxGeometry(T, LH, LD), wallMat),
+    { position: new THREE.Vector3(-LW/2, LH/2, 0) }
+  ));
+  // Right wall (+x)
+  group.add(Object.assign(
+    new THREE.Mesh(new THREE.BoxGeometry(T, LH, LD), wallMat),
+    { position: new THREE.Vector3(LW/2, LH/2, 0) }
+  ));
+  // Back wall (+z face, solid — window decor only)
+  group.add(Object.assign(
+    new THREE.Mesh(new THREE.BoxGeometry(LW + T, LH, T), wallMat),
+    { position: new THREE.Vector3(0, LH/2, LD/2) }
+  ));
+  // Front wall (-z face) — TWO panels flanking door + lintel
+  const sideW = (LW - DOOR_W) / 2;
+  [-1, 1].forEach(side => {
+    const fw = new THREE.Mesh(new THREE.BoxGeometry(sideW, LH, T), wallMat);
+    fw.position.set(side * (DOOR_W/2 + sideW/2), LH/2, -LD/2);
+    group.add(fw);
+  });
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + T, LH - DOOR_H, T), wallMat);
+  lintel.position.set(0, DOOR_H + (LH - DOOR_H)/2, -LD/2);
+  group.add(lintel);
+
+  // Door frame (wood trim)
+  const fTop = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + 0.5, 0.3, 0.7), frameMat);
+  fTop.position.set(0, DOOR_H + 0.15, -LD/2);
+  group.add(fTop);
+  [-DOOR_W/2 - 0.2, DOOR_W/2 + 0.2].forEach(fx => {
+    const fSide = new THREE.Mesh(new THREE.BoxGeometry(0.3, DOOR_H, 0.7), frameMat);
+    fSide.position.set(fx, DOOR_H/2, -LD/2);
+    group.add(fSide);
+  });
+
+  // Roof (flat with slight overhang)
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(LW + 2, 1.0, LD + 2), roofMat);
+  roof.position.set(0, LH + 0.5, 0);
+  group.add(roof);
+
+  // Exterior sign above door (outside the -z face)
+  const sc = document.createElement('canvas');
+  sc.width = 640; sc.height = 96;
+  const sctx = sc.getContext('2d');
+  sctx.fillStyle = '#a29bfe';
+  sctx.fillRect(0, 0, 640, 96);
+  sctx.fillStyle = '#ffffff';
+  sctx.font = 'bold 58px serif';
+  sctx.textAlign = 'center';
+  sctx.textBaseline = 'middle';
+  sctx.fillText('📚  LIBRARY', 320, 48);
+  const signMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(7, 1.05),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, side: THREE.BackSide })
+  );
+  signMesh.position.set(0, LH - 0.9, -LD/2 - 0.12);
+  group.add(signMesh);
+
+  // ── Interior ──
+
+  // Checkout desk near entrance (-z side)
+  const deskBase = new THREE.Mesh(new THREE.BoxGeometry(8, 3.4, 2.2), deskMat);
+  deskBase.position.set(0, 1.7, -LD/2 + 5);
+  group.add(deskBase);
+  const deskTop = new THREE.Mesh(new THREE.BoxGeometry(8.3, 0.2, 2.5), new THREE.MeshLambertMaterial({ color: 0x9b6a3d }));
+  deskTop.position.set(0, 3.5, -LD/2 + 5);
+  group.add(deskTop);
+
+  // Back wall bookshelves (at +z)
+  for (let sx = -10; sx <= 10; sx += 5) {
+    const ws = new THREE.Mesh(new THREE.BoxGeometry(4.6, 7.5, 0.6), shelfMat);
+    ws.position.set(sx, 4.5, LD/2 - 1);
+    group.add(ws);
+    for (let b = 0; b < 10; b++) {
+      const bk = new THREE.Mesh(
+        new THREE.BoxGeometry(0.33, 5.8, 0.5),
+        new THREE.MeshLambertMaterial({ color: bookCols[(b + sx + 14) % bookCols.length] })
+      );
+      bk.position.set(sx - 2.0 + b * 0.44, 4.5, LD/2 - 0.75);
+      group.add(bk);
+    }
+  }
+
+  // Left wall shelves
+  for (let sz = -7; sz <= 6; sz += 3.5) {
+    const ws = new THREE.Mesh(new THREE.BoxGeometry(0.6, 6, 3.2), shelfMat);
+    ws.position.set(-LW/2 + 1, 4, sz);
+    group.add(ws);
+    for (let b = 0; b < 6; b++) {
+      const bk = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, 4.5, 0.5),
+        new THREE.MeshLambertMaterial({ color: bookCols[(b + sz + 20) % bookCols.length] })
+      );
+      bk.position.set(-LW/2 + 0.9, 4, sz - 1.4 + b * 0.55);
+      group.add(bk);
+    }
+  }
+
+  // Right wall shelves
+  for (let sz = -7; sz <= 6; sz += 3.5) {
+    const ws = new THREE.Mesh(new THREE.BoxGeometry(0.6, 6, 3.2), shelfMat);
+    ws.position.set(LW/2 - 1, 4, sz);
+    group.add(ws);
+    for (let b = 0; b < 6; b++) {
+      const bk = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, 4.5, 0.5),
+        new THREE.MeshLambertMaterial({ color: bookCols[(b + sz + 7) % bookCols.length] })
+      );
+      bk.position.set(LW/2 - 0.9, 4, sz - 1.4 + b * 0.55);
+      group.add(bk);
+    }
+  }
+
+  // Free-standing shelf stacks creating aisles (back half)
+  for (const sz of [2, 6]) {
+    for (let sx = -9; sx <= 9; sx += 4.5) {
+      const stack = new THREE.Mesh(new THREE.BoxGeometry(0.45, 7, 3.8), shelfMat);
+      stack.position.set(sx, 4, sz);
+      group.add(stack);
+      for (let b = 0; b < 8; b++) {
+        const bc = bookCols[(b + sx * 2 + sz + 25) % bookCols.length];
+        for (const face of [-0.27, 0.27]) {
+          const bk = new THREE.Mesh(
+            new THREE.BoxGeometry(0.3, 5, 0.45),
+            new THREE.MeshLambertMaterial({ color: bc })
+          );
+          bk.position.set(sx + face, 4.2, sz + (b - 3.5) * 0.5);
+          group.add(bk);
+        }
+      }
+    }
+  }
+
+  // Reading tables (middle section)
+  const tblMat2 = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
+  const seatMat = new THREE.MeshLambertMaterial({ color: 0x6b3a1f });
+  for (const [tx, tz] of [[-6, -2], [6, -2]]) {
+    const tbl = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.14, 2.5), tblMat2);
+    tbl.position.set(tx, 3.5, tz);
+    group.add(tbl);
+    // Table legs
+    for (const [lx, lz] of [[-2.3,-1],[2.3,-1],[-2.3,1],[2.3,1]]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.5, 0.2), shelfMat);
+      leg.position.set(tx + lx, 1.75, tz + lz);
+      group.add(leg);
+    }
+    // Chairs
+    for (const [cx, cz, ry] of [[-3,0,Math.PI/2],[3,0,-Math.PI/2],[0,-1.6,0],[0,1.6,Math.PI]]) {
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.1, 0.85), seatMat);
+      seat.position.set(tx + cx, 2.85, tz + cz);
+      group.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.8, 0.1), seatMat);
+      back.position.set(tx + cx * 1.2, 3.3, tz + cz * 1.25);
+      back.rotation.y = ry;
+      group.add(back);
+    }
+  }
+
+  // Cosy armchair in back-right corner
+  const chairMat = new THREE.MeshLambertMaterial({ color: 0x8e44ad });
+  const armBody = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 2.2), chairMat);
+  armBody.position.set(LW/2 - 3.5, 1.4, LD/2 - 4.5);
+  group.add(armBody);
+  const armBack = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.8, 0.45), new THREE.MeshLambertMaterial({ color: 0x9b59b6 }));
+  armBack.position.set(LW/2 - 3.5, 2.5, LD/2 - 3.3);
+  group.add(armBack);
+  [-1.0, 1.0].forEach(ax => {
+    const ar = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.9, 2.2), new THREE.MeshLambertMaterial({ color: 0x9b59b6 }));
+    ar.position.set(LW/2 - 3.5 + ax, 2.25, LD/2 - 4.5);
+    group.add(ar);
+  });
+  // Side table by armchair
+  const sideTable = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.1, 10), tblMat2);
+  sideTable.position.set(LW/2 - 1.5, 3.0, LD/2 - 4.5);
+  group.add(sideTable);
+
+  // Floor lamps (warm pools of light)
+  [[-LW/4, -3], [LW/4, -3], [0, 4]].forEach(([lx, lz]) => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6.2, 6), new THREE.MeshLambertMaterial({ color: 0x999999 }));
+    post.position.set(lx, 3.2, lz);
+    group.add(post);
+    const shade = new THREE.Mesh(new THREE.ConeGeometry(0.95, 1.3, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff8d0, side: THREE.BackSide }));
+    shade.position.set(lx, 6.5, lz);
+    group.add(shade);
+    const pl = new THREE.PointLight(0xfff8d0, 1.1, 26);
+    pl.position.set(lx, 7, lz);
+    group.add(pl);
+  });
+
+  group.userData.label = 'Library';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
 // Place helper — sets position at terrain height
 // ---------------------------------------------------------------------------
 
@@ -971,56 +1193,10 @@ export function buildScene(scene) {
   // =====================================================================
   // LIBRARY (80, 40)
   // =====================================================================
-  const library = makeBuilding(14, 9, 12, C.library, C.roofDark, { solarPanels: true, label: 'Library' });
+  const library = makeLibraryBuilding();
   placeOnTerrain(library, 80, 40);
-  library.rotation.y = -0.4;
+  library.rotation.y = 1.1;
   scene.add(library);
-
-  // Library: semi-transparent walls to reveal cosy interior
-  library.children[0].material = new THREE.MeshLambertMaterial({ color: C.library, transparent: true, opacity: 0.28 });
-
-  // Interior bookshelves — children of library group so they rotate with it
-  const shelfWood = new THREE.MeshLambertMaterial({ color: 0x7b4d2a });
-  const libBookColors = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6, 0x1abc9c, 0xe67e22, 0x2c3e50, 0xc0392b, 0x27ae60];
-  for (let sx = -1; sx <= 1; sx++) {
-    const shelf = new THREE.Mesh(new THREE.BoxGeometry(4, 5.5, 0.55), shelfWood);
-    shelf.position.set(sx * 4.5, 4.5, -5.2);
-    library.add(shelf);
-    for (let b = 0; b < 9; b++) {
-      const bm = new THREE.MeshLambertMaterial({ color: libBookColors[(b + sx * 3 + 13) % 10] });
-      const book = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.5, 0.5), bm);
-      book.position.set(sx * 4.5 - 1.6 + b * 0.4, 4.5, -4.95);
-      library.add(book);
-    }
-  }
-  // Side shelf (left wall)
-  for (let row = 0; row < 3; row++) {
-    const sideShelf = new THREE.Mesh(new THREE.BoxGeometry(0.55, 4, 3.2), shelfWood);
-    sideShelf.position.set(-6.5, 4.5, -2 + row * 3.2);
-    library.add(sideShelf);
-  }
-  // Reading tables
-  const tblMat = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
-  for (let t = 0; t < 2; t++) {
-    const tbl = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.12, 2), tblMat);
-    tbl.position.set(-1.5 + t * 4, 3.5, 2.5);
-    library.add(tbl);
-    for (let c = -1; c <= 1; c += 2) {
-      const ch = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.7), new THREE.MeshLambertMaterial({ color: 0x8b4513 }));
-      ch.position.set(-1.5 + t * 4, 2.8, 2.5 + c * 1.5);
-      library.add(ch);
-    }
-  }
-  // Floor lamp
-  const lampPost2 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 5.5, 6), new THREE.MeshLambertMaterial({ color: 0x999999 }));
-  lampPost2.position.set(3, 2.8, 0);
-  library.add(lampPost2);
-  const lampShade2 = new THREE.Mesh(new THREE.ConeGeometry(0.85, 1.1, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff8d0, side: THREE.BackSide }));
-  lampShade2.position.set(3, 5.8, 0);
-  library.add(lampShade2);
-  const libLight = new THREE.PointLight(0xfff8d0, 0.9, 20);
-  libLight.position.set(3, 6, 0);
-  library.add(libLight);
 
   // Reading garden
   const readingGarden = makeGarden(4);
