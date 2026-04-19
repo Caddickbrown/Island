@@ -662,6 +662,193 @@ function makeSunDisc(scene) {
 }
 
 // ---------------------------------------------------------------------------
+// Campfire — stone ring, crossed logs, animated flame cones + warm light
+// ---------------------------------------------------------------------------
+
+function makeCampfire() {
+  const group = new THREE.Group();
+
+  // Stone ring
+  const stoneMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const stone = new THREE.Mesh(new THREE.SphereGeometry(0.28, 5, 4), stoneMat);
+    stone.position.set(Math.cos(angle) * 0.95, 0.18, Math.sin(angle) * 0.95);
+    stone.scale.set(1.3, 0.65, 0.9);
+    group.add(stone);
+  }
+
+  // Crossed logs
+  const logMat = new THREE.MeshLambertMaterial({ color: 0x5c3317 });
+  [-0.45, 0.45].forEach(ry => {
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 2.6, 6), logMat);
+    log.rotation.z = Math.PI / 2;
+    log.rotation.y = ry;
+    log.position.y = 0.16;
+    group.add(log);
+  });
+
+  // Flame group (animated via userData.flames)
+  const flames = new THREE.Group();
+  flames.position.y = 0.35;
+  // Outer base — red
+  flames.add(Object.assign(
+    new THREE.Mesh(new THREE.ConeGeometry(0.62, 0.55, 8),
+      new THREE.MeshBasicMaterial({ color: 0xcc2200 })),
+    { position: new THREE.Vector3(0, 0.27, 0) }
+  ));
+  // Mid — orange
+  flames.add(Object.assign(
+    new THREE.Mesh(new THREE.ConeGeometry(0.48, 1.0, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff6600 })),
+    { position: new THREE.Vector3(0, 0.5, 0) }
+  ));
+  // Tip — yellow
+  flames.add(Object.assign(
+    new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.4, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffdd44 })),
+    { position: new THREE.Vector3(0, 0.7, 0) }
+  ));
+  group.add(flames);
+  group.userData.flames = flames;
+
+  // Warm fire light
+  const fireLight = new THREE.PointLight(0xff7722, 2.0, 22);
+  fireLight.position.y = 1.5;
+  group.add(fireLight);
+  group.userData.fireLight = fireLight;
+
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Open garage — 3-wall corrugated shed, open front, truck + workbench inside
+// ---------------------------------------------------------------------------
+
+function makeOpenGarage() {
+  const GW = 18, GH = 7, GD = 16;
+  const T = 0.5;
+  const group = new THREE.Group();
+
+  const wallMat = new THREE.MeshLambertMaterial({ color: 0x7d8fa0, side: THREE.DoubleSide });
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x5a6e7d });
+  const floorMat = new THREE.MeshLambertMaterial({ color: 0x7a7a7a });
+  const postMat = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
+
+  // Concrete floor
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(GW, GD), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = 0.06;
+  group.add(floor);
+
+  // Left wall
+  group.add(Object.assign(
+    new THREE.Mesh(new THREE.BoxGeometry(T, GH, GD), wallMat),
+    { position: new THREE.Vector3(-GW/2, GH/2, 0) }
+  ));
+  // Right wall
+  group.add(Object.assign(
+    new THREE.Mesh(new THREE.BoxGeometry(T, GH, GD), wallMat),
+    { position: new THREE.Vector3( GW/2, GH/2, 0) }
+  ));
+  // Back wall
+  group.add(Object.assign(
+    new THREE.Mesh(new THREE.BoxGeometry(GW + T, GH, T), wallMat),
+    { position: new THREE.Vector3(0, GH/2, GD/2) }
+  ));
+
+  // Roof (with front overhang)
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(GW + 1.5, 0.55, GD + 3.5), roofMat);
+  roof.position.set(0, GH + 0.27, -0.8);
+  group.add(roof);
+
+  // Front support posts
+  [-GW/2 + 0.5, GW/2 - 0.5].forEach(px => {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.45, GH, 0.45), postMat);
+    post.position.set(px, GH/2, -GD/2);
+    group.add(post);
+  });
+
+  // Workbench along back wall
+  const benchMat = new THREE.MeshLambertMaterial({ color: 0x8b6914 });
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(GW - 3, 0.14, 2.0), benchMat);
+  bench.position.set(0, 4.2, GD/2 - 1.5);
+  group.add(bench);
+  // Bench legs
+  for (const bx of [-GW/2 + 2.5, GW/2 - 2.5]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.2, 0.18), benchMat);
+    leg.position.set(bx, 2.1, GD/2 - 1.5);
+    group.add(leg);
+  }
+
+  // Tool rack — hooks on back wall
+  const hookMat = new THREE.MeshLambertMaterial({ color: 0x9a9a9a });
+  for (let i = -3; i <= 3; i++) {
+    const hook = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 5), hookMat);
+    hook.rotation.z = Math.PI / 2;
+    hook.position.set(i * 1.9, 5.8, GD/2 - 0.5);
+    group.add(hook);
+  }
+
+  // Oil drums in right corner
+  const drumMat = new THREE.MeshLambertMaterial({ color: 0x2c5282 });
+  [[GW/2 - 1.5, GD/2 - 2.2], [GW/2 - 3.5, GD/2 - 2.2]].forEach(([dx, dz]) => {
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 2.1, 8), drumMat);
+    drum.position.set(dx, 1.05, dz);
+    group.add(drum);
+  });
+
+  // Red pickup truck (body + cab + wheels)
+  const truckBodyMat = new THREE.MeshLambertMaterial({ color: 0xc0392b });
+  const truckBody = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.0, 8.0), truckBodyMat);
+  truckBody.position.set(-4.5, 1.85, 1.5);
+  group.add(truckBody);
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(5.0, 2.2, 4.2),
+    new THREE.MeshLambertMaterial({ color: 0xa93226 }));
+  cab.position.set(-4.5, 3.5, -2.0);
+  group.add(cab);
+  // Windscreen tint
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.6, 0.15),
+    new THREE.MeshLambertMaterial({ color: 0x7fb3d3, transparent: true, opacity: 0.6 }));
+  glass.position.set(-4.5, 3.5, -4.05);
+  group.add(glass);
+  // Wheels
+  const wheelMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+  const hubMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+  [[-1.8, 0.5], [1.8, 0.5], [-1.8, -5.5], [1.8, -5.5]].forEach(([wx, wz]) => {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.65, 10), wheelMat);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(-4.5 + wx, 0.9, 1.5 + wz);
+    group.add(wheel);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.68, 6), hubMat);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(-4.5 + wx, 0.9, 1.5 + wz);
+    group.add(hub);
+  });
+
+  // "GARAGE" sign spanning the open front entrance
+  const sc = document.createElement('canvas');
+  sc.width = 512; sc.height = 80;
+  const sctx = sc.getContext('2d');
+  sctx.fillStyle = '#2d3748';
+  sctx.fillRect(0, 0, 512, 80);
+  sctx.fillStyle = '#fbbf24';
+  sctx.font = 'bold 52px sans-serif';
+  sctx.textAlign = 'center';
+  sctx.textBaseline = 'middle';
+  sctx.fillText('🔧 GARAGE', 256, 40);
+  const signMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(7, 1.1),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, side: THREE.DoubleSide })
+  );
+  signMesh.position.set(0, GH - 0.55, -GD/2 - 0.05);
+  group.add(signMesh);
+
+  group.userData.label = 'Garage';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
 // Explorable library — hollow building with door gap, rich interior
 // Door is on the -z face so after rotation y=1.1 it faces the town path
 // ---------------------------------------------------------------------------
@@ -1218,7 +1405,9 @@ export function buildScene(scene) {
   // =====================================================================
   // WORKSHOP (-80, 40)
   // =====================================================================
-  const workshop = makeBuilding(12, 7, 10, C.workshop, C.roofDark, { solarPanels: true, label: 'Workshop' });
+  // GARAGE / WORKSHOP (-80, 40) — open-front shed with truck inside
+  // =====================================================================
+  const workshop = makeOpenGarage();
   placeOnTerrain(workshop, -80, 40);
   workshop.rotation.y = 0.3;
   scene.add(workshop);
@@ -1335,10 +1524,15 @@ export function buildScene(scene) {
     scene.add(tree);
   });
 
-  // A small clearing bench in the forest
+  // Campfire in the forest clearing
+  const campfire = makeCampfire();
+  placeOnTerrain(campfire, 183, 122);
+  scene.add(campfire);
+
+  // A small clearing bench beside the campfire
   const forestBench = makeBench();
-  placeOnTerrain(forestBench, 180, 120);
-  forestBench.rotation.y = 1.2;
+  placeOnTerrain(forestBench, 178, 116);
+  forestBench.rotation.y = 2.4; // face the fire
   scene.add(forestBench);
 
   // =====================================================================
@@ -1540,6 +1734,7 @@ export function buildScene(scene) {
     [-4,  -61, "Suki's"],
     [53,  -80, "Clara's"],
     [57,  -58, "Rex's"],
+    [-92, 30, "Otto's"],
   ];
   for (const [px, pz, name] of homePlaqueData) {
     const plaque = makeHomePlaque(name);
@@ -1553,5 +1748,44 @@ export function buildScene(scene) {
   const cloudList = buildClouds(scene);
   makeSunDisc(scene);
 
-  return { windmill: windmillGroup, clouds: cloudList };
+  // =====================================================================
+  // BUILDING COLLIDERS — OBB rectangles { cx, cz, hw, hd, rot }
+  // hw = half-width (local x), hd = half-depth (local z), rot = world rot
+  // Library uses per-wall segments so player can walk through the door gap.
+  // The open garage has no front wall so is intentionally not listed.
+  // =====================================================================
+  const colliders = [
+    // Bakery (-60, -40)  12×9 building, rot 0.3
+    { cx: -60, cz: -40, hw: 6,   hd: 4.5, rot: 0.3  },
+    // Post Office (60, -40)  10×8, rot -0.2
+    { cx:  60, cz: -40, hw: 5,   hd: 4,   rot: -0.2 },
+    // The Anchor pub (-30, -70)  13×10, rot 0.1
+    { cx: -30, cz: -70, hw: 6.5, hd: 5,   rot: 0.1  },
+    // School (40, -70)  18×12, rot -0.15
+    { cx:  40, cz: -70, hw: 9,   hd: 6,   rot: -0.15 },
+    // Café (5, -55)  10×8, rot 0.15
+    { cx:   5, cz: -55, hw: 5,   hd: 4,   rot: 0.15 },
+    // Barn (-180, 70)  approx 14×10, rot 0.2
+    { cx: -180, cz: 70, hw: 7,   hd: 5,   rot: 0.2  },
+    // Greenhouse (-160, 90)  10×14, rot 0.2
+    { cx: -160, cz: 90, hw: 5,   hd: 7,   rot: 0.2  },
+    // Windmill tower (-100, -180)  approx radius 3.5
+    { cx: -100, cz: -180, hw: 3.5, hd: 3.5, rot: 0  },
+
+    // Library — per-wall colliders so player must use the door gap
+    // Library world pos (80, 40), rot 1.1. Walls in local space transformed:
+    // cos(1.1)≈0.4536, sin(1.1)≈0.8912
+    // Left wall local (-14, 0) → world (73.65, 27.52)
+    { cx: 73.65, cz: 27.52, hw: 0.3, hd: 12,   rot: 1.1 },
+    // Right wall local (14, 0) → world (86.35, 52.48)
+    { cx: 86.35, cz: 52.48, hw: 0.3, hd: 12,   rot: 1.1 },
+    // Back wall local (0, 12) → world (69.31, 45.44)
+    { cx: 69.31, cz: 45.44, hw: 14.5, hd: 0.3, rot: 1.1 },
+    // Front-left panel local (-8.25, -12) → world (86.95, 27.21)
+    { cx: 86.95, cz: 27.21, hw: 5.8,  hd: 0.3, rot: 1.1 },
+    // Front-right panel local (8.25, -12) → world (94.43, 41.91)
+    { cx: 94.43, cz: 41.91, hw: 5.8,  hd: 0.3, rot: 1.1 },
+  ];
+
+  return { windmill: windmillGroup, clouds: cloudList, campfire, colliders };
 }
