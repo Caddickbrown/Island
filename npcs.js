@@ -1,7 +1,7 @@
 /**
  * NPC System — Time-based schedules and routines
  *
- * 5 NPCs with distinct daily schedules driven by a simulated clock.
+ * 8 NPCs with distinct daily schedules driven by a simulated clock.
  * 1 real second = 10 sim minutes, so a full day = 2.4 real minutes.
  */
 
@@ -39,12 +39,16 @@ const AREAS = {
   southBeach:  { x: 0,    z: -220 },
   hilltop:     { x: -100, z: -180 },
   forestPath:  { x: 180,  z: 120  },
+  pub:         { x: -30,  z: -70  },
   // Homes — near each NPC's primary workplace
   mabelHome:   { x: -72,  z: -58  },
   gusHome:     { x: 72,   z: -58  },
   fernHome:    { x: -195, z: 90   },
   oliveHome:   { x: -12,  z: 12   },
   rosaHome:    { x: 90,   z: 58   },
+  jackHome:    { x: 30,   z: 200  },
+  peteHome:    { x: -195, z: 65   },
+  barneyHome:  { x: -42,  z: -78  },
 };
 
 // ---------------------------------------------------------------------------
@@ -92,6 +96,29 @@ const SCHEDULES = {
     [19, 21, 'forestPath',  'Evening walk 🌲'],
     [21, 9,  'rosaHome',    'Sleeping 💤'],
   ],
+  Jack: [
+    [5,  10, 'dock',        'Fishing 🎣'],
+    [10, 12, 'beach',       'Mending nets 🪢'],
+    [12, 14, 'townSquare',  'Selling catch 🐟'],
+    [14, 17, 'dock',        'Fishing 🎣'],
+    [17, 20, 'pub',         'Having a pint 🍺'],
+    [20, 5,  'jackHome',    'Sleeping 💤'],
+  ],
+  Pete: [
+    [4,  7,  'farm',        'Tending animals 🐄'],
+    [7,  12, 'farm',        'Working the fields 🌾'],
+    [12, 13, 'townSquare',  'Selling produce 🥕'],
+    [13, 16, 'farm',        'Harvesting 🌾'],
+    [16, 19, 'workshop',    'Fixing tools 🔧'],
+    [19, 21, 'pub',         'Unwinding 🍺'],
+    [21, 4,  'peteHome',    'Sleeping 💤'],
+  ],
+  Barney: [
+    [10, 14, 'pub',         'Preparing 🍺'],
+    [14, 23, 'pub',         'Running The Anchor ⚓'],
+    [23, 1,  'pub',         'Closing up 🍺'],
+    [1,  10, 'barneyHome',  'Sleeping 💤'],
+  ],
 };
 
 function getScheduleEntry(schedule, hour) {
@@ -114,9 +141,10 @@ function getScheduleEntry(schedule, hour) {
 
 const MOVE_SPEED = 4; // units per second
 const IDLE_THRESHOLD = 5; // distance to target to start idling
-const LABEL_DISTANCE = 12; // show label when player within this range
+const LABEL_DISTANCE = 14; // show label when player within this range
 
-const WANDER_RADIUS = 12; // roam within this many units of the area centre
+const WANDER_RADIUS = 12;      // roam within this many units of the area centre
+const SLEEP_WANDER_RADIUS = 2; // tiny wander when at home / sleeping
 
 class NPC {
   constructor(name, job, color, schedule) {
@@ -160,10 +188,10 @@ class NPC {
     eyeR.position.set(0.12, 2.05, 0.26);
     this.group.add(eyeR);
 
-    // Label sprite (will be updated dynamically)
+    // Label sprite — two-line format: "Name the Job" / activity
     this.labelText = '';
-    this.label = this._createLabel(`${name} • ${job}`);
-    this.label.position.y = 2.8;
+    this.label = this._createLabel(name, job, '');
+    this.label.position.y = 3.0;
     this.label.visible = false;
     this.group.add(this.label);
 
@@ -175,61 +203,28 @@ class NPC {
     this._currentActivity = entry.activity;
   }
 
-  _createLabel(text) {
+  _createLabel(name, job, activity) {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
-    canvas.height = 128;
+    canvas.height = 176;
     const ctx = canvas.getContext('2d');
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Background pill
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    const r = 16;
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.beginPath();
-    ctx.moveTo(r, 0);
-    ctx.lineTo(w - r, 0);
-    ctx.quadraticCurveTo(w, 0, w, r);
-    ctx.lineTo(w, h - r);
-    ctx.quadraticCurveTo(w, h, w - r, h);
-    ctx.lineTo(r, h);
-    ctx.quadraticCurveTo(0, h, 0, h - r);
-    ctx.lineTo(0, r);
-    ctx.quadraticCurveTo(0, 0, r, 0);
-    ctx.fill();
-
-    // Text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, w / 2, h / 2);
+    this._drawLabel(ctx, canvas.width, canvas.height, name, job, activity);
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(4, 1, 1);
+    sprite.scale.set(5, 1.72, 1);
     sprite.userData.canvas = canvas;
     sprite.userData.texture = texture;
     return sprite;
   }
 
-  _updateLabel(text) {
-    if (text === this.labelText) return;
-    this.labelText = text;
-
-    const canvas = this.label.userData.canvas;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
-
+  _drawLabel(ctx, w, h, name, job, activity) {
     ctx.clearRect(0, 0, w, h);
 
-    // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    const r = 16;
+    // Background pill
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    const r = 18;
     ctx.beginPath();
     ctx.moveTo(r, 0);
     ctx.lineTo(w - r, 0);
@@ -242,12 +237,35 @@ class NPC {
     ctx.quadraticCurveTo(0, 0, r, 0);
     ctx.fill();
 
+    // Name + job — "Gus the Postman"
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px sans-serif';
+    ctx.font = 'bold 42px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, w / 2, h / 2);
+    ctx.fillText(`${name} the ${job}`, w / 2, 62);
 
+    // Divider line
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 100);
+    ctx.lineTo(w - 40, 100);
+    ctx.stroke();
+
+    // Activity — smaller, slightly dimmer
+    ctx.fillStyle = '#d0e8ff';
+    ctx.font = '28px sans-serif';
+    ctx.fillText(activity || '', w / 2, 136);
+  }
+
+  _updateLabel(name, job, activity) {
+    const key = `${name}|${job}|${activity}`;
+    if (key === this.labelText) return;
+    this.labelText = key;
+
+    const canvas = this.label.userData.canvas;
+    const ctx = canvas.getContext('2d');
+    this._drawLabel(ctx, canvas.width, canvas.height, name, job, activity);
     this.label.userData.texture.needsUpdate = true;
   }
 
@@ -260,17 +278,24 @@ class NPC {
     const areaCenter = AREAS[entry.area];
     const pos = this.group.position;
 
+    // Smaller wander radius when sleeping at home
+    const isSleeping = entry.area.toLowerCase().includes('home');
+    const wanderR = isSleeping ? SLEEP_WANDER_RADIUS : WANDER_RADIUS;
+
     // Pick a wander sub-target when we arrive or timer expires
     this._wanderTimer -= delta;
     const distToCenter = Math.sqrt((pos.x - areaCenter.x) ** 2 + (pos.z - areaCenter.z) ** 2);
-    if (!this._wanderTarget || this._wanderTimer <= 0 || distToCenter > WANDER_RADIUS * 1.5) {
+    if (!this._wanderTarget || this._wanderTimer <= 0 || distToCenter > wanderR * 1.5) {
       const angle = Math.random() * Math.PI * 2;
-      const r = WANDER_RADIUS * 0.3 + Math.random() * WANDER_RADIUS * 0.7;
+      const r = wanderR * 0.3 + Math.random() * wanderR * 0.7;
       this._wanderTarget = {
         x: areaCenter.x + Math.cos(angle) * r,
         z: areaCenter.z + Math.sin(angle) * r,
       };
-      this._wanderTimer = 3 + Math.random() * 5; // hold position 3-8 s then re-wander
+      // Sleep longer between position changes when at home
+      this._wanderTimer = isSleeping
+        ? 8 + Math.random() * 8
+        : 3 + Math.random() * 5;
     }
 
     const dir = new THREE.Vector3(this._wanderTarget.x - pos.x, 0, this._wanderTarget.z - pos.z);
@@ -284,9 +309,15 @@ class NPC {
       this.group.rotation.y = Math.atan2(dir.x, dir.z);
       this.idleTime = 0;
     } else {
-      // Idle — gentle bobbing, occasionally look around
+      // Idle — gentle bobbing
       this.idleTime += delta;
-      this.group.children[1].position.y = 2.0 + Math.sin(this.idleTime * 2) * 0.05;
+      // When sleeping, tilt head forward gently
+      if (isSleeping) {
+        this.group.children[1].rotation.x = 0.4 + Math.sin(this.idleTime * 0.5) * 0.05;
+      } else {
+        this.group.children[1].rotation.x = 0;
+        this.group.children[1].position.y = 2.0 + Math.sin(this.idleTime * 2) * 0.05;
+      }
     }
 
     // Snap to terrain height
@@ -296,7 +327,7 @@ class NPC {
     const playerDist = pos.distanceTo(playerPosition);
     this.label.visible = playerDist < LABEL_DISTANCE;
     if (this.label.visible) {
-      this._updateLabel(`${this.name} • ${this._currentActivity}`);
+      this._updateLabel(this.name, this.job, this._currentActivity);
     }
   }
 }
@@ -306,11 +337,14 @@ class NPC {
 // ---------------------------------------------------------------------------
 
 const NPC_DEFS = [
-  { name: 'Mabel', job: 'Baker',       color: 0xe8a87c, schedule: SCHEDULES.Mabel },
-  { name: 'Gus',   job: 'Postman',     color: 0x5b9bd5, schedule: SCHEDULES.Gus },
-  { name: 'Fern',  job: 'Farmer',      color: 0x7bc67e, schedule: SCHEDULES.Fern },
-  { name: 'Olive', job: 'Shopkeeper',  color: 0xd4a0d4, schedule: SCHEDULES.Olive },
-  { name: 'Rosa',  job: 'Library Keeper', color: 0xa29bfe, schedule: SCHEDULES.Rosa },
+  { name: 'Mabel',  job: 'Baker',       color: 0xe8a87c, schedule: SCHEDULES.Mabel  },
+  { name: 'Gus',    job: 'Postman',     color: 0x5b9bd5, schedule: SCHEDULES.Gus    },
+  { name: 'Fern',   job: 'Farmer',      color: 0x7bc67e, schedule: SCHEDULES.Fern   },
+  { name: 'Olive',  job: 'Shopkeeper',  color: 0xd4a0d4, schedule: SCHEDULES.Olive  },
+  { name: 'Rosa',   job: 'Librarian',   color: 0xa29bfe, schedule: SCHEDULES.Rosa   },
+  { name: 'Jack',   job: 'Fisherman',   color: 0xc47d52, schedule: SCHEDULES.Jack   },
+  { name: 'Pete',   job: 'Farmer',      color: 0x8db87a, schedule: SCHEDULES.Pete   },
+  { name: 'Barney', job: 'Barkeeper',   color: 0xd4a853, schedule: SCHEDULES.Barney },
 ];
 
 export class NPCManager {

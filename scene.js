@@ -292,7 +292,7 @@ function makeWindmill() {
 }
 
 // ---------------------------------------------------------------------------
-// Postbox — classic red British pillar box
+// Postbox — classic large red British pillar box (Post Office only)
 // ---------------------------------------------------------------------------
 
 function makePostbox() {
@@ -310,6 +310,46 @@ function makePostbox() {
   const plate = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.06), mat(0xbb0000));
   plate.position.set(0, 0.55, 0.5);
   group.add(plate);
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Mailbox — small American-style box on a post (residential delivery)
+// ---------------------------------------------------------------------------
+
+function makeMailbox() {
+  const group = new THREE.Group();
+
+  // Post
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.2, 6), mat(0x888888));
+  post.position.y = 0.6;
+  group.add(post);
+
+  // Box body — rounded rectangular shape
+  const boxBody = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.38, 0.9), mat(0x446688));
+  boxBody.position.y = 1.38;
+  group.add(boxBody);
+
+  // Rounded top (half-cylinder)
+  const topGeo = new THREE.CylinderGeometry(0.19, 0.19, 0.55, 8, 1, false, 0, Math.PI);
+  const topCap = new THREE.Mesh(topGeo, mat(0x446688));
+  topCap.rotation.z = Math.PI / 2;
+  topCap.position.set(0, 1.57, 0);
+  group.add(topCap);
+
+  // Door flap (front face, slightly darker)
+  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.32, 0.04), mat(0x335577));
+  flap.position.set(0, 1.38, 0.47);
+  group.add(flap);
+
+  // Flag — small red flag on the side
+  const flagPost = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 4), mat(0x888888));
+  flagPost.position.set(0.28, 1.55, 0);
+  group.add(flagPost);
+  const flag = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.14, 0.03), mat(0xcc2222));
+  flag.position.set(0.38, 1.68, 0);
+  group.add(flag);
+
   return group;
 }
 
@@ -761,9 +801,13 @@ export function buildScene(scene) {
   flagStripe.position.set(68.6, poBase + 8.6, -37);
   scene.add(flagStripe);
 
-  // Postboxes scattered around the island — Gus's delivery route
-  const postboxSpots = [
-    [52,  -36],   // Post Office (existing spot)
+  // One large red pillar box at the Post Office entrance
+  const pillarBox = makePostbox();
+  placeOnTerrain(pillarBox, 52, -36);
+  scene.add(pillarBox);
+
+  // Small American-style mailboxes at residential/delivery spots around the island
+  const mailboxSpots = [
     [-52, -36],   // Bakery side
     [0,   12],    // Town Square north
     [-12, -8],    // Town Square west
@@ -781,12 +825,14 @@ export function buildScene(scene) {
     [-30, -80],   // Residential area
     [30,  -80],   // Residential area
     [-170, 70],   // Near farm
+    [30,  200],   // Near Jack's cottage
+    [-42, -80],   // Near Barney's home
   ];
-  for (const [px, pz] of postboxSpots) {
-    const pb = makePostbox();
-    placeOnTerrain(pb, px, pz);
-    pb.rotation.y = Math.random() * Math.PI * 2;
-    scene.add(pb);
+  for (const [px, pz] of mailboxSpots) {
+    const mb = makeMailbox();
+    placeOnTerrain(mb, px, pz);
+    mb.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(mb);
   }
 
   // =====================================================================
