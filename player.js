@@ -18,8 +18,9 @@ export class PlayerController {
     this.renderer = renderer;
 
     // Movement state
-    this.keys = { forward: false, backward: false, left: false, right: false };
-    this.moveSpeed = 8; // units per second
+    this.keys = { forward: false, backward: false, left: false, right: false, run: false };
+    this.moveSpeed = 8;    // units per second (walk)
+    this.runSpeed  = 20;   // units per second (run)
     this.isMoving = false;
 
     // Camera state
@@ -127,6 +128,7 @@ export class PlayerController {
       case 'KeyS': case 'ArrowDown':  this.keys.backward = pressed; break;
       case 'KeyA': case 'ArrowLeft':  this.keys.left     = pressed; break;
       case 'KeyD': case 'ArrowRight': this.keys.right    = pressed; break;
+      case 'Space': this.keys.run = pressed; e.preventDefault(); break;
     }
   }
 
@@ -153,7 +155,8 @@ export class PlayerController {
     if (this.isMoving) {
       this._moveDir.normalize();
 
-      this.player.position.addScaledVector(this._moveDir, this.moveSpeed * delta);
+      const speed = this.keys.run ? this.runSpeed : this.moveSpeed;
+      this.player.position.addScaledVector(this._moveDir, speed * delta);
 
       // Face movement direction
       this.player.rotation.y = Math.atan2(this._moveDir.x, this._moveDir.z);
