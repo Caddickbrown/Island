@@ -25,26 +25,26 @@ function advanceSimTime(deltaSec) {
 }
 
 // ---------------------------------------------------------------------------
-// Named areas — positions derived from scene.js building placements
+// Named areas — coordinates match scene.js building placements exactly
 // ---------------------------------------------------------------------------
 const AREAS = {
-  bakery:      new THREE.Vector3(-15, 0, 8),
-  postOffice:  new THREE.Vector3(15, 0, -8),
-  townSquare:  new THREE.Vector3(0, 0, 0),
-  library:     new THREE.Vector3(5, 0, -30),
-  workshop:    new THREE.Vector3(35, 0, 40),
-  dock:        new THREE.Vector3(70, 0, 65),
-  farm:        new THREE.Vector3(-45, 0, -50),
-  beach:       new THREE.Vector3(55, 0, 50),
-  southBeach:  new THREE.Vector3(0, 0, 70),
-  hilltop:     new THREE.Vector3(-50, 0, 30),  // near windmill
-  forestPath:  new THREE.Vector3(30, 0, -42),
+  bakery:      { x: -60,  z: -40  },
+  postOffice:  { x: 60,   z: -40  },
+  townSquare:  { x: 0,    z: 0    },
+  library:     { x: 80,   z: 40   },
+  workshop:    { x: -80,  z: 40   },
+  dock:        { x: 0,    z: 220  },
+  farm:        { x: -180, z: 80   },
+  beach:       { x: 30,   z: -200 },
+  southBeach:  { x: 0,    z: -220 },
+  hilltop:     { x: -100, z: -180 },
+  forestPath:  { x: 180,  z: 120  },
   // Homes — near each NPC's primary workplace
-  mabelHome:   new THREE.Vector3(-20, 0, 12),
-  gusHome:     new THREE.Vector3(20, 0, -12),
-  fernHome:    new THREE.Vector3(-35, 0, -40),
-  oliveHome:   new THREE.Vector3(5, 0, 5),
-  rosaHome:    new THREE.Vector3(10, 0, -25),
+  mabelHome:   { x: -72,  z: -58  },
+  gusHome:     { x: 72,   z: -58  },
+  fernHome:    { x: -195, z: 90   },
+  oliveHome:   { x: -12,  z: 12   },
+  rosaHome:    { x: 90,   z: 58   },
 };
 
 // ---------------------------------------------------------------------------

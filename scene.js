@@ -22,7 +22,7 @@ const C = {
   dock:       0x8b6914,
   // buildings
   bakery:     0xe17055,
-  postOffice: 0x4a90d9,
+  postOffice: 0xcc2222,
   house1:     0xffeaa7,
   house2:     0xfdcb6e,
   house3:     0xf8e8d0,
@@ -162,7 +162,7 @@ function flatPlane(w, d, color) {
 // Building factory
 // ---------------------------------------------------------------------------
 
-function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = false, label = '' } = {}) {
+function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = false, label = '', signText = '', signBg = 0xfde8c9, signColor = 0x4a2800 } = {}) {
   const group = new THREE.Group();
 
   const walls = box(w, h, d, wallColor);
@@ -193,6 +193,43 @@ function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = fa
       frame.rotation.x = -0.3;
       group.add(panel, frame);
     }
+  }
+
+  // Wall-mounted sign — flush on the front face, below the roof line
+  if (signText) {
+    const signW = Math.min(w * 0.72, 5.5);
+    const signH = 0.85;
+    const signY = doorH + (h - doorH) * 0.5; // between door top and roof, centred
+    const signZ = d / 2 + 0.12;
+
+    // Backing board
+    const backing = box(signW + 0.3, signH + 0.3, 0.12, signColor);
+    backing.position.set(0, signY, signZ - 0.03);
+    group.add(backing);
+
+    const board = box(signW, signH, 0.15, signBg);
+    board.position.set(0, signY, signZ);
+    group.add(board);
+
+    // Canvas text — rendered as a sprite ON the board face
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    const r = (signBg >> 16) & 0xff, g = (signBg >> 8) & 0xff, b = signBg & 0xff;
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(0, 0, 512, 128);
+    const tr = (signColor >> 16) & 0xff, tg = (signColor >> 8) & 0xff, tb = signColor & 0xff;
+    ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
+    ctx.font = 'bold 50px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(signText, 256, 64);
+    const tex = new THREE.CanvasTexture(canvas);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+    sprite.scale.set(signW, signH, 1);
+    sprite.position.set(0, signY, signZ + 0.09);
+    group.add(sprite);
   }
 
   group.userData.label = label;
@@ -697,7 +734,7 @@ export function buildScene(scene) {
   // =====================================================================
   // BAKERY (-60, -40)
   // =====================================================================
-  const bakery = makeBuilding(12, 8, 9, C.bakery, C.roofDark, { solarPanels: true, label: 'Bakery' });
+  const bakery = makeBuilding(12, 8, 9, C.bakery, C.roofDark, { solarPanels: true, label: 'Bakery', signText: '🍞 Bakery', signBg: 0xfde8c9, signColor: 0x6b2f00 });
   placeOnTerrain(bakery, -60, -40);
   bakery.rotation.y = 0.3;
   scene.add(bakery);
@@ -730,10 +767,6 @@ export function buildScene(scene) {
     scene.add(pole);
   }
 
-  // Bakery hanging sign
-  const bakerySign = makeHangingSign('🍞 BAKERY', 0xfde8c9, 0x8b4513);
-  bakerySign.position.set(-60, bakeryBase + 7.2, -35.2);
-  scene.add(bakerySign);
 
   // Small awning / outdoor seating
   const bakeryBench = makeBench();
@@ -748,16 +781,12 @@ export function buildScene(scene) {
   // =====================================================================
   // POST OFFICE (60, -40)
   // =====================================================================
-  const postOffice = makeBuilding(10, 7, 8, C.postOffice, C.roof, { solarPanels: true, label: 'Post Office' });
+  const postOffice = makeBuilding(10, 7, 8, C.postOffice, C.roofDark, { solarPanels: false, label: 'Post Office', signText: '📮 Post Office', signBg: 0xffffff, signColor: 0xcc2222 });
   placeOnTerrain(postOffice, 60, -40);
   postOffice.rotation.y = -0.2;
   scene.add(postOffice);
 
-  // Post Office hanging sign
   const poBase = getHeight(60, -40);
-  const poSign = makeHangingSign('📮 POST OFFICE', 0xffffff, 0x2d5fa3);
-  poSign.position.set(60, poBase + 6.8, -35.8);
-  scene.add(poSign);
 
   // Flagpole
   const flagPole = cylinder(0.12, 0.12, 9, 0xd0d0d0, 6);
