@@ -1013,6 +1013,7 @@ function makeOpenGarage() {
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, side: THREE.DoubleSide })
   );
   signMesh.position.set(0, GH - 0.55, -GD/2 - 0.05);
+  signMesh.scale.x = -1; // flip so canvas text reads correctly from outside
   group.add(signMesh);
 
   group.userData.label = 'Garage';
