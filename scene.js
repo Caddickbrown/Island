@@ -60,13 +60,15 @@ export const AREAS = {
   TOWN_SQUARE:  { x: 0,    z: 0,    label: 'Town Square' },
   BAKERY:       { x: -60,  z: -40,  label: 'Bakery' },
   POST_OFFICE:  { x: 60,   z: -40,  label: 'Post Office' },
-  DOCK:         { x: 0,    z: 220,  label: 'The Dock' },
+  DOCK:         { x: 0,    z: 262,  label: 'The Dock' },
   FARM:         { x: -180, z: 80,   label: 'The Farm' },
   FOREST:       { x: 180,  z: 120,  label: 'Forest Path' },
   HILLTOP:      { x: -100, z: -180, label: 'The Hilltop' },
   BEACH_SOUTH:  { x: 0,    z: -220, label: 'South Beach' },
   LIBRARY:      { x: 80,   z: 40,   label: 'Library' },
   WORKSHOP:     { x: -80,  z: 40,   label: 'Workshop' },
+  PUB:          { x: -30,  z: -70,  label: 'The Anchor' },
+  SCHOOL:       { x: 40,   z: -70,  label: 'School' },
 };
 
 // ---------------------------------------------------------------------------
@@ -324,8 +326,8 @@ function makeDock() {
 
   for (let z = -12; z <= 12; z += 4) {
     for (let x = -3; x <= 3; x += 6) {
-      const post = cylinder(0.3, 0.3, 3.5, C.trunk, 6);
-      post.position.set(x, 0, z);
+      const post = cylinder(0.3, 0.3, 5.5, C.trunk, 6);
+      post.position.set(x, -1, z);
       group.add(post);
     }
   }
@@ -773,6 +775,12 @@ export function buildScene(scene) {
     [25,  -68],   // Residential east
     [-35, -72],   // Residential west
     [35,  18],    // Near post office path junction
+    [-65, -20],   // Near bakery
+    [80,  20],    // Near library
+    [-80, 20],    // Near workshop
+    [-30, -80],   // Residential area
+    [30,  -80],   // Residential area
+    [-170, 70],   // Near farm
   ];
   for (const [px, pz] of postboxSpots) {
     const pb = makePostbox();
@@ -834,7 +842,7 @@ export function buildScene(scene) {
   // THE DOCK (0, 220)
   // =====================================================================
   const dock = makeDock();
-  dock.position.set(0, 0, 235); // force to sea level, not terrain height
+  dock.position.set(0, -1.0, 262); // push out toward water
   dock.rotation.y = 0;
   scene.add(dock);
 
@@ -1065,4 +1073,20 @@ export function buildScene(scene) {
     b.rotation.y = Math.random() * Math.PI;
     scene.add(b);
   });
+
+  // =====================================================================
+  // THE ANCHOR — Pub/Inn (-30, -70)
+  // =====================================================================
+  const pub = makeBuilding(13, 7, 10, 0xc8a56e, 0x5c3d1e, { solarPanels: false, label: 'The Anchor', signText: '⚓ The Anchor', signBg: 0x1a1a2e, signColor: 0xffd700 });
+  placeOnTerrain(pub, -30, -70);
+  pub.rotation.y = 0.1;
+  scene.add(pub);
+
+  // =====================================================================
+  // SCHOOL (40, -70)
+  // =====================================================================
+  const school = makeBuilding(18, 7, 12, 0xf9ca24, 0x6ab04c, { solarPanels: true, label: 'School', signText: '🏫 School', signBg: 0xffffff, signColor: 0x333333 });
+  placeOnTerrain(school, 40, -70);
+  school.rotation.y = -0.15;
+  scene.add(school);
 }

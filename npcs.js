@@ -33,7 +33,7 @@ const AREAS = {
   townSquare:  { x: 0,    z: 0    },
   library:     { x: 80,   z: 40   },
   workshop:    { x: -80,  z: 40   },
-  dock:        { x: 0,    z: 220  },
+  dock:        { x: 0,    z: 262  },
   farm:        { x: -180, z: 80   },
   beach:       { x: 30,   z: -200 },
   southBeach:  { x: 0,    z: -220 },
@@ -56,7 +56,7 @@ const AREAS = {
 const SCHEDULES = {
   Mabel: [
     [5,  8,  'bakery',     'Baking 🍞'],
-    [8,  12, 'townSquare', 'Selling bread 🥖'],
+    [8,  12, 'bakery',     'Selling bread 🥖'],
     [12, 14, 'beach',      'On break 🏖️'],
     [14, 18, 'bakery',     'Baking for tomorrow 🍞'],
     [18, 21, 'library',    'Reading 📚'],
