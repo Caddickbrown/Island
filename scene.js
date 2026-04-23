@@ -90,6 +90,15 @@ export const ISLAND_BOUNDS = {
 // ---------------------------------------------------------------------------
 const ISLAND_RADIUS = 300;
 
+function effectiveRadius(angle) {
+  return ISLAND_RADIUS
+    + 55 * Math.sin(2 * angle + 0.3)
+    + 38 * Math.sin(3 * angle + 1.1)
+    + 22 * Math.sin(5 * angle + 2.5)
+    + 14 * Math.sin(7 * angle + 0.7)
+    +  8 * Math.sin(11 * angle + 1.9);
+}
+
 export function getHeight(x, z) {
   const nx = x / 300;
   const nz = z / 300;
@@ -103,7 +112,8 @@ export function getHeight(x, z) {
 
   // Fade to 0 near edges (beach)
   const dist = Math.sqrt(x * x + z * z);
-  const edgeFade = Math.max(0, 1 - dist / ISLAND_RADIUS);
+  const angle = Math.atan2(z, x);
+  const edgeFade = Math.max(0, 1 - dist / effectiveRadius(angle));
   const fade = Math.min(1, edgeFade * 3); // sharper transition
   h *= fade;
 
@@ -1290,9 +1300,10 @@ function buildTerrain(scene) {
     const x = positions.getX(i);
     const z = positions.getZ(i);
     const dist = Math.sqrt(x * x + z * z);
+    const angle = Math.atan2(z, x);
 
     let y;
-    if (dist > ISLAND_RADIUS) {
+    if (dist > effectiveRadius(angle)) {
       y = -0.5; // underwater
     } else {
       y = getHeight(x, z);
@@ -1300,8 +1311,8 @@ function buildTerrain(scene) {
     positions.setY(i, y);
 
     // Vertex colours: sand at edges, grass inland, darker grass on hills
-    const edgeFactor = Math.max(0, 1 - dist / ISLAND_RADIUS);
-    if (dist > ISLAND_RADIUS - 15) {
+    const edgeFactor = Math.max(0, 1 - dist / effectiveRadius(angle));
+    if (dist > effectiveRadius(angle) - 15) {
       // Sand beach
       colors.push(0.91, 0.84, 0.64);
     } else if (y < 1) {
@@ -1328,12 +1339,7 @@ function buildTerrain(scene) {
   const terrain = new THREE.Mesh(geo, terrainMat);
   scene.add(terrain);
 
-  // Beach ring — a flat sand disc under the terrain for smoother shoreline
-  const beachGeo = new THREE.CircleGeometry(ISLAND_RADIUS + 20, 64);
-  beachGeo.rotateX(-Math.PI / 2);
-  const beach = new THREE.Mesh(beachGeo, mat(C.sand));
-  beach.position.y = -0.2;
-  scene.add(beach);
+  // Beach ring removed — terrain vertex colouring handles the beach look
 }
 
 // ---------------------------------------------------------------------------
@@ -1805,7 +1811,8 @@ export function buildScene(scene) {
   ];
   scatteredTrees.forEach(([x, z]) => {
     const dist = Math.sqrt(x * x + z * z);
-    if (dist > ISLAND_RADIUS - 10) return; // skip if off the island
+    const angle = Math.atan2(z, x);
+    if (dist > effectiveRadius(angle) - 10) return; // skip if off the island
     const height = 5 + Math.random() * 4;
     const color = Math.random() > 0.3 ? C.foliage : C.foliageDark;
     const tree = makeTree(height, color);
