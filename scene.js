@@ -57,6 +57,7 @@ const C = {
 // Areas — named locations NPCs and player navigate between
 // ---------------------------------------------------------------------------
 export const AREAS = {
+  KART_TRACK:     { x: 198,  z: -148, label: 'Kart Track' },
   TOWN_SQUARE:    { x: 0,    z: 0,    label: 'Town Square' },
   BAKERY:         { x: -60,  z: -40,  label: 'Bakery' },
   POST_OFFICE:    { x: 60,   z: -40,  label: 'Post Office' },
@@ -1984,6 +1985,144 @@ export function buildScene(scene) {
     // Front-right panel local (8.25, -12):  wx=73.048, wz=27.205
     { cx: 73.05, cz: 27.21, hw: 5.8, hd: 0.3, rot: 1.1 },
   ];
+
+
+  // =====================================================================
+  // GO-KART TRACK — east of the aquarium, near the coast
+  // =====================================================================
+  {
+    const MAT_ASPHALT = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+    const MAT_INFIELD = new THREE.MeshLambertMaterial({ color: 0x4a9951 });
+    const MAT_KERB_R  = new THREE.MeshLambertMaterial({ color: 0xee2222 });
+    const MAT_KERB_W  = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
+    const MAT_STRIPE  = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const MAT_METAL   = new THREE.MeshLambertMaterial({ color: 0x999999 });
+    const MAT_TIRE    = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const MAT_BANNER  = new THREE.MeshLambertMaterial({ color: 0xcc1111, side: THREE.DoubleSide });
+
+    const KX = 198, KZ = -148;
+    const trackBase = getHeight(KX, KZ) + 0.12;
+    const tg = new THREE.Group();
+    tg.position.set(KX, trackBase, KZ);
+
+    const SEGS = 64;
+    const RX_O = 30, RZ_O = 18;
+    const RX_I = 20, RZ_I = 8;
+
+    // Track surface (oval ring)
+    const tv = [], ti = [];
+    for (let i = 0; i <= SEGS; i++) {
+      const t = (i / SEGS) * Math.PI * 2;
+      const c = Math.cos(t), s = Math.sin(t);
+      tv.push(c * RX_O, 0.05, s * RZ_O,  c * RX_I, 0.05, s * RZ_I);
+    }
+    for (let i = 0; i < SEGS; i++) {
+      const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+      ti.push(a, c, b,  b, c, d);
+    }
+    const trkGeo = new THREE.BufferGeometry();
+    trkGeo.setAttribute('position', new THREE.Float32BufferAttribute(tv, 3));
+    trkGeo.setIndex(ti);
+    trkGeo.computeVertexNormals();
+    tg.add(new THREE.Mesh(trkGeo, MAT_ASPHALT));
+
+    // Infield grass fan
+    const iv = [0, 0.04, 0];
+    for (let i = 0; i <= SEGS; i++) {
+      const t = (i / SEGS) * Math.PI * 2;
+      iv.push(Math.cos(t) * (RX_I - 0.8), 0.04, Math.sin(t) * (RZ_I - 0.8));
+    }
+    const ii = [];
+    for (let i = 0; i < SEGS; i++) ii.push(0, i + 1, i + 2);
+    const infGeo = new THREE.BufferGeometry();
+    infGeo.setAttribute('position', new THREE.Float32BufferAttribute(iv, 3));
+    infGeo.setIndex(ii);
+    infGeo.computeVertexNormals();
+    tg.add(new THREE.Mesh(infGeo, MAT_INFIELD));
+
+    // Red/white kerb barriers around outer and inner edges
+    const N_B = 48;
+    for (let i = 0; i < N_B; i++) {
+      const t = (i + 0.5) / N_B * Math.PI * 2;
+      const c = Math.cos(t), s = Math.sin(t);
+      const kMat = (i % 2 === 0) ? MAT_KERB_R : MAT_KERB_W;
+      const ry = -Math.atan2(s * RX_O, c * RZ_O);
+      const ob = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 0.3), kMat);
+      ob.position.set(c * (RX_O + 0.6), 0.25, s * (RZ_O + 0.6));
+      ob.rotation.y = ry;
+      tg.add(ob);
+      const ib = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 0.3), kMat);
+      ib.position.set(c * (RX_I - 0.6), 0.25, s * (RZ_I - 0.6));
+      ib.rotation.y = ry;
+      tg.add(ib);
+    }
+
+    // Starting line stripe
+    const gantryX = (RX_O + RX_I) / 2;
+    const startW = RX_O - RX_I;
+    const sl = new THREE.Mesh(new THREE.BoxGeometry(startW, 0.01, 0.7), MAT_STRIPE);
+    sl.position.set(gantryX, 0.06, 0);
+    tg.add(sl);
+
+    // Finish gantry
+    for (const px of [RX_I - 0.4, RX_O + 0.4]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 4.5, 8), MAT_METAL);
+      post.position.set(px, 2.25, -2);
+      tg.add(post);
+    }
+    const gBar = new THREE.Mesh(new THREE.BoxGeometry(startW + 2.5, 0.25, 0.25), MAT_METAL);
+    gBar.position.set(gantryX, 4.5, -2);
+    tg.add(gBar);
+    const bannerMesh = new THREE.Mesh(new THREE.BoxGeometry(startW + 2, 1.2, 0.06), MAT_BANNER);
+    bannerMesh.position.set(gantryX, 3.6, -2);
+    tg.add(bannerMesh);
+
+    // 🏎️ Three go-karts in the pit area
+    const kartColors = [0xff6600, 0x2266ee, 0xffcc00];
+    kartColors.forEach((kc, ki) => {
+      const kg = new THREE.Group();
+      const kMat = new THREE.MeshLambertMaterial({ color: kc });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.28, 1.7), kMat);
+      body.position.set(0, 0.42, 0); kg.add(body);
+      const nose = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.52), kMat);
+      nose.position.set(0, 0.35, -0.9); kg.add(nose);
+      const seatBox = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), MAT_METAL);
+      seatBox.position.set(0, 0.62, 0.2); kg.add(seatBox);
+      [[-0.6, 0.52], [0.6, 0.52], [-0.6, -0.52], [0.6, -0.52]].forEach(([wx, wz]) => {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.16, 10), MAT_TIRE);
+        w.rotation.z = Math.PI / 2; w.position.set(wx, 0.2, wz); kg.add(w);
+      });
+      const sw = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.025, 6, 10), MAT_METAL);
+      sw.rotation.x = -0.4; sw.position.set(0, 0.82, -0.08); kg.add(sw);
+      kg.position.set(gantryX + (ki - 1) * 3.2, 0.01, -5 - ki * 1.5);
+      kg.rotation.y = ki === 1 ? 0.15 : (ki === 2 ? -0.12 : 0);
+      tg.add(kg);
+    });
+
+    // Tire stack at inner corner
+    for (let i = 0; i < 4; i++) {
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.14, 6, 10), MAT_TIRE);
+      tire.rotation.x = Math.PI / 2;
+      tire.position.set(-(RX_O + 0.8), 0.28 + (i % 2) * 0.12, (i < 2 ? 0.42 : -0.42));
+      tg.add(tire);
+    }
+
+    // Track label sign
+    const signPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3, 6), MAT_METAL);
+    signPole.position.set(RX_O + 2.5, 1.5, 5);
+    tg.add(signPole);
+    const signBoard = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.2, 0.1), MAT_KERB_R);
+    signBoard.position.set(RX_O + 2.5, 3.3, 5);
+    tg.add(signBoard);
+
+    scene.add(tg);
+
+    // Path connecting aquarium to kart track
+    makePath(scene, 155, -88, KX - 25, KZ + 6, 3);
+
+    // Collider for the gantry
+    colliders.push({ cx: KX + gantryX, cz: KZ - 2, hw: startW / 2 + 1.5, hd: 0.5, rot: 0 });
+  }
 
   const fish = aquarium.userData.fish || [];
   return { windmill: windmillGroup, clouds: cloudList, campfire, colliders, fish };
