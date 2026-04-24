@@ -73,6 +73,7 @@ export const AREAS = {
   SCHOOL:         { x: 40,   z: -70,  label: 'School' },
   SOUTH_QUARTER:  { x: 8,    z: -68,  label: 'South Quarter' },
   AQUARIUM:       { x: 150,  z: -80,  label: "Elliot's Aquarium" },
+  MILL:           { x: -120, z: 40,   label: 'The Mill' },
 };
 
 // ---------------------------------------------------------------------------
@@ -465,6 +466,139 @@ function makeBarn() {
   group.add(barnDoor);
 
   group.userData.label = 'Barn';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Mill — stone grinding mill with rotating windmill sails (CAD-365)
+// ---------------------------------------------------------------------------
+
+export let millSails = null; // exported so main loop can rotate it each frame
+
+function buildMill() {
+  const group = new THREE.Group();
+
+  // Stone base — slightly wider than tall, grey-tan
+  const base = box(6, 5, 6, 0xb0a090);
+  base.position.y = 2.5;
+  group.add(base);
+
+  // Second stone tier — narrower
+  const mid = box(5, 3, 5, 0xa09080);
+  mid.position.y = 6.5;
+  group.add(mid);
+
+  // Conical/pyramid roof — dark brown
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x5c3d1e });
+  const roofGeo = new THREE.ConeGeometry(3.8, 3.5, 4);
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.position.y = 9.75;
+  roof.rotation.y = Math.PI / 4; // align to box
+  group.add(roof);
+
+  // Door
+  const door = box(1.4, 2.4, 0.3, C.door);
+  door.position.set(0, 1.2, 3.15);
+  group.add(door);
+
+  // Window — small square
+  const win = box(1.0, 1.0, 0.3, 0x7fb3d3);
+  win.position.set(0, 5.0, 3.15);
+  group.add(win);
+
+  // Millstone wheel visible at the side — flattened torus
+  const stoneGeo = new THREE.TorusGeometry(1.4, 0.35, 6, 14);
+  const stoneMesh = new THREE.Mesh(stoneGeo, new THREE.MeshLambertMaterial({ color: 0x888888 }));
+  stoneMesh.position.set(3.4, 1.5, 0);
+  stoneMesh.rotation.y = Math.PI / 2;
+  group.add(stoneMesh);
+
+  // Windmill sails — 4 rectangular blades on a central axle
+  const sailHub = cylinder(0.25, 0.25, 0.5, 0x9e8a6e, 8);
+  sailHub.position.set(0, 7.5, 3.4);
+  sailHub.rotation.x = Math.PI / 2;
+  group.add(sailHub);
+
+  const spinner = new THREE.Group();
+  spinner.position.set(0, 7.5, 3.8);
+  for (let i = 0; i < 4; i++) {
+    const sail = box(0.7, 5, 0.12, 0xd4b896);
+    sail.position.set(0, 2.5, 0);
+    const pivot = new THREE.Group();
+    pivot.add(sail);
+    pivot.rotation.z = (Math.PI / 2) * i;
+    spinner.add(pivot);
+  }
+  group.add(spinner);
+  group.userData.spinner = spinner;
+  millSails = spinner; // export ref for animation loop
+
+  // Sign: "The Mill"
+  const signCanvas = document.createElement('canvas');
+  signCanvas.width = 256; signCanvas.height = 64;
+  const sctx = signCanvas.getContext('2d');
+  sctx.fillStyle = '#fde8c9';
+  sctx.fillRect(0, 0, 256, 64);
+  sctx.fillStyle = '#4a2800';
+  sctx.font = 'bold 28px sans-serif';
+  sctx.textAlign = 'center';
+  sctx.textBaseline = 'middle';
+  sctx.fillText('The Mill', 128, 32);
+  const signPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.5, 0.6),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signCanvas), transparent: true })
+  );
+  signPlane.position.set(0, 3.8, 3.18);
+  group.add(signPlane);
+
+  group.userData.label = 'The Mill';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Delivery van — small wooden van mesh (moves with Felix NPC)  (CAD-365)
+// ---------------------------------------------------------------------------
+
+export let deliveryVanMesh = null; // exported; position is set by Felix each frame
+
+export function buildDeliveryVan(scene) {
+  const group = new THREE.Group();
+
+  // Van body
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0xc8a85e }); // warm wood-tan
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.4, 3.2), bodyMat);
+  body.position.y = 1.1;
+  group.add(body);
+
+  // Cab (front section, slightly darker)
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 1.4),
+    new THREE.MeshLambertMaterial({ color: 0xb09040 }));
+  cab.position.set(0, 1.9, -1.6);
+  group.add(cab);
+
+  // Windscreen
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.8, 0.12),
+    new THREE.MeshLambertMaterial({ color: 0x7fb3d3, transparent: true, opacity: 0.6 }));
+  glass.position.set(0, 1.9, -2.28);
+  group.add(glass);
+
+  // Wheels (4)
+  const wheelMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+  const hubMat   = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+  for (const [wx, wz] of [[-1.1, 0.9], [1.1, 0.9], [-1.1, -0.9], [1.1, -0.9]]) {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.28, 8), wheelMat);
+    w.rotation.z = Math.PI / 2;
+    w.position.set(wx, 0.38, wz);
+    group.add(w);
+    const h = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.30, 6), hubMat);
+    h.rotation.z = Math.PI / 2;
+    h.position.set(wx, 0.38, wz);
+    group.add(h);
+  }
+
+  group.visible = true;
+  scene.add(group);
+  deliveryVanMesh = group;
   return group;
 }
 
@@ -1392,7 +1526,8 @@ export function buildScene(scene) {
   makePath(scene, 0, 0, -80, 40, 4);     // Town → Workshop
   makePath(scene, 0, 0, 0, 220, 4);      // Town → Dock (long south)
   // Outer ring & branches
-  makePath(scene, -80, 40, -180, 80, 3); // Workshop → Farm
+  makePath(scene, -80, 40, -120, 40, 3); // Workshop → Mill
+  makePath(scene, -120, 40, -180, 80, 3); // Mill → Farm
   makePath(scene, 80, 40, 180, 120, 3);  // Library → Forest
   makePath(scene, -60, -40, -100, -180, 3); // Bakery → Hilltop
   makePath(scene, 60, -40, 0, -220, 3);  // Post Office → South Beach
@@ -1748,6 +1883,24 @@ export function buildScene(scene) {
   const crate2 = box(1.5, 1.5, 1.5, C.dock);
   crate2.position.set(6.5, 0.75, 224);
   scene.add(crate2);
+
+  // =====================================================================
+  // THE MILL (-120, 40) — between workshop and farm  (CAD-365)
+  // =====================================================================
+  const millGroup = buildMill();
+  placeOnTerrain(millGroup, -120, 40);
+  millGroup.rotation.y = 0.4;
+  scene.add(millGroup);
+
+  // A couple of trees around the mill
+  [[-130, 30], [-110, 52]].forEach(([x, z]) => {
+    const t = makeTree(5 + Math.random() * 2);
+    placeOnTerrain(t, x, z);
+    scene.add(t);
+  });
+
+  // Delivery van (Felix drives this — position updated by Felix NPC each frame)
+  buildDeliveryVan(scene);
 
   // =====================================================================
   // THE FARM (-180, 80)
@@ -2247,6 +2400,8 @@ export function buildScene(scene) {
     { cx: -100, cz: -180, hw: 3.5, hd: 3.5, rot: 0  },
     // Elliot's Aquarium (150, -80)  20×15, rot -0.6
     { cx: 150,  cz: -80,  hw: 10,  hd: 7.5, rot: -0.6 },
+    // The Mill (-120, 40)  6×6 base, rot 0.4  (CAD-365)
+    { cx: -120, cz: 40,   hw: 3.5, hd: 3.5, rot: 0.4  },
 
     // Library — per-wall colliders (hollow building, player enters through door gap)
     // Local positions transformed to world using Three.js rotation.y = 1.1:
@@ -2411,7 +2566,7 @@ export function buildScene(scene) {
   // CAD-251 — Supply chain background simulation
   initSupplyChain(scene);
 
-  return { windmill: windmillGroup, clouds: cloudList, campfire, colliders, fish, boombox };
+  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox };
 }
 
 
@@ -2517,11 +2672,11 @@ export function tryGiveItem(npcName, npcPos, playerPos) {
 }
 
 // ===========================================================================
-// CAD-251 — Supply Chain (Eddy's farm → flour → Rosa's bakery)
+// CAD-251 / CAD-365 — Supply Chain (Eddy's farm → mill → bakery/café)
 // ===========================================================================
 // Background simulation: every 5 "game minutes" Eddy harvests (wheat bundle
 // appears briefly) and every 10 "game minutes" Rosa bakes (chimney smoke).
-// Uses Three.js particles for chimney smoke.
+// CAD-365 extends this with visible goods packages that travel with Felix.
 // ===========================================================================
 
 let _supplyChainScene = null;
@@ -2531,6 +2686,10 @@ let _harvestClock = 0;
 let _wheatBundle = null;
 let _wheatTimer = 0;
 let _smokeActive = false;
+
+// CAD-365 goods packages — small coloured boxes that follow Felix's van
+export let goodsWheatMesh = null;  // yellow wheat bundle (farm → mill)
+export let goodsFlourMesh = null;  // white flour sack (mill → bakery)
 
 // We expose the smoke group so the main loop can animate it
 export function getSupplyChain() {
@@ -2595,6 +2754,20 @@ export function initSupplyChain(scene) {
   wGroup.visible = false;
   scene.add(wGroup);
   _wheatBundle = wGroup;
+
+  // CAD-365 — Goods packages: wheat bundle (yellow) and flour sack (white)
+  // These small boxes travel with Felix's van, hidden when not in use.
+  const wPkg = box(0.4, 0.4, 0.4, 0xe8c04a); // golden wheat
+  wPkg.position.set(-200, getHeight(-200, 100) + 1.2, 100);
+  wPkg.visible = false;
+  scene.add(wPkg);
+  goodsWheatMesh = wPkg;
+
+  const fPkg = box(0.4, 0.5, 0.4, 0xf5f5f5); // white flour sack
+  fPkg.position.set(-200, getHeight(-200, 100) + 1.2, 100);
+  fPkg.visible = false;
+  scene.add(fPkg);
+  goodsFlourMesh = fPkg;
 }
 
 // Called from main animation loop with delta (real seconds) and simDelta (sim hours per tick)
@@ -2658,6 +2831,8 @@ export function updateSupplyChain(deltaSec, simDeltaHours) {
       geo.attributes.position.needsUpdate = true;
     }
   }
+
+  // CAD-365: goods package positions are updated directly by Felix in npcs.js
 }
 
 // ===========================================================================
