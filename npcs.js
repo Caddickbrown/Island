@@ -6,7 +6,7 @@
  */
 
 import * as THREE from 'three';
-import { getHeight } from './scene.js';
+import { getHeight, deliveryVanMesh, goodsWheatMesh, goodsFlourMesh } from './scene.js';
 
 // ---------------------------------------------------------------------------
 // Simulated time
@@ -42,6 +42,7 @@ const AREAS = {
   pub:         { x: -30,  z: -70  },
   cafe:        { x: 5,    z: -55  },
   school:      { x: 40,   z: -70  },
+  mill:        { x: -120, z: 40   },
   // Homes — near each NPC's primary workplace
   mabelHome:   { x: -72,  z: -58  },
   gusHome:     { x: 72,   z: -58  },
@@ -483,6 +484,240 @@ class NPC {
 }
 
 // ---------------------------------------------------------------------------
+// CAD-365 — Felix the Delivery Driver
+// ---------------------------------------------------------------------------
+// Felix drives a van around the island collecting and delivering goods.
+// Route: farm → mill → bakery → café → dock → farm (repeat)
+// ---------------------------------------------------------------------------
+
+const FELIX_ROUTE = [
+  { area: 'farm',      waitSec: 20, label: 'Collecting at farm 🌾' },
+  { area: 'mill',      waitSec: 30, label: 'Milling flour ⚙️'      },
+  { area: 'bakery',    waitSec: 15, label: 'Delivering flour 🍞'    },
+  { area: 'cafe',      waitSec: 15, label: 'Delivering supplies ☕'  },
+  { area: 'dock',      waitSec: 20, label: 'Collecting fish 🐟'     },
+];
+
+const FELIX_DIALOGUE = [
+  "Morning! Busy day — flour run first, then fish from the dock.",
+  "Mill's grinding well today. Eddy's got a good harvest on.",
+  "Nearly done the rounds. Just the café left.",
+  "Last run of the day. The island feeds itself, doesn't it?",
+];
+
+class DeliveryDriver {
+  constructor(scene) {
+    this.name = 'Felix';
+    this.job = 'Delivery Driver';
+    this._routeIndex = 0;
+    this._waitTimer = 0;
+    this._travelling = true; // start by travelling to first stop
+    this._speed = 5.5; // slightly faster than walking NPCs
+    this._dialogueIndex = 0;
+    this._idleTime = 0;
+
+    // Build NPC mesh (Felix — blue uniform)
+    this.group = new THREE.Group();
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3a7bd5 });
+
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.2, 8), bodyMat);
+    torso.position.y = 1.1;
+    this.group.add(torso);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), bodyMat);
+    head.position.y = 2.0;
+    this.group.add(head);
+    this._head = head;
+
+    // Eyes
+    const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const eyeGeo = new THREE.SphereGeometry(0.065, 6, 5);
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.12, 2.05, 0.26); this.group.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.12, 2.05, 0.26); this.group.add(eyeR);
+
+    // Cap — navy peaked cap for delivery driver
+    const capMat = new THREE.MeshLambertMaterial({ color: 0x1a2a5e });
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.36, 0.14, 10), capMat);
+    cap.position.set(0, 2.29, 0); this.group.add(cap);
+    const peak = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.05, 0.22), capMat);
+    peak.position.set(0, 2.21, 0.30); this.group.add(peak);
+
+    // Label
+    this.label = this._createLabel();
+    this.label.position.y = 3.2;
+    this.label.visible = false;
+    this.group.add(this.label);
+
+    // Start at farm
+    const startPos = AREAS.farm;
+    this.group.position.set(startPos.x, getHeight(startPos.x, startPos.z), startPos.z);
+
+    scene.add(this.group);
+  }
+
+  _createLabel() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 176;
+    const ctx = canvas.getContext('2d');
+    this._drawLabel(ctx, canvas.width, canvas.height, 'Collecting at farm 🌾');
+    const tex = new THREE.CanvasTexture(canvas);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+    sprite.scale.set(5, 1.72, 1);
+    sprite.userData.canvas = canvas;
+    sprite.userData.texture = tex;
+    return sprite;
+  }
+
+  _drawLabel(ctx, w, h, activity) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    const r = 18;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(w - r, 0);
+    ctx.quadraticCurveTo(w, 0, w, r); ctx.lineTo(w, h - r);
+    ctx.quadraticCurveTo(w, h, w - r, h); ctx.lineTo(r, h);
+    ctx.quadraticCurveTo(0, h, 0, h - r); ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 42px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Felix the Delivery Driver', w / 2, 62);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 100); ctx.lineTo(w - 40, 100); ctx.stroke();
+    ctx.fillStyle = '#d0e8ff';
+    ctx.font = '28px sans-serif';
+    ctx.fillText(activity, w / 2, 136);
+  }
+
+  _updateLabel(activity) {
+    const canvas = this.label.userData.canvas;
+    const ctx = canvas.getContext('2d');
+    this._drawLabel(ctx, canvas.width, canvas.height, activity);
+    this.label.userData.texture.needsUpdate = true;
+  }
+
+  _applyGoodsVisibility() {
+    // Decide which goods mesh is visible based on route leg
+    const stop = FELIX_ROUTE[this._routeIndex];
+    if (!goodsWheatMesh || !goodsFlourMesh) return;
+    // Leg farm→mill: show wheat
+    // Leg mill→bakery or mill→café: show flour (after milling wait)
+    // Other legs: hide both
+    if (this._routeIndex === 0) {
+      // At farm, waiting — wheat visible
+      goodsWheatMesh.visible = !this._travelling;
+      goodsFlourMesh.visible = false;
+    } else if (this._routeIndex === 1) {
+      // Travelling to mill or waiting at mill — wheat visible, flour hidden until wait done
+      goodsWheatMesh.visible = true;
+      goodsFlourMesh.visible = false;
+    } else if (this._routeIndex === 2 || this._routeIndex === 3) {
+      // Mill→bakery or bakery→café: flour visible
+      goodsWheatMesh.visible = false;
+      goodsFlourMesh.visible = true;
+    } else {
+      // dock leg, return — nothing
+      goodsWheatMesh.visible = false;
+      goodsFlourMesh.visible = false;
+    }
+  }
+
+  update(delta, playerPosition) {
+    const stop = FELIX_ROUTE[this._routeIndex];
+    const target = AREAS[stop.area];
+    const pos = this.group.position;
+
+    if (this._travelling) {
+      // Move toward target
+      const dx = target.x - pos.x;
+      const dz = target.z - pos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      if (dist < 2.5) {
+        // Arrived at stop
+        this._travelling = false;
+        this._waitTimer = stop.waitSec;
+
+        // At mill: swap wheat → flour after milling wait
+        if (stop.area === 'mill' && goodsWheatMesh) {
+          // flour will show after wait completes (handled below)
+        }
+      } else {
+        const nx = dx / dist;
+        const nz = dz / dist;
+        pos.x += nx * this._speed * delta;
+        pos.z += nz * this._speed * delta;
+        this.group.rotation.y = Math.atan2(nx, nz);
+      }
+    } else {
+      // Waiting at stop
+      this._waitTimer -= delta;
+      this._idleTime += delta;
+      this._head.position.y = 2.0 + Math.sin(this._idleTime * 1.5) * 0.04;
+
+      if (this._waitTimer <= 0) {
+        // At mill: transition wheat to flour
+        if (stop.area === 'mill' && goodsWheatMesh && goodsFlourMesh) {
+          goodsWheatMesh.visible = false;
+          goodsFlourMesh.visible = true;
+        }
+
+        // Advance to next stop
+        this._routeIndex = (this._routeIndex + 1) % FELIX_ROUTE.length;
+        this._travelling = true;
+        this._idleTime = 0;
+
+        // Advance dialogue line (cycle through lines, skip first-visit line after first cycle)
+        this._dialogueIndex = (this._dialogueIndex + 1) % FELIX_DIALOGUE.length;
+      }
+    }
+
+    // Snap to terrain
+    pos.y = getHeight(pos.x, pos.z);
+
+    // Move van mesh alongside Felix (offset slightly to not overlap)
+    if (deliveryVanMesh) {
+      deliveryVanMesh.position.set(pos.x + 1.5, pos.y, pos.z);
+      deliveryVanMesh.rotation.y = this.group.rotation.y;
+    }
+
+    // Keep goods packages pinned above the van
+    const vanX = pos.x + 1.5;
+    const vanZ = pos.z;
+    if (goodsWheatMesh && goodsWheatMesh.visible) {
+      goodsWheatMesh.position.set(vanX, pos.y + 1.8, vanZ);
+    }
+    if (goodsFlourMesh && goodsFlourMesh.visible) {
+      goodsFlourMesh.position.set(vanX, pos.y + 1.8, vanZ);
+    }
+
+    // Apply goods visibility
+    this._applyGoodsVisibility();
+
+    // Label
+    const playerDist = pos.distanceTo(playerPosition);
+    this.label.visible = playerDist < 14;
+    if (this.label.visible) {
+      this._updateLabel(FELIX_ROUTE[this._routeIndex].label);
+    }
+  }
+
+  /** Returns Felix's current dialogue line (called by interaction system) */
+  getDialogue() {
+    const hour = getSimTime();
+    if (this._dialogueIndex === 0) return FELIX_DIALOGUE[0];
+    if (hour >= 12 && hour < 17) return FELIX_DIALOGUE[2];
+    if (hour >= 17) return FELIX_DIALOGUE[3];
+    return FELIX_DIALOGUE[1];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // NPC Manager
 // ---------------------------------------------------------------------------
 
@@ -506,6 +741,8 @@ export class NPCManager {
     this.npcs = [];
     this.scene = scene;
     this._createNPCs();
+    // CAD-365 — Felix the Delivery Driver
+    this.felix = new DeliveryDriver(scene);
   }
 
   _createNPCs() {
@@ -521,6 +758,8 @@ export class NPCManager {
     for (const npc of this.npcs) {
       npc.update(delta, playerPosition);
     }
+    // Update Felix separately (route-driven, not schedule-driven)
+    this.felix.update(delta, playerPosition);
   }
 }
 
