@@ -1457,6 +1457,66 @@ export function buildScene(scene) {
   bakery.rotation.y = 0.3;
   scene.add(bakery);
 
+  // ─── Bakery Interior ───────────────────────────────────────────────
+  {
+    const bx = -60, bz = -40;
+    const bBase = getHeight(bx, bz);
+
+    // Wooden counter along back wall (z+3.5 inside 9-deep building)
+    const bCounter = box(7, 1.1, 0.8, 0x8b5e3c);
+    bCounter.position.set(bx, bBase + 0.55, bz + 3);
+    scene.add(bCounter);
+    const bCounterTop = box(7.2, 0.12, 0.9, 0xa0714a);
+    bCounterTop.position.set(bx, bBase + 1.12, bz + 3);
+    scene.add(bCounterTop);
+
+    // Large oven — dark grey box at back-left
+    const bOven = box(2.4, 2.2, 1.5, 0x444444);
+    bOven.position.set(bx - 3.5, bBase + 1.1, bz + 3.5);
+    scene.add(bOven);
+    const bOvenDoor = box(1.4, 1.0, 0.12, 0x222222);
+    bOvenDoor.position.set(bx - 3.5, bBase + 0.9, bz + 2.76);
+    scene.add(bOvenDoor);
+
+    // Bread shelves — long thin horizontal slabs along right wall
+    for (let si = 0; si < 3; si++) {
+      const bShelf = box(0.2, 0.1, 5.5, 0x9b6a3d);
+      bShelf.position.set(bx + 5.5, bBase + 1.0 + si * 0.9, bz + 0.5);
+      scene.add(bShelf);
+      // Loaves of bread on each shelf (small rounded boxes, warm brown)
+      for (let li = 0; li < 4; li++) {
+        const loaf = box(0.55, 0.35, 0.6, 0xc47c2b);
+        loaf.position.set(bx + 5.38, bBase + 1.22 + si * 0.9, bz - 1.5 + li * 1.1);
+        scene.add(loaf);
+      }
+    }
+
+    // Flour sacks — small white cylinders near oven
+    for (const [fx, fz] of [[-4.5, 2.0], [-5.2, 2.5], [-4.0, 2.7]]) {
+      const sack = cylinder(0.35, 0.4, 0.75, 0xf0ede0, 8);
+      sack.position.set(bx + fx, bBase + 0.38, bz + fz);
+      scene.add(sack);
+    }
+
+    // Chalkboard menu sign on back wall
+    const bChalk = box(2.8, 1.6, 0.1, 0x2d4a3e);
+    bChalk.position.set(bx + 1.5, bBase + 2.5, bz + 4.25);
+    scene.add(bChalk);
+    const bChalkFrame = box(3.0, 1.8, 0.08, 0x6b4226);
+    bChalkFrame.position.set(bx + 1.5, bBase + 2.5, bz + 4.22);
+    scene.add(bChalkFrame);
+
+    // Serving table in centre
+    const bTable = box(3.5, 0.1, 1.8, 0xa0714a);
+    bTable.position.set(bx, bBase + 1.1, bz - 0.5);
+    scene.add(bTable);
+    for (const [tx, tz] of [[-1.5,-0.7],[1.5,-0.7],[-1.5,0.7],[1.5,0.7]]) {
+      const leg = box(0.12, 1.1, 0.12, 0x7a5230);
+      leg.position.set(bx + tx, bBase + 0.55, bz - 0.5 + tz);
+      scene.add(leg);
+    }
+  }
+
   // Bakery chimney — tall brick stack with animated smoke handled in main loop
   const bakeryBase = getHeight(-60, -40);
   const chimneyStack = cylinder(0.45, 0.55, 6, 0x8b4513, 8);
@@ -1501,6 +1561,67 @@ export function buildScene(scene) {
   placeOnTerrain(postOffice, 60, -40);
   postOffice.rotation.y = -0.2;
   scene.add(postOffice);
+
+  // ─── Post Office Interior ──────────────────────────────────────────
+  {
+    const px = 60, pz = -40;
+    const pBase = getHeight(px, pz);
+
+    // Wooden counter with glass panel on top
+    const pCounter = box(6, 1.2, 0.9, 0x8b5e3c);
+    pCounter.position.set(px, pBase + 0.6, pz + 2.5);
+    scene.add(pCounter);
+    const pCounterTop = box(6.2, 0.08, 1.0, 0xa0714a);
+    pCounterTop.position.set(px, pBase + 1.25, pz + 2.5);
+    scene.add(pCounterTop);
+    // Glass screen on counter
+    const pGlass = box(5.5, 1.0, 0.08, 0xaaddff);
+    pGlass.material = new THREE.MeshLambertMaterial({ color: 0xaaddff, transparent: true, opacity: 0.45 });
+    pGlass.position.set(px, pBase + 1.75, pz + 2.5);
+    scene.add(pGlass);
+
+    // Postal scales on counter
+    const pScaleBase = box(0.5, 0.12, 0.5, 0x888888);
+    pScaleBase.position.set(px + 2.2, pBase + 1.35, pz + 2.2);
+    scene.add(pScaleBase);
+    const pScalePan = cylinder(0.25, 0.22, 0.06, 0xbbbbbb, 8);
+    pScalePan.position.set(px + 2.2, pBase + 1.52, pz + 2.2);
+    scene.add(pScalePan);
+
+    // PO boxes along left wall — 4 columns × 4 rows
+    for (let col = 0; col < 4; col++) {
+      for (let row = 0; row < 4; row++) {
+        const pb = box(0.85, 0.7, 0.5, row % 2 === 0 ? 0x888888 : 0x777777);
+        pb.position.set(px - 4.5 + col * 0.95, pBase + 0.6 + row * 0.78, pz + 3.4);
+        scene.add(pb);
+        // Small handle dot
+        const handle = box(0.06, 0.06, 0.1, 0xccaa44);
+        handle.position.set(px - 4.5 + col * 0.95, pBase + 0.6 + row * 0.78, pz + 3.16);
+        scene.add(handle);
+      }
+    }
+
+    // Sorting table in back area
+    const sortTop = box(4.5, 0.1, 2.0, 0x9b6a3d);
+    sortTop.position.set(px + 1.5, pBase + 1.15, pz - 0.5);
+    scene.add(sortTop);
+    for (const [lx, lz] of [[-1.9,-0.8],[1.9,-0.8],[-1.9,0.8],[1.9,0.8]]) {
+      const leg = box(0.12, 1.15, 0.12, 0x7a5230);
+      leg.position.set(px + 1.5 + lx, pBase + 0.58, pz - 0.5 + lz);
+      scene.add(leg);
+    }
+
+    // Notice board on front wall (inside)
+    const nBoard = box(2.5, 1.8, 0.1, 0xc8a850);
+    nBoard.position.set(px - 2.5, pBase + 2.4, pz - 3.4);
+    scene.add(nBoard);
+    // Pinned notices — small coloured rectangles
+    for (const [nx, ny, nc] of [[-0.7,0.3,0xff6666],[0.3,0.5,0x66aaff],[-0.3,-0.3,0xffcc44],[0.6,-0.4,0x88dd88]]) {
+      const note = box(0.55, 0.4, 0.08, nc);
+      note.position.set(px - 2.5 + nx, pBase + 2.4 + ny, pz - 3.36);
+      scene.add(note);
+    }
+  }
 
   const poBase = getHeight(60, -40);
 
@@ -1859,6 +1980,89 @@ export function buildScene(scene) {
   school.rotation.y = -0.15;
   scene.add(school);
 
+  // ─── School Interior ──────────────────────────────────────────────
+  {
+    const sx2 = 40, sz2 = -70;
+    const sBase = getHeight(sx2, sz2);
+    const deskMat2 = new THREE.MeshLambertMaterial({ color: 0xc8a850 });
+    const seatMat2 = new THREE.MeshLambertMaterial({ color: 0x6b8e23 });
+
+    // Blackboard on front wall (+z inside)
+    const blackboard = box(9, 3.2, 0.2, 0x1a3a2a);
+    blackboard.position.set(sx2, sBase + 3.5, sz2 + 5.6);
+    scene.add(blackboard);
+    const bbFrame = box(9.3, 3.5, 0.15, 0x6b4226);
+    bbFrame.position.set(sx2, sBase + 3.5, sz2 + 5.55);
+    scene.add(bbFrame);
+
+    // Chalk tray below board
+    const chalkTray = box(9, 0.15, 0.3, 0x8b6914);
+    chalkTray.position.set(sx2, sBase + 1.82, sz2 + 5.55);
+    scene.add(chalkTray);
+
+    // Teacher's desk at front (near blackboard)
+    const tDesk = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.12, 1.8), deskMat2);
+    tDesk.position.set(sx2, sBase + 1.22, sz2 + 3.5);
+    scene.add(tDesk);
+    for (const [lx, lz] of [[-1.7,-0.75],[1.7,-0.75],[-1.7,0.75],[1.7,0.75]]) {
+      const leg = box(0.14, 1.22, 0.14, 0x9b6a3d);
+      leg.position.set(sx2 + lx, sBase + 0.61, sz2 + 3.5 + lz);
+      scene.add(leg);
+    }
+    // Teacher's chair
+    const tChairSeat = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.1, 0.9), seatMat2);
+    tChairSeat.position.set(sx2, sBase + 0.88, sz2 + 2.4);
+    scene.add(tChairSeat);
+    const tChairBack = box(0.9, 0.8, 0.1, 0x6b8e23);
+    tChairBack.position.set(sx2, sBase + 1.32, sz2 + 1.97);
+    scene.add(tChairBack);
+
+    // Globe on teacher's desk
+    const globe = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), new THREE.MeshLambertMaterial({ color: 0x2980b9 }));
+    globe.position.set(sx2 + 1.5, sBase + 1.45, sz2 + 3.5);
+    scene.add(globe);
+    const globeStand = cylinder(0.06, 0.08, 0.3, 0x888888, 6);
+    globeStand.position.set(sx2 + 1.5, sBase + 1.27, sz2 + 3.5);
+    scene.add(globeStand);
+
+    // Rows of student desks — 3 columns × 3 rows
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const dX = sx2 - 5 + col * 4.5;
+        const dZ = sz2 - 3.5 + row * 2.8;
+        // Desk top
+        const sDesk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 1.0), deskMat2);
+        sDesk.position.set(dX, sBase + 1.0, dZ);
+        scene.add(sDesk);
+        // Desk leg
+        const dLeg = box(0.1, 1.0, 0.1, 0x9b6a3d);
+        dLeg.position.set(dX, sBase + 0.5, dZ + 0.2);
+        scene.add(dLeg);
+        // Student chair (seat only for performance)
+        const sSeat = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.75), seatMat2);
+        sSeat.position.set(dX, sBase + 0.72, dZ - 1.0);
+        scene.add(sSeat);
+        const sBack = box(0.75, 0.55, 0.08, 0x6b8e23);
+        sBack.position.set(dX, sBase + 1.02, dZ - 1.35);
+        scene.add(sBack);
+      }
+    }
+
+    // Bookshelves along back wall (-z)
+    for (let bi = 0; bi < 3; bi++) {
+      const shelf = box(4.5, 3.5, 0.4, 0x9b6a3d);
+      shelf.position.set(sx2 - 7 + bi * 6, sBase + 1.75, sz2 - 5.6);
+      scene.add(shelf);
+      // Books on each shelf unit
+      for (let b = 0; b < 6; b++) {
+        const bkCol = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6, 0x1abc9c][b];
+        const bk = box(0.5, 2.6, 0.35, bkCol);
+        bk.position.set(sx2 - 7 + bi * 6 - 1.8 + b * 0.65, sBase + 1.75, sz2 - 5.42);
+        scene.add(bk);
+      }
+    }
+  }
+
   // =====================================================================
   // THE CAFÉ (5, -55)
   // =====================================================================
@@ -1872,6 +2076,74 @@ export function buildScene(scene) {
   placeOnTerrain(cafeBuilding, 5, -55);
   cafeBuilding.rotation.y = 0.15;
   scene.add(cafeBuilding);
+
+  // ─── Café Interior ────────────────────────────────────────────────
+  {
+    const cx = 5, cz = -55;
+    const cBase = getHeight(cx, cz);
+
+    // Counter along back wall with coffee machine
+    const cCounter = box(6, 1.1, 0.9, 0x7b4d2a);
+    cCounter.position.set(cx, cBase + 0.55, cz + 2.8);
+    scene.add(cCounter);
+    const cCounterTop = box(6.2, 0.1, 1.0, 0x5c3d1e);
+    cCounterTop.position.set(cx, cBase + 1.12, cz + 2.8);
+    scene.add(cCounterTop);
+
+    // Coffee machine — boxy appliance on counter
+    const machine = box(0.9, 1.0, 0.6, 0x222222);
+    machine.position.set(cx - 1.5, cBase + 1.62, cz + 2.5);
+    scene.add(machine);
+    const machineTop = box(0.9, 0.12, 0.6, 0x444444);
+    machineTop.position.set(cx - 1.5, cBase + 2.18, cz + 2.5);
+    scene.add(machineTop);
+    // Coffee machine light
+    const mLight = box(0.2, 0.12, 0.1, 0x00cc44);
+    mLight.position.set(cx - 1.5, cBase + 1.85, cz + 2.22);
+    scene.add(mLight);
+
+    // Chalkboard menu
+    const ccChalk = box(2.4, 1.5, 0.1, 0x2d4a3e);
+    ccChalk.position.set(cx + 1.5, cBase + 2.5, cz + 3.4);
+    scene.add(ccChalk);
+    const ccFrame = box(2.6, 1.7, 0.08, 0x4a2800);
+    ccFrame.position.set(cx + 1.5, cBase + 2.5, cz + 3.38);
+    scene.add(ccFrame);
+
+    // 3 small round tables inside with chairs
+    for (const [tx, tz] of [[-2.5, -1.5],[2.0, -1.0],[-1.0, 1.0]]) {
+      // Table top — cylinder
+      const tTop = cylinder(0.65, 0.65, 0.1, 0x9b6a3d, 12);
+      tTop.position.set(cx + tx, cBase + 1.05, cz + tz);
+      scene.add(tTop);
+      // Pedestal
+      const tPed = cylinder(0.1, 0.15, 1.05, 0x7b4d2a, 6);
+      tPed.position.set(cx + tx, cBase + 0.53, cz + tz);
+      scene.add(tPed);
+      // 2 chairs per table (simple seat + backrest)
+      for (const [angle] of [[-Math.PI/3],[Math.PI * 2/3]]) {
+        const chX = cx + tx + Math.cos(angle) * 1.05;
+        const chZ = cz + tz + Math.sin(angle) * 1.05;
+        const seat = cylinder(0.32, 0.32, 0.08, 0x5c3d1e, 8);
+        seat.position.set(chX, cBase + 0.8, chZ);
+        scene.add(seat);
+        const back = box(0.55, 0.55, 0.08, 0x5c3d1e);
+        back.position.set(chX + Math.cos(angle) * 0.25, cBase + 1.1, chZ + Math.sin(angle) * 0.25);
+        back.rotation.y = angle + Math.PI / 2;
+        scene.add(back);
+      }
+    }
+
+    // Potted plants in two inside corners
+    for (const [px2, pz2] of [[-4.2,-3.2],[3.8,-3.2]]) {
+      const pot2 = cylinder(0.32, 0.38, 0.55, 0x8b6914, 8);
+      pot2.position.set(cx + px2, cBase + 0.28, cz + pz2);
+      scene.add(pot2);
+      const foliage2 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 6, 5), mat(C.foliage));
+      foliage2.position.set(cx + px2, cBase + 0.85, cz + pz2);
+      scene.add(foliage2);
+    }
+  }
 
   // Outdoor café seating
   for (const [tx, tz] of [[14, -50], [16, -56], [14, -62]]) {
