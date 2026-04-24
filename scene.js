@@ -2404,550 +2404,453 @@ export function buildScene(scene) {
   }
 
   const fish = aquarium.userData.fish || [];
-  return { windmill: windmillGroup, clouds: cloudList, campfire, colliders, fish };
+
+  // CAD-252 — Island Radio boombox
+  const boombox = initRadio(scene);
+
+  // CAD-251 — Supply chain background simulation
+  initSupplyChain(scene);
+
+  return { windmill: windmillGroup, clouds: cloudList, campfire, colliders, fish, boombox };
 }
 
-// ---------------------------------------------------------------------------
-// MiniGameSystem — simple 2D overlay mini-games triggered near NPCs (CAD-270–274)
-// ---------------------------------------------------------------------------
 
-export class MiniGameSystem {
-  constructor(playerController) {
-    this.player = playerController;
-    this.active = null; // currently open mini-game id
+// ===========================================================================
+// CAD-250 — Economy System (gentle barter/gift economy)
+// ===========================================================================
 
-    // Interaction zones: { id, x, z, radius, npc }
-    this.zones = [
-      { id: 'library',  x: 80,   z: 40,  radius: 10, npc: 'Rosa'  },
-      { id: 'fishing',  x: 0,    z: 262, radius: 12, npc: 'Jack'  },
-      { id: 'farm',     x: -180, z: 80,  radius: 12, npc: 'Fern'  },
-      { id: 'bakery',   x: -60,  z: -40, radius: 10, npc: 'Mabel' },
-      { id: 'postman',  x: 60,   z: -40, radius: 10, npc: 'Gus'   },
-    ];
+export const inventory = []; // max 3 items
+const MAX_INV = 3;
 
-    // Postman delivery houses (3 positions in the 3D world)
-    this.postHouses = [
-      { x: 0,   z: 12,  label: 'Town Square',   delivered: false },
-      { x: 80,  z: 50,  label: "Rosa's House",  delivered: false },
-      { x: -80, z: 52,  label: 'Workshop',      delivered: false },
-    ];
+// Pickupable item spots in the world: { id, label, emoji, x, z, npcGiver }
+export const ITEM_SPOTS = [
+  { id: 'bread',  label: 'bread',  emoji: '🍞', x: -55,  z: -36,  npcGiver: null },
+  { id: 'fish',   label: 'fish',   emoji: '🐟', x: 2,    z: -57,  npcGiver: 'Suki' },
+  { id: 'eggs',   label: 'eggs',   emoji: '🥚', x: -185, z: 85,   npcGiver: null },
+  { id: 'flour',  label: 'flour',  emoji: '🌾', x: -195, z: 100,  npcGiver: null },
+  { id: 'coffee', label: 'coffee', emoji: '☕', x: 8,    z: -52,  npcGiver: null },
+];
 
-    this._overlay = null;
-    this._keyHandler = null;
-    this._promptEl = null; // "Press E to help" hint
-    this._promptTimeout = null;
+// NPC gift responses when you give them something
+const GIFT_RESPONSES = {
+  Mabel:  { receives: ['fish','eggs','flour'], gives: 'bread',  giveEmoji: '🍞', line: "Oh, how lovely! Here, take a fresh loaf." },
+  Suki:   { receives: ['bread','eggs'],        gives: 'coffee', giveEmoji: '☕', line: "That's so kind! A coffee for you." },
+  Fern:   { receives: ['bread','coffee'],      gives: 'eggs',   giveEmoji: '🥚', line: "Wonderful! Take some eggs from the hens." },
+  Jack:   { receives: ['bread','coffee'],      gives: 'fish',   giveEmoji: '🐟', line: "Cheers! Here's a fresh catch for you." },
+  default: { line: "Thank you, that's so thoughtful!" },
+};
 
-    this._createPromptEl();
-    this._bindGlobalKeys();
+let _inventoryOverlayEl = null;
+
+export function getInventoryOverlay() { return _inventoryOverlayEl; }
+
+export function initEconomy() {
+  // Build DOM overlay
+  const el = document.createElement('div');
+  el.id = 'inventory-overlay';
+  el.style.cssText = [
+    'position:fixed', 'bottom:24px', 'left:50%', 'transform:translateX(-50%)',
+    'background:rgba(0,0,0,0.55)', 'color:#fff', 'padding:10px 22px',
+    'border-radius:24px', 'font-size:18px', 'font-family:sans-serif',
+    'pointer-events:none', 'z-index:100', 'display:none',
+    'backdrop-filter:blur(4px)', 'letter-spacing:0.03em',
+  ].join(';');
+  document.body.appendChild(el);
+  _inventoryOverlayEl = el;
+  _refreshInventoryUI();
+}
+
+function _refreshInventoryUI() {
+  if (!_inventoryOverlayEl) return;
+  if (inventory.length === 0) {
+    _inventoryOverlayEl.style.display = 'none';
+    return;
   }
+  _inventoryOverlayEl.style.display = 'block';
+  _inventoryOverlayEl.textContent = 'carrying: ' + inventory.map(i => `${i.emoji} ${i.label}`).join('  ·  ');
+}
 
-  // ── Helper: create/remove the overlay div ──────────────────────────────
-
-  _createOverlay(html) {
-    this._removeOverlay();
-    const el = document.createElement('div');
-    el.id = 'minigame-overlay';
-    Object.assign(el.style, {
-      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-      background: 'rgba(0,0,0,0.55)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 9999,
-      fontFamily: 'sans-serif',
-    });
-    el.innerHTML = html;
-    document.body.appendChild(el);
-    this._overlay = el;
-    return el;
+export function tryPickupItem(playerPos) {
+  if (inventory.length >= MAX_INV) {
+    showNotification("Your hands are full!");
+    return false;
   }
-
-  _removeOverlay() {
-    if (this._overlay) { this._overlay.remove(); this._overlay = null; }
-  }
-
-  _createPromptEl() {
-    const el = document.createElement('div');
-    el.id = 'minigame-prompt';
-    Object.assign(el.style, {
-      position: 'fixed', bottom: '60px', left: '50%',
-      transform: 'translateX(-50%)',
-      background: 'rgba(0,0,0,0.65)', color: '#fff',
-      padding: '8px 20px', borderRadius: '20px',
-      fontSize: '15px', zIndex: 9000, display: 'none',
-      pointerEvents: 'none',
-    });
-    document.body.appendChild(el);
-    this._promptEl = el;
-  }
-
-  _showPrompt(text) {
-    if (!this._promptEl) return;
-    this._promptEl.textContent = text;
-    this._promptEl.style.display = 'block';
-    clearTimeout(this._promptTimeout);
-  }
-
-  _hidePrompt() {
-    if (!this._promptEl) return;
-    this._promptEl.style.display = 'none';
-  }
-
-  _card(inner, titleColor = '#ffd700') {
-    return `<div style="background:#2d2d2d;border-radius:16px;padding:32px 40px;max-width:480px;
-      width:90%;color:#f0f0f0;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
-      ${inner}</div>`;
-  }
-
-  _title(t, color = '#ffd700') {
-    return `<div style="font-size:22px;font-weight:bold;color:${color};margin-bottom:16px">${t}</div>`;
-  }
-
-  _btn(label, id) {
-    return `<button id="${id}" style="margin-top:20px;padding:10px 28px;border:none;border-radius:12px;
-      background:#ffd700;color:#111;font-size:16px;cursor:pointer;font-weight:bold">${label}</button>`;
-  }
-
-  // ── Global ESC to close ────────────────────────────────────────────────
-
-  _bindGlobalKeys() {
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Escape' && this.active) {
-        this.close();
-        e.stopPropagation();
-      }
-      if (e.code === 'KeyE' && !this.active) {
-        const zone = this._nearbyZone();
-        if (zone) { this.open(zone.id); e.stopPropagation(); }
-      }
-    });
-  }
-
-  _nearbyZone() {
-    if (!this.player) return null;
-    const pp = this.player.player.position;
-    for (const z of this.zones) {
-      const dx = pp.x - z.x, dz = pp.z - z.z;
-      if (Math.sqrt(dx * dx + dz * dz) < z.radius) return z;
-    }
-    return null;
-  }
-
-  close() {
-    this._removeOverlay();
-    this.active = null;
-    if (this._keyHandler) {
-      window.removeEventListener('keydown', this._keyHandler);
-      this._keyHandler = null;
+  for (const spot of ITEM_SPOTS) {
+    const dx = playerPos.x - spot.x;
+    const dz = playerPos.z - spot.z;
+    if (Math.sqrt(dx*dx + dz*dz) < 5) {
+      inventory.push({ id: spot.id, label: spot.label, emoji: spot.emoji });
+      _refreshInventoryUI();
+      showNotification(`You picked up ${spot.emoji} ${spot.label}`);
+      return true;
     }
   }
+  return false;
+}
 
-  open(id) {
-    this.active = id;
-    switch (id) {
-      case 'library':  this._startLibrary();  break;
-      case 'fishing':  this._startFishing();  break;
-      case 'farm':     this._startFarm();     break;
-      case 'bakery':   this._startBakery();   break;
-      case 'postman':  this._startPostman();  break;
-    }
-  }
+export function tryGiveItem(npcName, npcPos, playerPos) {
+  if (inventory.length === 0) return false;
+  const dx = playerPos.x - npcPos.x;
+  const dz = playerPos.z - npcPos.z;
+  if (Math.sqrt(dx*dx + dz*dz) > 8) return false;
 
-  // ── Update — called every frame ────────────────────────────────────────
+  const resp = GIFT_RESPONSES[npcName] || GIFT_RESPONSES.default;
+  const item = inventory[inventory.length - 1]; // give most recently picked up
 
-  update() {
-    if (this.active) { this._hidePrompt(); return; }
-    const zone = this._nearbyZone();
-    if (zone) {
-      this._showPrompt(`Press E to help ${zone.npc}`);
+  // Remove item from inventory
+  inventory.splice(inventory.indexOf(item), 1);
+
+  // NPC gives something back?
+  if (resp.receives && resp.receives.includes(item.id) && resp.gives) {
+    if (inventory.length < MAX_INV) {
+      inventory.push({ id: resp.gives, label: resp.gives, emoji: resp.giveEmoji });
+      showNotification(`${npcName}: "${resp.line}"\nYou received ${resp.giveEmoji} ${resp.gives}!`);
     } else {
-      this._hidePrompt();
+      showNotification(`${npcName}: "${resp.line}"`);
     }
-    // Postman delivery check (works while postman game is active)
-    if (this.active === 'postman') {
-      this._checkPostmanDelivery();
+  } else {
+    showNotification(`${npcName}: "${(resp.line || GIFT_RESPONSES.default.line)}"`);
+  }
+
+  _refreshInventoryUI();
+  return true;
+}
+
+// ===========================================================================
+// CAD-251 — Supply Chain (Eddy's farm → flour → Rosa's bakery)
+// ===========================================================================
+// Background simulation: every 5 "game minutes" Eddy harvests (wheat bundle
+// appears briefly) and every 10 "game minutes" Rosa bakes (chimney smoke).
+// Uses Three.js particles for chimney smoke.
+// ===========================================================================
+
+let _supplyChainScene = null;
+let _smokeParticles = null;
+let _smokeClock = 0;
+let _harvestClock = 0;
+let _wheatBundle = null;
+let _wheatTimer = 0;
+let _smokeActive = false;
+
+// We expose the smoke group so the main loop can animate it
+export function getSupplyChain() {
+  return { smokeParticles: _smokeParticles, wheatBundle: _wheatBundle };
+}
+
+export function initSupplyChain(scene) {
+  _supplyChainScene = scene;
+
+  // --- Chimney smoke particle system (Three.js Points) ---
+  const PARTICLE_COUNT = 60;
+  const positions = new Float32Array(PARTICLE_COUNT * 3);
+  const opacities = new Float32Array(PARTICLE_COUNT);
+  const sizes = new Float32Array(PARTICLE_COUNT);
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    positions[i * 3]     = -57.5 + (Math.random() - 0.5) * 0.6;
+    positions[i * 3 + 1] = getHeight(-57.5, -43) + 12 + Math.random() * 6;
+    positions[i * 3 + 2] = -43 + (Math.random() - 0.5) * 0.6;
+    opacities[i] = 0;
+    sizes[i] = 1.2 + Math.random() * 2;
+  }
+
+  const smokeGeo = new THREE.BufferGeometry();
+  smokeGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  smokeGeo.setAttribute('alpha', new THREE.Float32BufferAttribute(opacities, 1));
+  smokeGeo.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+
+  // Custom shader material for opacity-per-particle
+  const smokeMat = new THREE.PointsMaterial({
+    color: 0xdddddd,
+    size: 1.8,
+    transparent: true,
+    opacity: 0.0,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  _smokeParticles = new THREE.Points(smokeGeo, smokeMat);
+  _smokeParticles.userData.particles = { positions, opacities, sizes, count: PARTICLE_COUNT };
+  _smokeParticles.visible = false;
+  scene.add(_smokeParticles);
+
+  // --- Wheat bundle (harvest indicator) ---
+  const wGroup = new THREE.Group();
+  const wMat = new THREE.MeshLambertMaterial({ color: 0xe8c04a });
+  // 5 stalks bundled together
+  for (let i = 0; i < 5; i++) {
+    const stalk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.08, 1.2, 5),
+      wMat
+    );
+    stalk.position.set((Math.random() - 0.5) * 0.4, 0.6, (Math.random() - 0.5) * 0.4);
+    stalk.rotation.z = (Math.random() - 0.5) * 0.3;
+    wGroup.add(stalk);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.35, 0.08), wMat);
+    head.position.copy(stalk.position);
+    head.position.y = 1.4;
+    wGroup.add(head);
+  }
+  const farmBase = getHeight(-195, 100);
+  wGroup.position.set(-195, farmBase, 100);
+  wGroup.visible = false;
+  scene.add(wGroup);
+  _wheatBundle = wGroup;
+}
+
+// Called from main animation loop with delta (real seconds) and simDelta (sim hours per tick)
+export function updateSupplyChain(deltaSec, simDeltaHours) {
+  // Sim: 5 game-minutes = 5/60 sim-hours
+  const SIM_MIN = 1 / 60;
+
+  _harvestClock += simDeltaHours;
+  _smokeClock += simDeltaHours;
+
+  // Harvest event every 5 sim-minutes
+  if (_harvestClock >= 5 * SIM_MIN) {
+    _harvestClock = 0;
+    if (_wheatBundle) {
+      _wheatBundle.visible = true;
+      _wheatTimer = 8; // show for 8 real seconds
     }
   }
 
-  // ──────────────────────────────────────────────────────────────────────
-  // CAD-270 — Library Assistant
-  // ──────────────────────────────────────────────────────────────────────
-
-  _startLibrary() {
-    const subjects = ['History', 'Science', 'Fiction', 'Poetry', 'Nature'];
-    const keys     = { History: '←', Science: '→', Fiction: '↑', Poetry: '↓', Nature: ' ' };
-    const codes    = { History: 'ArrowLeft', Science: 'ArrowRight', Fiction: 'ArrowUp', Poetry: 'ArrowDown', Nature: 'Space' };
-
-    let idx = 0, total = 5;
-
-    const render = (msg = '') => {
-      const subj = subjects[idx];
-      const shelfGuide = Object.entries(keys).map(([s, k]) =>
-        `<span style="opacity:${s === subj ? 1 : 0.4}">${k} ${s}</span>`).join(' &nbsp; ');
-      this._createOverlay(this._card(`
-        ${this._title('📚 Library Assistant')}
-        <div style="font-size:15px;color:#b0c4de;margin-bottom:18px">
-          Rosa hands you a book. Shelve it in the right section!
-        </div>
-        <div style="background:#1a1a2e;border-radius:10px;padding:20px;margin-bottom:14px">
-          <div style="font-size:32px">📖</div>
-          <div style="font-size:22px;font-weight:bold;margin-top:8px">${subj}</div>
-        </div>
-        <div style="font-size:13px;color:#888;margin-bottom:6px">${shelfGuide}</div>
-        <div style="font-size:14px;color:#afd;min-height:20px">${msg}</div>
-        <div style="font-size:12px;color:#666;margin-top:10px">Book ${idx + 1} of ${total} &nbsp;•&nbsp; ESC to leave</div>
-      `));
-    };
-
-    render();
-
-    this._keyHandler = (e) => {
-      if (!this.active) return;
-      const subj = subjects[idx];
-      if (e.code === codes[subj]) {
-        e.preventDefault();
-        idx++;
-        if (idx >= total) {
-          this._createOverlay(this._card(`
-            ${this._title('📚 Library Assistant', '#afd')}
-            <div style="font-size:48px;margin:16px 0">🏆</div>
-            <div style="font-size:18px">Thanks for helping! The shelves look wonderful.</div>
-            <div style="font-size:13px;color:#888;margin-top:12px">Rosa smiles warmly.</div>
-            ${this._btn('Done', 'lib-done')}
-          `));
-          this._overlay.querySelector('#lib-done').onclick = () => this.close();
-          window.removeEventListener('keydown', this._keyHandler);
-          this._keyHandler = null;
-        } else {
-          render('✓ Shelved!');
-        }
-      } else if (e.code === 'Escape') {
-        this.close();
-      } else {
-        render('Hmm, which shelf does this go on?');
-      }
-    };
-    window.addEventListener('keydown', this._keyHandler);
+  // Baking event every 10 sim-minutes → smoke for 30 real seconds
+  if (_smokeClock >= 10 * SIM_MIN) {
+    _smokeClock = 0;
+    if (_smokeParticles) {
+      _smokeParticles.visible = true;
+      _smokeParticles.material.opacity = 0.55;
+      _smokeActive = true;
+      // Auto-hide after 30s via userData timer
+      _smokeParticles.userData.hideTimer = 30;
+    }
   }
 
-  // ──────────────────────────────────────────────────────────────────────
-  // CAD-271 — Fisherman
-  // ──────────────────────────────────────────────────────────────────────
-
-  _startFishing() {
-    let caught = 0, casts = 0, maxCasts = 5;
-    let bobberDipping = false, biteTimer = null, biteWindow = false, biteTimeout = null;
-
-    const fish = ['🐟 Mackerel', '🐠 Perch', '🦈 Tiddler', '🐡 Bream', '🎣 Old Boot'];
-    const BITE_WINDOW = 500; // ms
-
-    const render = (status = 'The line is still…', sub = '') => {
-      this._createOverlay(this._card(`
-        ${this._title('🎣 Fishing with Jack')}
-        <div style="font-size:14px;color:#b0c4de;margin-bottom:16px">
-          Jack passes you the rod. Just watch and wait for the bobber to dip, then press Space.
-        </div>
-        <div style="font-size:48px;margin:12px 0" id="bobber-el">${bobberDipping ? '🎣' : '🪝'}</div>
-        <div style="font-size:16px;min-height:22px">${status}</div>
-        <div style="font-size:13px;color:#888;min-height:18px;margin-top:4px">${sub}</div>
-        <div style="font-size:12px;color:#666;margin-top:12px">
-          Catch: ${caught} fish &nbsp;•&nbsp; Cast ${Math.min(casts + 1, maxCasts)} of ${maxCasts} &nbsp;•&nbsp; ESC to leave
-        </div>
-      `));
-    };
-
-    const scheduleBite = () => {
-      const delay = 2000 + Math.random() * 4000;
-      biteTimer = setTimeout(() => {
-        if (!this.active || this.active !== 'fishing') return;
-        bobberDipping = true;
-        biteWindow = true;
-        render('🌊 The bobber dips! Press Space!');
-        biteTimeout = setTimeout(() => {
-          if (!biteWindow) return;
-          biteWindow = false;
-          bobberDipping = false;
-          casts++;
-          if (casts >= maxCasts) { finish(); return; }
-          render('It got away. Keep watching…', 'The line settles again.');
-          scheduleBite();
-        }, BITE_WINDOW * 4); // generous 2s window total
-      }, delay);
-    };
-
-    const finish = () => {
-      clearTimeout(biteTimer); clearTimeout(biteTimeout);
-      window.removeEventListener('keydown', this._keyHandler);
-      this._keyHandler = null;
-      this._createOverlay(this._card(`
-        ${this._title('🎣 Fishing Done!', '#74b9ff')}
-        <div style="font-size:36px;margin:12px 0">${caught > 0 ? '🐟'.repeat(Math.min(caught, 5)) : '🎣'}</div>
-        <div style="font-size:18px">You caught ${caught} fish!</div>
-        <div style="font-size:14px;color:#888;margin-top:8px">
-          ${caught === 0 ? "Don't worry — Jack says it's about the peace and quiet." :
-            caught >= 3 ? "Jack is impressed! Great haul." : "Nice catch. Jack nods appreciatively."}
-        </div>
-        ${this._btn('Done', 'fish-done')}
-      `));
-      this._overlay.querySelector('#fish-done').onclick = () => this.close();
-    };
-
-    render();
-    scheduleBite();
-
-    this._keyHandler = (e) => {
-      if (!this.active) return;
-      if (e.code === 'Space') {
-        e.preventDefault();
-        if (biteWindow) {
-          clearTimeout(biteTimeout);
-          biteWindow = false;
-          bobberDipping = false;
-          caught++;
-          casts++;
-          const f = fish[Math.floor(Math.random() * (fish.length - 1))]; // exclude old boot usually
-          if (casts >= maxCasts) { finish(); return; }
-          render(`✓ Got one! ${f}`, 'You cast again…');
-          scheduleBite();
-        } else {
-          // Pressed too early — gentle, not punishing
-          render('Just a ripple. Wait for the dip…');
-        }
-      } else if (e.code === 'Escape') {
-        clearTimeout(biteTimer); clearTimeout(biteTimeout);
-        this.close();
-      }
-    };
-    window.addEventListener('keydown', this._keyHandler);
+  // Wheat bundle timeout
+  if (_wheatTimer > 0) {
+    _wheatTimer -= deltaSec;
+    if (_wheatTimer <= 0 && _wheatBundle) {
+      _wheatBundle.visible = false;
+    }
   }
 
-  // ──────────────────────────────────────────────────────────────────────
-  // CAD-272 — Farm Hand
-  // ──────────────────────────────────────────────────────────────────────
-
-  _startFarm() {
-    const tasks = [
-      { id: 'water',  label: 'Fill the water trough',    key: 'Space', hold: true,  emoji: '🪣',  hint: 'Hold Space' },
-      { id: 'egg',    label: 'Collect the egg',           key: 'E',     hold: false, emoji: '🥚',  hint: 'Press E' },
-      { id: 'feed',   label: 'Feed the chickens',         key: 'F',     hold: false, emoji: '🐔',  hint: 'Press F' },
-    ];
-    let taskIdx = 0, holdProgress = 0, holding = false, holdRequired = 3.0; // seconds
-
-    const render = (feedback = '') => {
-      const t = tasks[taskIdx];
-      const pct = t.hold ? Math.min(100, (holdProgress / holdRequired) * 100) : 0;
-      const bar = t.hold
-        ? `<div style="background:#444;border-radius:6px;height:12px;width:220px;margin:10px auto">
-             <div style="background:#74b9ff;width:${pct}%;height:100%;border-radius:6px;transition:width 0.1s"></div>
-           </div>` : '';
-      this._createOverlay(this._card(`
-        ${this._title('🌾 Farm Hand')}
-        <div style="font-size:14px;color:#b0c4de;margin-bottom:14px">
-          Fern shows you around. A few gentle chores to help out.
-        </div>
-        <div style="font-size:42px;margin:10px 0">${t.emoji}</div>
-        <div style="font-size:20px;font-weight:bold;margin-bottom:8px">${t.label}</div>
-        <div style="font-size:14px;color:#ffd700;margin-bottom:4px">${t.hint}</div>
-        ${bar}
-        <div style="font-size:13px;color:#afd;min-height:18px;margin-top:6px">${feedback}</div>
-        <div style="font-size:12px;color:#666;margin-top:10px">Task ${taskIdx + 1} of ${tasks.length} &nbsp;•&nbsp; ESC to leave</div>
-      `));
-    };
-
-    const next = (fb) => {
-      taskIdx++;
-      holdProgress = 0;
-      holding = false;
-      if (taskIdx >= tasks.length) {
-        this._createOverlay(this._card(`
-          ${this._title('🌾 Farm Done!', '#7dcea0')}
-          <div style="font-size:36px;margin:12px 0">🐔🥚🌾</div>
-          <div style="font-size:18px">Great work! The animals are happy.</div>
-          <div style="font-size:14px;color:#888;margin-top:8px">Fern gives you a fresh carrot as thanks.</div>
-          ${this._btn('Done', 'farm-done')}
-        `));
-        this._overlay.querySelector('#farm-done').onclick = () => this.close();
-        window.removeEventListener('keydown', this._keyHandler);
-        this._keyHandler = null;
-      } else {
-        render(fb);
-      }
-    };
-
-    render();
-
-    // Hold-progress tick
-    const tick = () => {
-      if (!this.active || this.active !== 'farm') return;
-      if (holding && tasks[taskIdx].hold) {
-        holdProgress += 0.05;
-        render();
-        if (holdProgress >= holdRequired) { holding = false; next('✓ Trough filled!'); return; }
-      }
-      if (this.active === 'farm') requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-
-    this._keyHandler = (e) => {
-      if (!this.active) return;
-      const t = tasks[taskIdx];
-      if (e.code === 'Escape') { this.close(); return; }
-      if (t.hold && e.code === 'Space') {
-        e.preventDefault();
-        if (e.type === 'keydown') holding = true;
-      } else if (!t.hold) {
-        const codeMap = { E: 'KeyE', F: 'KeyF' };
-        if (e.code === codeMap[t.key]) { e.preventDefault(); next('✓ Done!'); }
-      }
-    };
-    window.addEventListener('keydown', this._keyHandler);
-    window.addEventListener('keyup', (e) => { if (e.code === 'Space') holding = false; });
-  }
-
-  // ──────────────────────────────────────────────────────────────────────
-  // CAD-273 — Baker's Apprentice
-  // ──────────────────────────────────────────────────────────────────────
-
-  _startBakery() {
-    const steps = [
-      { label: 'Add flour',  key: 'F',     code: 'KeyF',     emoji: '🌾', hint: 'Press F' },
-      { label: 'Mix',        key: 'M',     code: 'KeyM',     emoji: '🥣', hint: 'Press M' },
-      { label: 'Prove',      key: 'P',     code: 'KeyP',     emoji: '⏳', hint: 'Press P' },
-      { label: 'Bake',       key: 'B',     code: 'KeyB',     emoji: '🔥', hint: 'Press B' },
-    ];
-    let idx = 0;
-
-    const render = (msg = '') => {
-      const step = steps[idx];
-      const trail = steps.map((s, i) =>
-        `<span style="opacity:${i < idx ? 1 : i === idx ? 1 : 0.3};color:${i < idx ? '#afd' : '#fff'}">
-          ${i < idx ? '✓' : ''} ${s.label}
-        </span>`).join(' → ');
-      this._createOverlay(this._card(`
-        ${this._title("🍞 Baker's Apprentice")}
-        <div style="font-size:14px;color:#b0c4de;margin-bottom:14px">
-          Mabel's teaching you her recipe. Take it slow!
-        </div>
-        <div style="font-size:13px;color:#888;margin-bottom:14px">${trail}</div>
-        <div style="font-size:48px;margin:10px 0">${step.emoji}</div>
-        <div style="font-size:22px;font-weight:bold;margin-bottom:6px">${step.label}</div>
-        <div style="font-size:14px;color:#ffd700">${step.hint}</div>
-        <div style="font-size:13px;color:#afd;min-height:18px;margin-top:8px">${msg}</div>
-        <div style="font-size:12px;color:#666;margin-top:10px">Step ${idx + 1} of ${steps.length} &nbsp;•&nbsp; ESC to leave</div>
-      `));
-    };
-
-    render();
-
-    this._keyHandler = (e) => {
-      if (!this.active) return;
-      if (e.code === 'Escape') { this.close(); return; }
-      const step = steps[idx];
-      if (e.code === step.code) {
-        e.preventDefault();
-        idx++;
-        if (idx >= steps.length) {
-          this._createOverlay(this._card(`
-            ${this._title("🍞 Baker's Apprentice", '#e17055')}
-            <div style="font-size:64px;margin:16px 0">🍞</div>
-            <div style="font-size:20px">A perfect loaf!</div>
-            <div style="font-size:14px;color:#888;margin-top:8px">
-              Mabel claps. "You're a natural!" The whole bakery smells wonderful.
-            </div>
-            ${this._btn('Done', 'bake-done')}
-          `));
-          this._overlay.querySelector('#bake-done').onclick = () => this.close();
-          window.removeEventListener('keydown', this._keyHandler);
-          this._keyHandler = null;
-        } else {
-          render('✓ Good!');
+  // Animate smoke particles (drift upward)
+  if (_smokeParticles && _smokeParticles.visible) {
+    _smokeParticles.userData.hideTimer -= deltaSec;
+    if (_smokeParticles.userData.hideTimer <= 0) {
+      _smokeParticles.visible = false;
+      _smokeActive = false;
+    } else {
+      const geo = _smokeParticles.geometry;
+      const pos = geo.attributes.position.array;
+      const N = _smokeParticles.userData.particles.count;
+      const chimneyY = getHeight(-57.5, -43) + 12;
+      for (let i = 0; i < N; i++) {
+        pos[i * 3 + 1] += deltaSec * (0.4 + Math.random() * 0.2); // drift up
+        pos[i * 3]     += deltaSec * (Math.random() - 0.5) * 0.15; // slight sway
+        // Reset particle if it drifts too high
+        if (pos[i * 3 + 1] > chimneyY + 10) {
+          pos[i * 3]     = -57.5 + (Math.random() - 0.5) * 0.6;
+          pos[i * 3 + 1] = chimneyY;
+          pos[i * 3 + 2] = -43 + (Math.random() - 0.5) * 0.6;
         }
       }
-    };
-    window.addEventListener('keydown', this._keyHandler);
-  }
-
-  // ──────────────────────────────────────────────────────────────────────
-  // CAD-274 — Postman Round
-  // ──────────────────────────────────────────────────────────────────────
-
-  _startPostman() {
-    // Reset deliveries each time
-    for (const h of this.postHouses) h.delivered = false;
-
-    this._renderPostman();
-
-    this._keyHandler = (e) => {
-      if (!this.active) return;
-      if (e.code === 'Escape') { this.close(); return; }
-      if (e.code === 'KeyE') {
-        e.preventDefault();
-        this._tryDeliver();
-      }
-    };
-    window.addEventListener('keydown', this._keyHandler);
-  }
-
-  _renderPostman(feedback = '') {
-    const pp = this.player.player.position;
-    const rows = this.postHouses.map((h) => {
-      const dx = pp.x - h.x, dz = pp.z - h.z;
-      const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
-      return `<div style="display:flex;align-items:center;justify-content:space-between;
-        padding:8px 12px;margin:6px 0;background:${h.delivered ? '#1a3a1a' : '#1e1e2e'};border-radius:8px">
-        <span>${h.delivered ? '✅' : '✉️'} ${h.label}</span>
-        <span style="font-size:12px;color:#888">${h.delivered ? 'Delivered!' : dist + 'm away'}</span>
-      </div>`;
-    }).join('');
-
-    const done = this.postHouses.filter(h => h.delivered).length;
-    this._createOverlay(this._card(`
-      ${this._title('📮 Postman Round')}
-      <div style="font-size:14px;color:#b0c4de;margin-bottom:14px">
-        Gus has asked you to cover three deliveries. Walk close to each house and press E.
-      </div>
-      ${rows}
-      <div style="font-size:13px;color:#afd;min-height:18px;margin-top:10px">${feedback}</div>
-      <div style="font-size:12px;color:#666;margin-top:8px">
-        ${done}/${this.postHouses.length} delivered &nbsp;•&nbsp; ESC to leave
-      </div>
-    `));
-
-    if (done >= this.postHouses.length) {
-      this._createOverlay(this._card(`
-        ${this._title('📮 Round Complete!', '#cc2222')}
-        <div style="font-size:36px;margin:12px 0">✉️✉️✉️</div>
-        <div style="font-size:18px">All letters delivered!</div>
-        <div style="font-size:14px;color:#888;margin-top:8px">
-          Gus tips his cap. "Fastest round I've ever seen."
-        </div>
-        ${this._btn('Done', 'post-done')}
-      `));
-      this._overlay.querySelector('#post-done').onclick = () => this.close();
-      window.removeEventListener('keydown', this._keyHandler);
-      this._keyHandler = null;
+      geo.attributes.position.needsUpdate = true;
     }
   }
+}
 
-  _tryDeliver() {
-    const pp = this.player.player.position;
-    let delivered = false;
-    for (const h of this.postHouses) {
-      if (h.delivered) continue;
-      const dx = pp.x - h.x, dz = pp.z - h.z;
-      if (Math.sqrt(dx * dx + dz * dz) < 15) {
-        h.delivered = true;
-        delivered = true;
-        this._renderPostman(`✉ Delivered to ${h.label}!`);
-        break;
-      }
-    }
-    if (!delivered) {
-      this._renderPostman('You need to walk closer to a house.');
-    }
+// ===========================================================================
+// CAD-252 — Island Radio
+// ===========================================================================
+
+const RADIO_TRACKS = [
+  "Morning on the Headland",
+  "Low Tide",
+  "The Ferry Comes at Three",
+  "Garden Hours",
+  "Salt & Fog",
+];
+const TRACK_DURATION_REAL_SEC = 180; // 3 real minutes per track
+
+let _radioOn = false;
+let _audioCtx = null;
+let _radioNodes = null;
+let _radioOverlayEl = null;
+let _trackIndex = 0;
+let _trackTimer = 0;
+let _radioToggleCooldown = 0;
+
+// Boombox 3D object position (town square)
+export const BOOMBOX_POS = { x: -8, z: 8 };
+
+export function initRadio(scene) {
+  // 3D boombox object
+  const bGroup = new THREE.Group();
+  const bBase = getHeight(BOOMBOX_POS.x, BOOMBOX_POS.z);
+
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0x1a1a2e });
+  const accentMat = new THREE.MeshLambertMaterial({ color: 0xcc2222 });
+  const speakerMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+  const knobMat = new THREE.MeshLambertMaterial({ color: 0xf0c040 });
+
+  // Body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 0.7), bodyMat);
+  body.position.set(BOOMBOX_POS.x, bBase + 1.35, BOOMBOX_POS.z);
+  bGroup.add(body);
+
+  // Speakers (left + right)
+  for (const ox of [-0.72, 0.72]) {
+    const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.12, 10), speakerMat);
+    sp.rotation.x = Math.PI / 2;
+    sp.position.set(BOOMBOX_POS.x + ox, bBase + 1.35, BOOMBOX_POS.z + 0.31);
+    bGroup.add(sp);
   }
 
-  _checkPostmanDelivery() {
-    // Called from update() — just refresh distances shown in panel
-    if (this.active === 'postman' && this._overlay) {
-      this._renderPostman();
-    }
+  // Antenna
+  const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5), new THREE.MeshLambertMaterial({ color: 0x888888 }));
+  ant.position.set(BOOMBOX_POS.x + 0.9, bBase + 2.3, BOOMBOX_POS.z);
+  ant.rotation.z = 0.15;
+  bGroup.add(ant);
+
+  // Accent stripe
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.14, 0.72), accentMat);
+  stripe.position.set(BOOMBOX_POS.x, bBase + 1.7, BOOMBOX_POS.z);
+  bGroup.add(stripe);
+
+  // Knob
+  const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 8), knobMat);
+  knob.rotation.x = Math.PI / 2;
+  knob.position.set(BOOMBOX_POS.x, bBase + 1.35, BOOMBOX_POS.z + 0.32);
+  bGroup.add(knob);
+
+  scene.add(bGroup);
+
+  // DOM overlay
+  const el = document.createElement('div');
+  el.id = 'radio-overlay';
+  el.style.cssText = [
+    'position:fixed', 'top:24px', 'right:24px',
+    'background:rgba(0,0,0,0.60)', 'color:#fff',
+    'padding:12px 20px', 'border-radius:16px',
+    'font-size:16px', 'font-family:sans-serif',
+    'pointer-events:none', 'z-index:100', 'display:none',
+    'backdrop-filter:blur(4px)',
+  ].join(';');
+  document.body.appendChild(el);
+  _radioOverlayEl = el;
+
+  return bGroup;
+}
+
+function _startAudio() {
+  if (_audioCtx) return;
+  _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const master = _audioCtx.createGain();
+  master.gain.value = 0.18;
+  master.connect(_audioCtx.destination);
+
+  // Pleasant lo-fi chord: layered oscillators (Fmaj-ish)
+  const freqs = [174.6, 220, 261.6, 329.6, 392, 440, 523.2];
+  const oscs = freqs.map((f, i) => {
+    const osc = _audioCtx.createOscillator();
+    const g = _audioCtx.createGain();
+    osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+    osc.frequency.value = f;
+    // Slow gentle tremolo
+    const lfo = _audioCtx.createOscillator();
+    lfo.frequency.value = 0.18 + i * 0.03;
+    const lfoGain = _audioCtx.createGain();
+    lfoGain.gain.value = 0.04;
+    lfo.connect(lfoGain);
+    lfoGain.connect(g.gain);
+    lfo.start();
+    g.gain.value = 0.055 - i * 0.005;
+    osc.connect(g);
+    g.connect(master);
+    osc.start();
+    return { osc, lfo };
+  });
+  _radioNodes = { master, oscs };
+}
+
+function _stopAudio() {
+  if (!_radioNodes) return;
+  _radioNodes.oscs.forEach(({ osc, lfo }) => { try { osc.stop(); lfo.stop(); } catch(e){} });
+  _radioNodes = null;
+  if (_audioCtx) { _audioCtx.close(); _audioCtx = null; }
+}
+
+function _updateRadioOverlay() {
+  if (!_radioOverlayEl) return;
+  if (!_radioOn) { _radioOverlayEl.style.display = 'none'; return; }
+  _radioOverlayEl.style.display = 'block';
+  _radioOverlayEl.innerHTML = `📻 <b>Island Radio</b><br><span style="font-size:13px;opacity:0.8">♪ ${RADIO_TRACKS[_trackIndex]}</span>`;
+}
+
+export function toggleRadio() {
+  if (_radioToggleCooldown > 0) return;
+  _radioToggleCooldown = 0.5;
+  _radioOn = !_radioOn;
+  if (_radioOn) {
+    _startAudio();
+    _trackTimer = 0;
+    showNotification('📻 Island Radio — on');
+  } else {
+    _stopAudio();
+    showNotification('📻 Island Radio — off');
+  }
+  _updateRadioOverlay();
+}
+
+export function updateRadio(deltaSec) {
+  if (_radioToggleCooldown > 0) _radioToggleCooldown -= deltaSec;
+  if (!_radioOn) return;
+  _trackTimer += deltaSec;
+  if (_trackTimer >= TRACK_DURATION_REAL_SEC) {
+    _trackTimer = 0;
+    _trackIndex = (_trackIndex + 1) % RADIO_TRACKS.length;
+    _updateRadioOverlay();
+  }
+}
+
+export function isNearBoombox(playerPos) {
+  const dx = playerPos.x - BOOMBOX_POS.x;
+  const dz = playerPos.z - BOOMBOX_POS.z;
+  return Math.sqrt(dx*dx + dz*dz) < 6;
+}
+
+// ===========================================================================
+// Shared notification helper (used by Economy & Radio)
+// ===========================================================================
+
+let _notifEl = null;
+let _notifTimer = 0;
+
+export function showNotification(msg) {
+  if (!_notifEl) {
+    _notifEl = document.createElement('div');
+    _notifEl.style.cssText = [
+      'position:fixed', 'bottom:80px', 'left:50%', 'transform:translateX(-50%)',
+      'background:rgba(0,0,0,0.70)', 'color:#fff', 'padding:14px 28px',
+      'border-radius:20px', 'font-size:17px', 'font-family:sans-serif',
+      'pointer-events:none', 'z-index:200', 'text-align:center',
+      'white-space:pre-line', 'max-width:460px',
+      'backdrop-filter:blur(4px)',
+    ].join(';');
+    document.body.appendChild(_notifEl);
+  }
+  _notifEl.textContent = msg;
+  _notifEl.style.display = 'block';
+  _notifEl.style.opacity = '1';
+  _notifTimer = 3.5;
+}
+
+export function updateNotification(deltaSec) {
+  if (!_notifEl || _notifTimer <= 0) return;
+  _notifTimer -= deltaSec;
+  if (_notifTimer <= 0) {
+    _notifEl.style.opacity = '0';
+    setTimeout(() => { if (_notifEl) _notifEl.style.display = 'none'; }, 400);
   }
 }
