@@ -3,6 +3,9 @@
  *
  * 8 NPCs with distinct daily schedules driven by a simulated clock.
  * 1 real second = 10 sim minutes, so a full day = 2.4 real minutes.
+ *
+ * CAD-359: Pathfinding — NPCs route via door waypoints to exit buildings.
+ * CAD-253: Dialogue system — press E near an NPC to open branching conversations.
  */
 
 import * as THREE from 'three';
@@ -56,6 +59,37 @@ const AREAS = {
   rexHome:     { x: 56,   z: -60  },
   ottoHome:    { x: -94,  z: 28   },
 };
+
+// ---------------------------------------------------------------------------
+// CAD-359: Building zones + door exit waypoints
+//
+// Each entry describes a building the NPC might be inside (roughly), plus
+// the door position they should walk through to exit the building.
+// halfW/halfD are the half-extents of the footprint (no rotation for now).
+// doorX/doorZ is the world position just outside the front door.
+// ---------------------------------------------------------------------------
+const BUILDING_ZONES = [
+  { name: 'bakery',     cx: -60, cz: -40, hw: 7, hd: 5,  doorX: -60, doorZ: -33 },
+  { name: 'postOffice', cx:  60, cz: -40, hw: 7, hd: 5,  doorX:  60, doorZ: -33 },
+  { name: 'library',    cx:  80, cz:  40, hw: 7, hd: 5,  doorX:  80, doorZ:  47 },
+  { name: 'workshop',   cx: -80, cz:  40, hw: 7, hd: 5,  doorX: -80, doorZ:  47 },
+  { name: 'pub',        cx: -30, cz: -70, hw: 6, hd: 5,  doorX: -30, doorZ: -63 },
+  { name: 'cafe',       cx:   5, cz: -55, hw: 5, hd: 4,  doorX:   5, doorZ: -49 },
+  { name: 'school',     cx:  40, cz: -70, hw: 6, hd: 5,  doorX:  40, doorZ: -63 },
+];
+
+/**
+ * If (x,z) is inside any building footprint, return that building's door
+ * position as a waypoint {x, z}. Otherwise return null.
+ */
+function getDoorWaypoint(x, z) {
+  for (const b of BUILDING_ZONES) {
+    if (Math.abs(x - b.cx) < b.hw && Math.abs(z - b.cz) < b.hd) {
+      return { x: b.doorX, z: b.doorZ };
+    }
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // NPC schedules
@@ -172,12 +206,159 @@ function getScheduleEntry(schedule, hour) {
 }
 
 // ---------------------------------------------------------------------------
+// CAD-253: Dialogue data
+// ---------------------------------------------------------------------------
+// Each NPC has dialogue organised by time-of-day period:
+//   morning (5–12), afternoon (12–18), evening (18–5)
+// Plus first-visit greeting and follow-up lines that cycle.
+// ---------------------------------------------------------------------------
+const DIALOGUE = {
+  Rosa: {
+    job: 'Librarian',
+    greeting: ["Oh, a new face! Welcome — please come in, the stacks are open to everyone.", "Don't be shy. A library is the friendliest place in any town."],
+    morning:   ["Good morning! I'm just cataloguing the new arrivals.", "Morning light through the windows — best time to read, honestly."],
+    afternoon: ["Afternoon. Looking for anything in particular?", "We've a wonderful section on island ecology if you're curious."],
+    evening:   ["Quiet in here now. Just how I like it.", "Evening reading is underrated. Come find a chair."],
+  },
+  Theo: {
+    job: 'Postman',
+    greeting: ["Morning! You must be new here — I'd have remembered a face.", "Post's nearly all done for today. Flying visit?"],
+    morning:   ["Early start again. These letters won't deliver themselves!", "I know every path on this island. Comes with the job."],
+    afternoon: ["Post is all sorted. Now I can breathe.", "Afternoon round done. Feet are grateful."],
+    evening:   ["Off duty at last. Heading to Mabel's for something warm.", "Long day but a good one. Everyone was pleased to see me!"],
+  },
+  Marta: {
+    job: 'Librarian',
+    greeting: ["Hello! Are you a reader? We love readers here.", "Come in, come in — there's always room for one more."],
+    morning:   ["Fresh books came in on the ferry this week!", "Morning. I'm reorganising by colour today — Rosa thinks I'm mad."],
+    afternoon: ["Bit quieter now — good time to browse.", "Afternoons are my favourite shift. The light's just right."],
+    evening:   ["Almost closing time. Have a last look around.", "Evenings here are so peaceful. The whole town settles down."],
+  },
+  Suki: {
+    job: 'Fisherman',
+    greeting: ["Ahoy! Not many strangers find their way out to the dock.", "You've got your sea legs, have you? Good on you."],
+    morning:   ["Best fish bite at dawn. You've missed the rush, but the view's still free.", "Tide's right this morning — good haul coming."],
+    afternoon: ["Mending nets. Glamorous work, this.", "Catch is in. Now the dull part begins."],
+    evening:   ["One last cast before dark. You're welcome to watch.", "Wind's picking up — good night for sitting inside, I reckon."],
+  },
+  Eddy: {
+    job: 'Farmer',
+    greeting: ["Afternoon! Don't get many visitors down this end of the island.", "Welcome. Mind the chickens — they'll be underfoot in a second."],
+    morning:   ["Up since four. The animals don't care about the time, see.", "Morning mist on the fields — worth getting up early for."],
+    afternoon: ["Halfway through. Dozen more rows and I'm done.", "Hot work today. The soil's dry — we could use some rain."],
+    evening:   ["Last light is the best light on a farm.", "Almost done for the day. Supper's waiting."],
+  },
+};
+
+// Get time-of-day key from sim hour
+function getTimeOfDay(hour) {
+  if (hour >= 5 && hour < 12)  return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  return 'evening';
+}
+
+// ---------------------------------------------------------------------------
+// Dialogue DOM overlay (CAD-253)
+// ---------------------------------------------------------------------------
+let dialogueEl = null;
+let dialogueActive = false;
+let dialogueNPC = null;
+let dialogueLineIndex = 0;
+let dialogueLines = [];
+
+function ensureDialogueUI() {
+  if (dialogueEl) return;
+
+  dialogueEl = document.createElement('div');
+  dialogueEl.id = 'dialogue-box';
+  dialogueEl.style.cssText = [
+    'position:fixed',
+    'bottom:80px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'background:#fdf6e3',
+    'border:2px solid #c8aa72',
+    'border-radius:14px',
+    'padding:18px 26px',
+    'max-width:520px',
+    'min-width:280px',
+    'font-family:"Segoe UI",system-ui,sans-serif',
+    'font-size:15px',
+    'color:#3b2a10',
+    'box-shadow:0 4px 24px rgba(0,0,0,0.28)',
+    'display:none',
+    'z-index:9999',
+    'line-height:1.55',
+    'user-select:none',
+  ].join(';');
+
+  const nameEl = document.createElement('div');
+  nameEl.id = 'dialogue-name';
+  nameEl.style.cssText = 'font-weight:700;font-size:13px;letter-spacing:0.06em;color:#7a5c2e;margin-bottom:8px;text-transform:uppercase';
+  dialogueEl.appendChild(nameEl);
+
+  const textEl = document.createElement('div');
+  textEl.id = 'dialogue-text';
+  dialogueEl.appendChild(textEl);
+
+  const hintEl = document.createElement('div');
+  hintEl.style.cssText = 'margin-top:10px;font-size:12px;opacity:0.55;text-align:right';
+  hintEl.textContent = 'E — continue · ESC — close';
+  dialogueEl.appendChild(hintEl);
+
+  document.body.appendChild(dialogueEl);
+}
+
+function openDialogue(npc) {
+  ensureDialogueUI();
+  dialogueNPC = npc;
+  dialogueActive = true;
+
+  const data = DIALOGUE[npc.name];
+  const tod = getTimeOfDay(getSimTime());
+
+  if (!npc._hasMetPlayer) {
+    // First visit — show greeting
+    dialogueLines = data ? [...data.greeting] : ["..."];
+    npc._hasMetPlayer = true;
+  } else {
+    // Subsequent visits — time-of-day lines
+    dialogueLines = data ? [...(data[tod] || data.morning)] : ["Nice to see you again."];
+  }
+
+  // Cycle through lines if we've seen them before
+  if (npc._dialogueCycle == null) npc._dialogueCycle = 0;
+  dialogueLineIndex = 0;
+
+  document.getElementById('dialogue-name').textContent = `${npc.name} · ${npc.job}`;
+  document.getElementById('dialogue-text').textContent = dialogueLines[0];
+  dialogueEl.style.display = 'block';
+}
+
+function advanceDialogue() {
+  if (!dialogueActive) return;
+  dialogueLineIndex++;
+  if (dialogueLineIndex >= dialogueLines.length) {
+    closeDialogue();
+  } else {
+    document.getElementById('dialogue-text').textContent = dialogueLines[dialogueLineIndex];
+  }
+}
+
+function closeDialogue() {
+  dialogueActive = false;
+  dialogueNPC = null;
+  if (dialogueEl) dialogueEl.style.display = 'none';
+}
+
+// ---------------------------------------------------------------------------
 // NPC class
 // ---------------------------------------------------------------------------
 
 const MOVE_SPEED = 4; // units per second
 const IDLE_THRESHOLD = 5; // distance to target to start idling
 const LABEL_DISTANCE = 14; // show label when player within this range
+const INTERACT_DISTANCE = 4; // show E prompt and allow dialogue
 
 const WANDER_RADIUS = 12;      // roam within this many units of the area centre
 const SLEEP_WANDER_RADIUS = 2; // tiny wander when at home / sleeping
@@ -189,6 +370,13 @@ class NPC {
     this.schedule = schedule;
     this.speed = MOVE_SPEED;
     this.idleTime = 0;
+
+    // Dialogue state (CAD-253)
+    this._hasMetPlayer = false;
+    this._dialogueCycle = 0;
+
+    // CAD-359: door waypoint state
+    this._doorWaypoint = null;
 
     // Wander state: pick a nearby sub-target to loiter around
     this._wanderTarget = null;
@@ -427,7 +615,17 @@ class NPC {
       this._head.position.y = 2.0;
     } else if (isSleeping) {
       // Walk directly to home centre (no wander sub-targets while sleeping)
-      const hDir = new THREE.Vector3(areaCenter.x - pos.x, 0, areaCenter.z - pos.z).normalize();
+      // CAD-359: check if inside a building and route via door first
+      const door = getDoorWaypoint(pos.x, pos.z);
+      let targetX, targetZ;
+      if (door) {
+        targetX = door.x;
+        targetZ = door.z;
+      } else {
+        targetX = areaCenter.x;
+        targetZ = areaCenter.z;
+      }
+      const hDir = new THREE.Vector3(targetX - pos.x, 0, targetZ - pos.z).normalize();
       pos.x += hDir.x * this.speed * delta;
       pos.z += hDir.z * this.speed * delta;
       this.group.rotation.y = Math.atan2(hDir.x, hDir.z);
@@ -436,14 +634,28 @@ class NPC {
       // Normal wander behaviour
       this._head.rotation.x = 0;
       this._wanderTimer -= delta;
+
+      // CAD-359: if inside a building footprint, set door as wander target
+      const door = getDoorWaypoint(pos.x, pos.z);
+      if (door && !this._exitingBuilding) {
+        // Force exit via door
+        this._wanderTarget = { x: door.x, z: door.z };
+        this._exitingBuilding = true;
+        this._wanderTimer = 3;
+      } else if (!door) {
+        this._exitingBuilding = false;
+      }
+
       if (!this._wanderTarget || this._wanderTimer <= 0 || distToCenter > WANDER_RADIUS * 1.5) {
-        const angle = Math.random() * Math.PI * 2;
-        const r = WANDER_RADIUS * 0.3 + Math.random() * WANDER_RADIUS * 0.7;
-        this._wanderTarget = {
-          x: areaCenter.x + Math.cos(angle) * r,
-          z: areaCenter.z + Math.sin(angle) * r,
-        };
-        this._wanderTimer = 3 + Math.random() * 5;
+        if (!door) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = WANDER_RADIUS * 0.3 + Math.random() * WANDER_RADIUS * 0.7;
+          this._wanderTarget = {
+            x: areaCenter.x + Math.cos(angle) * r,
+            z: areaCenter.z + Math.sin(angle) * r,
+          };
+          this._wanderTimer = 3 + Math.random() * 5;
+        }
       }
 
       const dir = new THREE.Vector3(this._wanderTarget.x - pos.x, 0, this._wanderTarget.z - pos.z);
@@ -458,6 +670,11 @@ class NPC {
       } else {
         this.idleTime += delta;
         this._head.position.y = 2.0 + Math.sin(this.idleTime * 2) * 0.05;
+        if (this._exitingBuilding) {
+          // Reached door — clear exit flag so normal wandering resumes
+          this._exitingBuilding = false;
+          this._wanderTarget = null;
+        }
       }
     }
 
@@ -497,6 +714,7 @@ export class NPCManager {
     this.npcs = [];
     this.scene = scene;
     this._createNPCs();
+    this._bindKeys();
   }
 
   _createNPCs() {
@@ -507,10 +725,36 @@ export class NPCManager {
     }
   }
 
+  // CAD-253: bind E and ESC for dialogue
+  _bindKeys() {
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyE') {
+        if (dialogueActive) {
+          advanceDialogue();
+        } else if (this._nearestNPC) {
+          openDialogue(this._nearestNPC);
+        }
+      }
+      if (e.code === 'Escape') {
+        closeDialogue();
+      }
+    });
+  }
+
   update(delta, playerPosition) {
     advanceSimTime(delta);
+    this._nearestNPC = null;
+    let nearestDist = Infinity;
+
     for (const npc of this.npcs) {
       npc.update(delta, playerPosition);
+
+      // Track nearest NPC within interaction range
+      const d = npc.group.position.distanceTo(playerPosition);
+      if (d < INTERACT_DISTANCE && d < nearestDist) {
+        nearestDist = d;
+        this._nearestNPC = npc;
+      }
     }
   }
 }
