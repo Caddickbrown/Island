@@ -63,9 +63,11 @@
 
 <script type="module">
   import * as THREE from 'three';
-  import { buildScene, AREAS } from './scene.js';
+  import { buildScene, AREAS, initEconomy, tryPickupItem, tryGiveItem,
+           updateSupplyChain, updateRadio, toggleRadio, isNearBoombox,
+           updateNotification, showNotification } from './scene.js';
   import { PlayerController } from './player.js';
-  import { NPCManager } from './npcs.js';
+  import { NPCManager, findOpenShift, startSubInShift, updateSubIn } from './npcs.js';
   import { WildlifeManager } from './wildlife.js';
   import { AnimalManager } from './animals.js';
 
@@ -104,11 +106,14 @@
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1500);
 
   // --- Build world ---
-  const { windmill, clouds, campfire, colliders, fish } = buildScene(scene);
+  const { windmill, clouds, campfire, colliders, fish, boombox } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
   playerCtrl.setColliders(colliders);
+
+  // --- Economy ---
+  initEconomy();
 
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
@@ -151,6 +156,18 @@
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
+
+    // Sim time scalar: 1 real second = 1 game minute (1/60 sim hour)
+    const simDelta = delta / 60;
+    updateSupplyChain(delta, simDelta);
+    updateRadio(delta);
+    updateNotification(delta);
+
+    // Sub-in shift completion check
+    const subInResult = updateSubIn(delta);
+    if (subInResult) {
+      showNotification(subInResult);
+    }
 
     // Windmill blade rotation
     if (windmill?.userData?.spinner) {
@@ -217,6 +234,52 @@
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // --- E key interactions ---
+  // Priority order:
+  //   1. Near boombox → toggle radio
+  //   2. Near open shift → sub-in prompt
+  //   3. Mini-game trigger → open mini-game (handled by PlayerController if present)
+  //   4. Near NPC with inventory → try give item
+  //   5. Else → try pick up item from world
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyE') return;
+
+    const playerPos = playerCtrl.player.position;
+
+    // 1. Boombox / radio
+    if (isNearBoombox(playerPos)) {
+      toggleRadio();
+      return;
+    }
+
+    // 2. Job sub-in
+    const shift = findOpenShift(npcManager.npcs, playerPos);
+    if (shift) {
+      const msg = startSubInShift(shift.npcName);
+      showNotification(msg);
+      return;
+    }
+
+    // 3. Mini-game (PlayerController owns this if it exists)
+    if (playerCtrl.miniGame && playerCtrl.miniGame.tryOpen) {
+      if (playerCtrl.miniGame.tryOpen(playerPos)) return;
+    }
+
+    // 4. Near NPC — try to give an item
+    let nearestNPC = null;
+    let nearestDist = Infinity;
+    for (const npc of npcManager.npcs) {
+      const d = npc.group.position.distanceTo(playerPos);
+      if (d < nearestDist) { nearestDist = d; nearestNPC = npc; }
+    }
+    if (nearestNPC && nearestDist < 8) {
+      if (tryGiveItem(nearestNPC.name, nearestNPC.group.position, playerPos)) return;
+    }
+
+    // 5. Pick up item from world
+    tryPickupItem(playerPos);
   });
 </script>
 
