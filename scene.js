@@ -2406,3 +2406,548 @@ export function buildScene(scene) {
   const fish = aquarium.userData.fish || [];
   return { windmill: windmillGroup, clouds: cloudList, campfire, colliders, fish };
 }
+
+// ---------------------------------------------------------------------------
+// MiniGameSystem — simple 2D overlay mini-games triggered near NPCs (CAD-270–274)
+// ---------------------------------------------------------------------------
+
+export class MiniGameSystem {
+  constructor(playerController) {
+    this.player = playerController;
+    this.active = null; // currently open mini-game id
+
+    // Interaction zones: { id, x, z, radius, npc }
+    this.zones = [
+      { id: 'library',  x: 80,   z: 40,  radius: 10, npc: 'Rosa'  },
+      { id: 'fishing',  x: 0,    z: 262, radius: 12, npc: 'Jack'  },
+      { id: 'farm',     x: -180, z: 80,  radius: 12, npc: 'Fern'  },
+      { id: 'bakery',   x: -60,  z: -40, radius: 10, npc: 'Mabel' },
+      { id: 'postman',  x: 60,   z: -40, radius: 10, npc: 'Gus'   },
+    ];
+
+    // Postman delivery houses (3 positions in the 3D world)
+    this.postHouses = [
+      { x: 0,   z: 12,  label: 'Town Square',   delivered: false },
+      { x: 80,  z: 50,  label: "Rosa's House",  delivered: false },
+      { x: -80, z: 52,  label: 'Workshop',      delivered: false },
+    ];
+
+    this._overlay = null;
+    this._keyHandler = null;
+    this._promptEl = null; // "Press E to help" hint
+    this._promptTimeout = null;
+
+    this._createPromptEl();
+    this._bindGlobalKeys();
+  }
+
+  // ── Helper: create/remove the overlay div ──────────────────────────────
+
+  _createOverlay(html) {
+    this._removeOverlay();
+    const el = document.createElement('div');
+    el.id = 'minigame-overlay';
+    Object.assign(el.style, {
+      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+      background: 'rgba(0,0,0,0.55)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+      fontFamily: 'sans-serif',
+    });
+    el.innerHTML = html;
+    document.body.appendChild(el);
+    this._overlay = el;
+    return el;
+  }
+
+  _removeOverlay() {
+    if (this._overlay) { this._overlay.remove(); this._overlay = null; }
+  }
+
+  _createPromptEl() {
+    const el = document.createElement('div');
+    el.id = 'minigame-prompt';
+    Object.assign(el.style, {
+      position: 'fixed', bottom: '60px', left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(0,0,0,0.65)', color: '#fff',
+      padding: '8px 20px', borderRadius: '20px',
+      fontSize: '15px', zIndex: 9000, display: 'none',
+      pointerEvents: 'none',
+    });
+    document.body.appendChild(el);
+    this._promptEl = el;
+  }
+
+  _showPrompt(text) {
+    if (!this._promptEl) return;
+    this._promptEl.textContent = text;
+    this._promptEl.style.display = 'block';
+    clearTimeout(this._promptTimeout);
+  }
+
+  _hidePrompt() {
+    if (!this._promptEl) return;
+    this._promptEl.style.display = 'none';
+  }
+
+  _card(inner, titleColor = '#ffd700') {
+    return `<div style="background:#2d2d2d;border-radius:16px;padding:32px 40px;max-width:480px;
+      width:90%;color:#f0f0f0;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
+      ${inner}</div>`;
+  }
+
+  _title(t, color = '#ffd700') {
+    return `<div style="font-size:22px;font-weight:bold;color:${color};margin-bottom:16px">${t}</div>`;
+  }
+
+  _btn(label, id) {
+    return `<button id="${id}" style="margin-top:20px;padding:10px 28px;border:none;border-radius:12px;
+      background:#ffd700;color:#111;font-size:16px;cursor:pointer;font-weight:bold">${label}</button>`;
+  }
+
+  // ── Global ESC to close ────────────────────────────────────────────────
+
+  _bindGlobalKeys() {
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape' && this.active) {
+        this.close();
+        e.stopPropagation();
+      }
+      if (e.code === 'KeyE' && !this.active) {
+        const zone = this._nearbyZone();
+        if (zone) { this.open(zone.id); e.stopPropagation(); }
+      }
+    });
+  }
+
+  _nearbyZone() {
+    if (!this.player) return null;
+    const pp = this.player.player.position;
+    for (const z of this.zones) {
+      const dx = pp.x - z.x, dz = pp.z - z.z;
+      if (Math.sqrt(dx * dx + dz * dz) < z.radius) return z;
+    }
+    return null;
+  }
+
+  close() {
+    this._removeOverlay();
+    this.active = null;
+    if (this._keyHandler) {
+      window.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = null;
+    }
+  }
+
+  open(id) {
+    this.active = id;
+    switch (id) {
+      case 'library':  this._startLibrary();  break;
+      case 'fishing':  this._startFishing();  break;
+      case 'farm':     this._startFarm();     break;
+      case 'bakery':   this._startBakery();   break;
+      case 'postman':  this._startPostman();  break;
+    }
+  }
+
+  // ── Update — called every frame ────────────────────────────────────────
+
+  update() {
+    if (this.active) { this._hidePrompt(); return; }
+    const zone = this._nearbyZone();
+    if (zone) {
+      this._showPrompt(`Press E to help ${zone.npc}`);
+    } else {
+      this._hidePrompt();
+    }
+    // Postman delivery check (works while postman game is active)
+    if (this.active === 'postman') {
+      this._checkPostmanDelivery();
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // CAD-270 — Library Assistant
+  // ──────────────────────────────────────────────────────────────────────
+
+  _startLibrary() {
+    const subjects = ['History', 'Science', 'Fiction', 'Poetry', 'Nature'];
+    const keys     = { History: '←', Science: '→', Fiction: '↑', Poetry: '↓', Nature: ' ' };
+    const codes    = { History: 'ArrowLeft', Science: 'ArrowRight', Fiction: 'ArrowUp', Poetry: 'ArrowDown', Nature: 'Space' };
+
+    let idx = 0, total = 5;
+
+    const render = (msg = '') => {
+      const subj = subjects[idx];
+      const shelfGuide = Object.entries(keys).map(([s, k]) =>
+        `<span style="opacity:${s === subj ? 1 : 0.4}">${k} ${s}</span>`).join(' &nbsp; ');
+      this._createOverlay(this._card(`
+        ${this._title('📚 Library Assistant')}
+        <div style="font-size:15px;color:#b0c4de;margin-bottom:18px">
+          Rosa hands you a book. Shelve it in the right section!
+        </div>
+        <div style="background:#1a1a2e;border-radius:10px;padding:20px;margin-bottom:14px">
+          <div style="font-size:32px">📖</div>
+          <div style="font-size:22px;font-weight:bold;margin-top:8px">${subj}</div>
+        </div>
+        <div style="font-size:13px;color:#888;margin-bottom:6px">${shelfGuide}</div>
+        <div style="font-size:14px;color:#afd;min-height:20px">${msg}</div>
+        <div style="font-size:12px;color:#666;margin-top:10px">Book ${idx + 1} of ${total} &nbsp;•&nbsp; ESC to leave</div>
+      `));
+    };
+
+    render();
+
+    this._keyHandler = (e) => {
+      if (!this.active) return;
+      const subj = subjects[idx];
+      if (e.code === codes[subj]) {
+        e.preventDefault();
+        idx++;
+        if (idx >= total) {
+          this._createOverlay(this._card(`
+            ${this._title('📚 Library Assistant', '#afd')}
+            <div style="font-size:48px;margin:16px 0">🏆</div>
+            <div style="font-size:18px">Thanks for helping! The shelves look wonderful.</div>
+            <div style="font-size:13px;color:#888;margin-top:12px">Rosa smiles warmly.</div>
+            ${this._btn('Done', 'lib-done')}
+          `));
+          this._overlay.querySelector('#lib-done').onclick = () => this.close();
+          window.removeEventListener('keydown', this._keyHandler);
+          this._keyHandler = null;
+        } else {
+          render('✓ Shelved!');
+        }
+      } else if (e.code === 'Escape') {
+        this.close();
+      } else {
+        render('Hmm, which shelf does this go on?');
+      }
+    };
+    window.addEventListener('keydown', this._keyHandler);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // CAD-271 — Fisherman
+  // ──────────────────────────────────────────────────────────────────────
+
+  _startFishing() {
+    let caught = 0, casts = 0, maxCasts = 5;
+    let bobberDipping = false, biteTimer = null, biteWindow = false, biteTimeout = null;
+
+    const fish = ['🐟 Mackerel', '🐠 Perch', '🦈 Tiddler', '🐡 Bream', '🎣 Old Boot'];
+    const BITE_WINDOW = 500; // ms
+
+    const render = (status = 'The line is still…', sub = '') => {
+      this._createOverlay(this._card(`
+        ${this._title('🎣 Fishing with Jack')}
+        <div style="font-size:14px;color:#b0c4de;margin-bottom:16px">
+          Jack passes you the rod. Just watch and wait for the bobber to dip, then press Space.
+        </div>
+        <div style="font-size:48px;margin:12px 0" id="bobber-el">${bobberDipping ? '🎣' : '🪝'}</div>
+        <div style="font-size:16px;min-height:22px">${status}</div>
+        <div style="font-size:13px;color:#888;min-height:18px;margin-top:4px">${sub}</div>
+        <div style="font-size:12px;color:#666;margin-top:12px">
+          Catch: ${caught} fish &nbsp;•&nbsp; Cast ${Math.min(casts + 1, maxCasts)} of ${maxCasts} &nbsp;•&nbsp; ESC to leave
+        </div>
+      `));
+    };
+
+    const scheduleBite = () => {
+      const delay = 2000 + Math.random() * 4000;
+      biteTimer = setTimeout(() => {
+        if (!this.active || this.active !== 'fishing') return;
+        bobberDipping = true;
+        biteWindow = true;
+        render('🌊 The bobber dips! Press Space!');
+        biteTimeout = setTimeout(() => {
+          if (!biteWindow) return;
+          biteWindow = false;
+          bobberDipping = false;
+          casts++;
+          if (casts >= maxCasts) { finish(); return; }
+          render('It got away. Keep watching…', 'The line settles again.');
+          scheduleBite();
+        }, BITE_WINDOW * 4); // generous 2s window total
+      }, delay);
+    };
+
+    const finish = () => {
+      clearTimeout(biteTimer); clearTimeout(biteTimeout);
+      window.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = null;
+      this._createOverlay(this._card(`
+        ${this._title('🎣 Fishing Done!', '#74b9ff')}
+        <div style="font-size:36px;margin:12px 0">${caught > 0 ? '🐟'.repeat(Math.min(caught, 5)) : '🎣'}</div>
+        <div style="font-size:18px">You caught ${caught} fish!</div>
+        <div style="font-size:14px;color:#888;margin-top:8px">
+          ${caught === 0 ? "Don't worry — Jack says it's about the peace and quiet." :
+            caught >= 3 ? "Jack is impressed! Great haul." : "Nice catch. Jack nods appreciatively."}
+        </div>
+        ${this._btn('Done', 'fish-done')}
+      `));
+      this._overlay.querySelector('#fish-done').onclick = () => this.close();
+    };
+
+    render();
+    scheduleBite();
+
+    this._keyHandler = (e) => {
+      if (!this.active) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (biteWindow) {
+          clearTimeout(biteTimeout);
+          biteWindow = false;
+          bobberDipping = false;
+          caught++;
+          casts++;
+          const f = fish[Math.floor(Math.random() * (fish.length - 1))]; // exclude old boot usually
+          if (casts >= maxCasts) { finish(); return; }
+          render(`✓ Got one! ${f}`, 'You cast again…');
+          scheduleBite();
+        } else {
+          // Pressed too early — gentle, not punishing
+          render('Just a ripple. Wait for the dip…');
+        }
+      } else if (e.code === 'Escape') {
+        clearTimeout(biteTimer); clearTimeout(biteTimeout);
+        this.close();
+      }
+    };
+    window.addEventListener('keydown', this._keyHandler);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // CAD-272 — Farm Hand
+  // ──────────────────────────────────────────────────────────────────────
+
+  _startFarm() {
+    const tasks = [
+      { id: 'water',  label: 'Fill the water trough',    key: 'Space', hold: true,  emoji: '🪣',  hint: 'Hold Space' },
+      { id: 'egg',    label: 'Collect the egg',           key: 'E',     hold: false, emoji: '🥚',  hint: 'Press E' },
+      { id: 'feed',   label: 'Feed the chickens',         key: 'F',     hold: false, emoji: '🐔',  hint: 'Press F' },
+    ];
+    let taskIdx = 0, holdProgress = 0, holding = false, holdRequired = 3.0; // seconds
+
+    const render = (feedback = '') => {
+      const t = tasks[taskIdx];
+      const pct = t.hold ? Math.min(100, (holdProgress / holdRequired) * 100) : 0;
+      const bar = t.hold
+        ? `<div style="background:#444;border-radius:6px;height:12px;width:220px;margin:10px auto">
+             <div style="background:#74b9ff;width:${pct}%;height:100%;border-radius:6px;transition:width 0.1s"></div>
+           </div>` : '';
+      this._createOverlay(this._card(`
+        ${this._title('🌾 Farm Hand')}
+        <div style="font-size:14px;color:#b0c4de;margin-bottom:14px">
+          Fern shows you around. A few gentle chores to help out.
+        </div>
+        <div style="font-size:42px;margin:10px 0">${t.emoji}</div>
+        <div style="font-size:20px;font-weight:bold;margin-bottom:8px">${t.label}</div>
+        <div style="font-size:14px;color:#ffd700;margin-bottom:4px">${t.hint}</div>
+        ${bar}
+        <div style="font-size:13px;color:#afd;min-height:18px;margin-top:6px">${feedback}</div>
+        <div style="font-size:12px;color:#666;margin-top:10px">Task ${taskIdx + 1} of ${tasks.length} &nbsp;•&nbsp; ESC to leave</div>
+      `));
+    };
+
+    const next = (fb) => {
+      taskIdx++;
+      holdProgress = 0;
+      holding = false;
+      if (taskIdx >= tasks.length) {
+        this._createOverlay(this._card(`
+          ${this._title('🌾 Farm Done!', '#7dcea0')}
+          <div style="font-size:36px;margin:12px 0">🐔🥚🌾</div>
+          <div style="font-size:18px">Great work! The animals are happy.</div>
+          <div style="font-size:14px;color:#888;margin-top:8px">Fern gives you a fresh carrot as thanks.</div>
+          ${this._btn('Done', 'farm-done')}
+        `));
+        this._overlay.querySelector('#farm-done').onclick = () => this.close();
+        window.removeEventListener('keydown', this._keyHandler);
+        this._keyHandler = null;
+      } else {
+        render(fb);
+      }
+    };
+
+    render();
+
+    // Hold-progress tick
+    const tick = () => {
+      if (!this.active || this.active !== 'farm') return;
+      if (holding && tasks[taskIdx].hold) {
+        holdProgress += 0.05;
+        render();
+        if (holdProgress >= holdRequired) { holding = false; next('✓ Trough filled!'); return; }
+      }
+      if (this.active === 'farm') requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+
+    this._keyHandler = (e) => {
+      if (!this.active) return;
+      const t = tasks[taskIdx];
+      if (e.code === 'Escape') { this.close(); return; }
+      if (t.hold && e.code === 'Space') {
+        e.preventDefault();
+        if (e.type === 'keydown') holding = true;
+      } else if (!t.hold) {
+        const codeMap = { E: 'KeyE', F: 'KeyF' };
+        if (e.code === codeMap[t.key]) { e.preventDefault(); next('✓ Done!'); }
+      }
+    };
+    window.addEventListener('keydown', this._keyHandler);
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space') holding = false; });
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // CAD-273 — Baker's Apprentice
+  // ──────────────────────────────────────────────────────────────────────
+
+  _startBakery() {
+    const steps = [
+      { label: 'Add flour',  key: 'F',     code: 'KeyF',     emoji: '🌾', hint: 'Press F' },
+      { label: 'Mix',        key: 'M',     code: 'KeyM',     emoji: '🥣', hint: 'Press M' },
+      { label: 'Prove',      key: 'P',     code: 'KeyP',     emoji: '⏳', hint: 'Press P' },
+      { label: 'Bake',       key: 'B',     code: 'KeyB',     emoji: '🔥', hint: 'Press B' },
+    ];
+    let idx = 0;
+
+    const render = (msg = '') => {
+      const step = steps[idx];
+      const trail = steps.map((s, i) =>
+        `<span style="opacity:${i < idx ? 1 : i === idx ? 1 : 0.3};color:${i < idx ? '#afd' : '#fff'}">
+          ${i < idx ? '✓' : ''} ${s.label}
+        </span>`).join(' → ');
+      this._createOverlay(this._card(`
+        ${this._title("🍞 Baker's Apprentice")}
+        <div style="font-size:14px;color:#b0c4de;margin-bottom:14px">
+          Mabel's teaching you her recipe. Take it slow!
+        </div>
+        <div style="font-size:13px;color:#888;margin-bottom:14px">${trail}</div>
+        <div style="font-size:48px;margin:10px 0">${step.emoji}</div>
+        <div style="font-size:22px;font-weight:bold;margin-bottom:6px">${step.label}</div>
+        <div style="font-size:14px;color:#ffd700">${step.hint}</div>
+        <div style="font-size:13px;color:#afd;min-height:18px;margin-top:8px">${msg}</div>
+        <div style="font-size:12px;color:#666;margin-top:10px">Step ${idx + 1} of ${steps.length} &nbsp;•&nbsp; ESC to leave</div>
+      `));
+    };
+
+    render();
+
+    this._keyHandler = (e) => {
+      if (!this.active) return;
+      if (e.code === 'Escape') { this.close(); return; }
+      const step = steps[idx];
+      if (e.code === step.code) {
+        e.preventDefault();
+        idx++;
+        if (idx >= steps.length) {
+          this._createOverlay(this._card(`
+            ${this._title("🍞 Baker's Apprentice", '#e17055')}
+            <div style="font-size:64px;margin:16px 0">🍞</div>
+            <div style="font-size:20px">A perfect loaf!</div>
+            <div style="font-size:14px;color:#888;margin-top:8px">
+              Mabel claps. "You're a natural!" The whole bakery smells wonderful.
+            </div>
+            ${this._btn('Done', 'bake-done')}
+          `));
+          this._overlay.querySelector('#bake-done').onclick = () => this.close();
+          window.removeEventListener('keydown', this._keyHandler);
+          this._keyHandler = null;
+        } else {
+          render('✓ Good!');
+        }
+      }
+    };
+    window.addEventListener('keydown', this._keyHandler);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // CAD-274 — Postman Round
+  // ──────────────────────────────────────────────────────────────────────
+
+  _startPostman() {
+    // Reset deliveries each time
+    for (const h of this.postHouses) h.delivered = false;
+
+    this._renderPostman();
+
+    this._keyHandler = (e) => {
+      if (!this.active) return;
+      if (e.code === 'Escape') { this.close(); return; }
+      if (e.code === 'KeyE') {
+        e.preventDefault();
+        this._tryDeliver();
+      }
+    };
+    window.addEventListener('keydown', this._keyHandler);
+  }
+
+  _renderPostman(feedback = '') {
+    const pp = this.player.player.position;
+    const rows = this.postHouses.map((h) => {
+      const dx = pp.x - h.x, dz = pp.z - h.z;
+      const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
+      return `<div style="display:flex;align-items:center;justify-content:space-between;
+        padding:8px 12px;margin:6px 0;background:${h.delivered ? '#1a3a1a' : '#1e1e2e'};border-radius:8px">
+        <span>${h.delivered ? '✅' : '✉️'} ${h.label}</span>
+        <span style="font-size:12px;color:#888">${h.delivered ? 'Delivered!' : dist + 'm away'}</span>
+      </div>`;
+    }).join('');
+
+    const done = this.postHouses.filter(h => h.delivered).length;
+    this._createOverlay(this._card(`
+      ${this._title('📮 Postman Round')}
+      <div style="font-size:14px;color:#b0c4de;margin-bottom:14px">
+        Gus has asked you to cover three deliveries. Walk close to each house and press E.
+      </div>
+      ${rows}
+      <div style="font-size:13px;color:#afd;min-height:18px;margin-top:10px">${feedback}</div>
+      <div style="font-size:12px;color:#666;margin-top:8px">
+        ${done}/${this.postHouses.length} delivered &nbsp;•&nbsp; ESC to leave
+      </div>
+    `));
+
+    if (done >= this.postHouses.length) {
+      this._createOverlay(this._card(`
+        ${this._title('📮 Round Complete!', '#cc2222')}
+        <div style="font-size:36px;margin:12px 0">✉️✉️✉️</div>
+        <div style="font-size:18px">All letters delivered!</div>
+        <div style="font-size:14px;color:#888;margin-top:8px">
+          Gus tips his cap. "Fastest round I've ever seen."
+        </div>
+        ${this._btn('Done', 'post-done')}
+      `));
+      this._overlay.querySelector('#post-done').onclick = () => this.close();
+      window.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = null;
+    }
+  }
+
+  _tryDeliver() {
+    const pp = this.player.player.position;
+    let delivered = false;
+    for (const h of this.postHouses) {
+      if (h.delivered) continue;
+      const dx = pp.x - h.x, dz = pp.z - h.z;
+      if (Math.sqrt(dx * dx + dz * dz) < 15) {
+        h.delivered = true;
+        delivered = true;
+        this._renderPostman(`✉ Delivered to ${h.label}!`);
+        break;
+      }
+    }
+    if (!delivered) {
+      this._renderPostman('You need to walk closer to a house.');
+    }
+  }
+
+  _checkPostmanDelivery() {
+    // Called from update() — just refresh distances shown in panel
+    if (this.active === 'postman' && this._overlay) {
+      this._renderPostman();
+    }
+  }
+}
