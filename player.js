@@ -91,6 +91,9 @@ export class PlayerController {
     this._moveDir = new THREE.Vector3();
 
     this._bindInput();
+
+    // Mini-game system reference — set externally after construction
+    this.miniGame = null;
   }
 
   /** Call after buildScene() to pass building colliders. */
@@ -196,6 +199,7 @@ export class PlayerController {
       case 'KeyD': case 'ArrowRight': this.keys.right    = pressed; break;
       case 'ShiftLeft': case 'ShiftRight': this.keys.sprint = pressed; break;
       case 'Space':
+        if (this.miniGame && this.miniGame.active) { e.preventDefault(); break; }
         if (pressed && this.isOnGround) {
           this.velocityY    = this.JUMP_IMPULSE;
           this.isOnGround   = false;
@@ -209,6 +213,18 @@ export class PlayerController {
   }
 
   update(delta) {
+    // If a mini-game overlay is open, freeze player movement
+    if (this.miniGame && this.miniGame.active) {
+      // Still update camera so the world stays visible behind the overlay
+      const camGroundY = getHeight(this.player.position.x, this.player.position.z);
+      const camX = this.player.position.x + Math.sin(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
+      const camZ = this.player.position.z + Math.cos(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
+      const camY = camGroundY + this.cameraHeight + this.cameraDistance * Math.sin(this.pitch);
+      this.camera.position.set(camX, camY, camZ);
+      this.camera.lookAt(this.player.position.x, camGroundY + 1.2, this.player.position.z);
+      return;
+    }
+
     // Get camera forward direction projected onto XZ plane
     const forward = new THREE.Vector3();
     this.camera.getWorldDirection(forward);
