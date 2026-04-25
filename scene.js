@@ -49,6 +49,14 @@ const C = {
   water:      0x74b9ff,
   white:      0xffffff,
   fence:      0x9e8a6e,
+  cycleShop:  0x2d9e8f,
+  sportsCourt:0x3aad5c,
+  fitnessCtr: 0x4a90d9,
+  scienceCtr: 0xf5f5f5,
+  fishery:    0x4a5568,
+  wizLibrary: 0x3a1a6e,
+  maintenance:0x718096,
+  vrPod:      0x1a1a3e,
   boat:       0xc0392b,
   boatHull:   0xf5f0e8,
 };
@@ -76,6 +84,14 @@ export const AREAS = {
   AQUARIUM:       { x: 150,  z: -80,  label: "Elliot's Aquarium" },
   MILL:           { x: -120, z: 40,   label: 'The Mill' },
   GENERAL_STORE:  { x: -20,  z: -48,  label: 'General Store' },
+  CYCLE_SHOP:     { x: -30,  z: -90,  label: 'Cycle Shop' },
+  SPORTS_COURTS:  { x: 110,  z: -30,  label: 'Sports Courts' },
+  FITNESS_CENTER: { x: 110,  z: -55,  label: 'Fitness Center' },
+  SCIENCE_CENTER: { x: -80,  z: -150, label: 'Science Center' },
+  FISHERY_AREA:   { x: 30,   z: 230,  label: 'Fishery' },
+  WIZARD_LIBRARY: { x: -140, z: -80,  label: "Wizard's Library" },
+  MAINTENANCE:    { x: -105, z: 70,   label: 'Maintenance' },
+  VR_EXPERIENCE:  { x: 140,  z: -30,  label: 'VR Experience' },
 };
 
 // ---------------------------------------------------------------------------
@@ -1384,6 +1400,600 @@ function makeLibraryBuilding() {
 }
 
 // ---------------------------------------------------------------------------
+// CAD-153: Cycle Shop — green/teal building, bike racks, repair stand
+// ---------------------------------------------------------------------------
+
+function makeCycleShop() {
+  const group = new THREE.Group();
+  const CW = 10, CH = 6, CD = 8;
+
+  const walls = box(CW, CH, CD, C.cycleShop);
+  walls.position.y = CH / 2;
+  group.add(walls);
+
+  const roofH = CH * 0.3;
+  const roof = box(CW + 1, roofH, CD + 1, 0x1a7a6e);
+  roof.position.y = CH + roofH / 2 - 0.2;
+  group.add(roof);
+
+  const door = box(1.8, 2.6, 0.3, C.door);
+  door.position.set(0, 1.3, CD / 2 + 0.15);
+  group.add(door);
+
+  const sc = document.createElement('canvas');
+  sc.width = 512; sc.height = 96;
+  const sctx = sc.getContext('2d');
+  sctx.fillStyle = '#1a7a6e';
+  sctx.fillRect(0, 0, 512, 96);
+  sctx.fillStyle = '#ffffff';
+  sctx.font = 'bold 46px sans-serif';
+  sctx.textAlign = 'center';
+  sctx.textBaseline = 'middle';
+  sctx.fillText('🚲 Cycle Shop', 256, 48);
+  const signMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(6, 1.1),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true })
+  );
+  signMesh.position.set(0, CH * 0.8, CD / 2 + 0.18);
+  group.add(signMesh);
+
+  for (let i = 0; i < 3; i++) {
+    const post1 = cylinder(0.08, 0.08, 1.1, C.solarFrame, 6);
+    post1.position.set(-2.5 + i * 2.0, 0.55, CD / 2 + 2.0);
+    const post2 = cylinder(0.08, 0.08, 1.1, C.solarFrame, 6);
+    post2.position.set(-2.5 + i * 2.0 + 0.8, 0.55, CD / 2 + 2.0);
+    const bar = box(0.9, 0.1, 0.1, C.solarFrame);
+    bar.position.set(-2.5 + i * 2.0 + 0.4, 1.1, CD / 2 + 2.0);
+    group.add(post1, post2, bar);
+  }
+
+  for (let i = 0; i < 2; i++) {
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.07, 6, 14), new THREE.MeshLambertMaterial({ color: 0x222222 }));
+    wheel.rotation.y = Math.PI / 2;
+    wheel.position.set(-1.5 + i * 2.6, 0.5, CD / 2 + 1.6);
+    group.add(wheel);
+  }
+
+  const rsPost = cylinder(0.08, 0.08, 1.5, 0x888888, 6);
+  rsPost.position.set(-CW / 2 - 1.5, 0.75, 0);
+  group.add(rsPost);
+  const rsArm = box(0.9, 0.1, 0.1, 0x888888);
+  rsArm.position.set(-CW / 2 - 1.05, 1.5, 0);
+  group.add(rsArm);
+
+  const hookMat2 = new THREE.MeshLambertMaterial({ color: 0x555555 });
+  for (let i = 0; i < 3; i++) {
+    const hook = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.5, 5), hookMat2);
+    hook.rotation.z = Math.PI / 2;
+    hook.position.set(-CW / 2 - 0.05, 3.0, -1.5 + i * 1.5);
+    group.add(hook);
+  }
+
+  group.userData.label = 'Cycle Shop';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// CAD-152: Sports Courts — flat court surface, net, seating
+// ---------------------------------------------------------------------------
+
+function makeSportsCourts() {
+  const group = new THREE.Group();
+
+  const court = flatPlane(22, 14, 0x3aad5c);
+  court.position.y = 0.06;
+  group.add(court);
+
+  const lineCol = 0xffffff;
+  const borderN = box(22.2, 0.05, 0.18, lineCol); borderN.position.set(0, 0.07, -7);  group.add(borderN);
+  const borderS = box(22.2, 0.05, 0.18, lineCol); borderS.position.set(0, 0.07,  7);  group.add(borderS);
+  const borderW = box(0.18, 0.05, 14.2, lineCol); borderW.position.set(-11, 0.07, 0); group.add(borderW);
+  const borderE = box(0.18, 0.05, 14.2, lineCol); borderE.position.set( 11, 0.07, 0); group.add(borderE);
+  const centreLine = box(0.18, 0.05, 14.2, lineCol); centreLine.position.set(0, 0.07, 0); group.add(centreLine);
+  const svc1 = box(11, 0.05, 0.18, lineCol); svc1.position.set(-5.5, 0.07, -3.5); group.add(svc1);
+  const svc2 = box(11, 0.05, 0.18, lineCol); svc2.position.set(-5.5, 0.07,  3.5); group.add(svc2);
+
+  const netPostL = cylinder(0.12, 0.12, 1.6, 0xcccccc, 6); netPostL.position.set(-0.1, 0.8, -7.5); group.add(netPostL);
+  const netPostR = cylinder(0.12, 0.12, 1.6, 0xcccccc, 6); netPostR.position.set(-0.1, 0.8,  7.5); group.add(netPostR);
+  const netMesh = box(0.08, 0.8, 15, 0xffffff);
+  netMesh.material = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+  netMesh.position.set(-0.1, 1.05, 0);
+  group.add(netMesh);
+
+  const bench1 = makeBench();
+  bench1.position.set(-14, 0, -2);
+  bench1.rotation.y = Math.PI / 2;
+  group.add(bench1);
+  const bench2 = makeBench();
+  bench2.position.set(-14, 0, 2);
+  bench2.rotation.y = Math.PI / 2;
+  group.add(bench2);
+
+  const signPost = cylinder(0.1, 0.1, 3.0, C.solarFrame, 6);
+  signPost.position.set(-12, 1.5, -8);
+  group.add(signPost);
+  const sc2 = document.createElement('canvas');
+  sc2.width = 384; sc2.height = 80;
+  const sctx2 = sc2.getContext('2d');
+  sctx2.fillStyle = '#3aad5c';
+  sctx2.fillRect(0, 0, 384, 80);
+  sctx2.fillStyle = '#ffffff';
+  sctx2.font = 'bold 38px sans-serif';
+  sctx2.textAlign = 'center';
+  sctx2.textBaseline = 'middle';
+  sctx2.fillText('🎾 Sports Courts', 192, 40);
+  const signPlaneMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.5, 0.95),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc2), transparent: true })
+  );
+  signPlaneMesh.position.set(-12, 3.3, -8);
+  group.add(signPlaneMesh);
+
+  group.userData.label = 'Sports Courts';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// CAD-150: Fitness Center — large windows, exercise equipment, modern look
+// ---------------------------------------------------------------------------
+
+function makeFitnessCenter() {
+  const group = new THREE.Group();
+  const FW = 14, FH = 7, FD = 10;
+
+  const walls = box(FW, FH, FD, C.fitnessCtr);
+  walls.position.y = FH / 2;
+  group.add(walls);
+
+  const roofH = FH * 0.25;
+  const roof = box(FW + 1.2, roofH, FD + 1.2, 0x2d6aaa);
+  roof.position.y = FH + roofH / 2 - 0.15;
+  group.add(roof);
+
+  const glassMat = new THREE.MeshLambertMaterial({ color: 0x7fb3d3, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+  for (const wx of [-3, 3]) {
+    const win = new THREE.Mesh(new THREE.BoxGeometry(4.5, FH * 0.55, 0.15), glassMat);
+    win.position.set(wx, FH * 0.55, FD / 2 + 0.05);
+    group.add(win);
+  }
+
+  const door = box(2.0, 2.8, 0.3, C.door);
+  door.position.set(0, 1.4, FD / 2 + 0.15);
+  group.add(door);
+
+  const sc3 = document.createElement('canvas');
+  sc3.width = 512; sc3.height = 80;
+  const sctx3 = sc3.getContext('2d');
+  sctx3.fillStyle = '#2d6aaa';
+  sctx3.fillRect(0, 0, 512, 80);
+  sctx3.fillStyle = '#ffffff';
+  sctx3.font = 'bold 42px sans-serif';
+  sctx3.textAlign = 'center';
+  sctx3.textBaseline = 'middle';
+  sctx3.fillText('💪 Fitness Center', 256, 40);
+  const signMesh3 = new THREE.Mesh(
+    new THREE.PlaneGeometry(6.5, 1.0),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc3), transparent: true })
+  );
+  signMesh3.position.set(0, FH * 0.82, FD / 2 + 0.2);
+  group.add(signMesh3);
+
+  for (let i = 0; i < 4; i++) {
+    const dbell = box(0.3, 0.18, 0.9, 0x444444);
+    dbell.position.set(-FW/2 + 1.5 + i * 1.2, 1.0, -FD/2 + 1.5);
+    group.add(dbell);
+  }
+  const bpBench = box(3.2, 0.22, 0.8, 0x333333);
+  bpBench.position.set(FW/2 - 2.5, 0.8, -FD/2 + 2.5);
+  group.add(bpBench);
+  const bpPost1 = cylinder(0.12, 0.12, 1.8, 0x555555, 6);
+  bpPost1.position.set(FW/2 - 3.5, 1.8, -FD/2 + 2.5);
+  const bpPost2 = cylinder(0.12, 0.12, 1.8, 0x555555, 6);
+  bpPost2.position.set(FW/2 - 1.5, 1.8, -FD/2 + 2.5);
+  group.add(bpPost1, bpPost2);
+  const bpBar = box(2.5, 0.12, 0.12, 0x888888);
+  bpBar.position.set(FW/2 - 2.5, 2.7, -FD/2 + 2.5);
+  group.add(bpBar);
+  const tread = box(1.5, 0.4, 3.5, 0x222222);
+  tread.position.set(0, 0.4, -FD/2 + 2.5);
+  group.add(tread);
+
+  group.userData.label = 'Fitness Center';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// CAD-151: Science Center — white walls, dome roof, telescope on top
+// ---------------------------------------------------------------------------
+
+function makeScienceCenter() {
+  const group = new THREE.Group();
+  const SW = 13, SH = 8, SD = 11;
+
+  const walls = box(SW, SH, SD, C.scienceCtr);
+  walls.position.y = SH / 2;
+  group.add(walls);
+
+  const frontRoof = box(SW * 0.55, 0.5, SD, 0xd0d0d0);
+  frontRoof.position.set(SW * 0.225, SH + 0.25, 0);
+  group.add(frontRoof);
+
+  const domeBase = cylinder(3.5, 3.5, 0.5, 0xe0e0e0, 16);
+  domeBase.position.set(-2, SH + 0.25, 0);
+  group.add(domeBase);
+  const domeMat = new THREE.MeshLambertMaterial({ color: 0xc8d8e8 });
+  const domeGeo = new THREE.SphereGeometry(3.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+  const sciDome = new THREE.Mesh(domeGeo, domeMat);
+  sciDome.position.set(-2, SH + 0.5, 0);
+  group.add(sciDome);
+
+  const teleBase = cylinder(0.35, 0.4, 0.8, 0x666666, 8);
+  teleBase.position.set(-2, SH + 4.3, 0);
+  group.add(teleBase);
+  const teleScope = cylinder(0.3, 0.28, 2.5, 0x444444, 8);
+  teleScope.rotation.z = 0.5;
+  teleScope.position.set(-1.4, SH + 5.5, 0);
+  group.add(teleScope);
+  const teleEye = cylinder(0.28, 0.34, 0.4, 0x555555, 8);
+  teleEye.rotation.z = 0.5;
+  teleEye.position.set(-0.8, SH + 6.5, 0);
+  group.add(teleEye);
+
+  const door = box(1.8, 2.8, 0.3, C.door);
+  door.position.set(2.5, 1.4, SD / 2 + 0.15);
+  group.add(door);
+
+  const wMatSci = new THREE.MeshLambertMaterial({ color: 0x7fb3d3, transparent: true, opacity: 0.5 });
+  for (const wx of [-4, -1, 5]) {
+    const win = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.0, 0.15), wMatSci);
+    win.position.set(wx, SH * 0.55, SD / 2);
+    group.add(win);
+  }
+
+  const sc4 = document.createElement('canvas');
+  sc4.width = 512; sc4.height = 80;
+  const sctx4 = sc4.getContext('2d');
+  sctx4.fillStyle = '#1a5276';
+  sctx4.fillRect(0, 0, 512, 80);
+  sctx4.fillStyle = '#ffffff';
+  sctx4.font = 'bold 38px sans-serif';
+  sctx4.textAlign = 'center';
+  sctx4.textBaseline = 'middle';
+  sctx4.fillText('🔭 Science Center', 256, 40);
+  const signMesh4 = new THREE.Mesh(
+    new THREE.PlaneGeometry(6.5, 1.0),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc4), transparent: true })
+  );
+  signMesh4.position.set(2.5, SH * 0.82, SD / 2 + 0.2);
+  group.add(signMesh4);
+
+  for (let i = 0; i < 2; i++) {
+    const labBench = box(5, 0.15, 1.2, 0x2d6a4f);
+    labBench.position.set(-2.5 + i * 5, 3.2, -SD/2 + 2.5);
+    group.add(labBench);
+    for (let j = 0; j < 4; j++) {
+      const jar = cylinder(0.15, 0.13, 0.4, 0xaaddff, 8);
+      jar.position.set(-4 + i * 5 + j * 0.8, 3.5, -SD/2 + 2.5);
+      group.add(jar);
+    }
+  }
+
+  group.userData.label = 'Science Center';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// CAD-139: Fishery — harbour building, fish drying racks, ice chest
+// ---------------------------------------------------------------------------
+
+function makeFishery() {
+  const group = new THREE.Group();
+  const FHW = 12, FHH = 6, FHD = 8;
+
+  const walls = box(FHW, FHH, FHD, C.fishery);
+  walls.position.y = FHH / 2;
+  group.add(walls);
+
+  for (let i = 0; i < 5; i++) {
+    const corrStrip = box(FHW + 1.5, 0.22, FHD / 5, 0x5a6e7d);
+    corrStrip.position.set(0, FHH + 0.11, -FHD/2 + i * (FHD/5) + 0.5);
+    corrStrip.rotation.x = -0.06;
+    group.add(corrStrip);
+  }
+
+  const fishDoor = box(2.0, 2.8, 0.3, 0x5a3a1a);
+  fishDoor.position.set(0, 1.4, FHD / 2 + 0.15);
+  group.add(fishDoor);
+
+  const sc5 = document.createElement('canvas');
+  sc5.width = 512; sc5.height = 80;
+  const sctx5 = sc5.getContext('2d');
+  sctx5.fillStyle = '#2c3e50';
+  sctx5.fillRect(0, 0, 512, 80);
+  sctx5.fillStyle = '#7fb3d3';
+  sctx5.font = 'bold 44px sans-serif';
+  sctx5.textAlign = 'center';
+  sctx5.textBaseline = 'middle';
+  sctx5.fillText('🐟 Fishery', 256, 40);
+  const signMesh5 = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.5, 0.9),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc5), transparent: true })
+  );
+  signMesh5.position.set(0, FHH * 0.82, FHD / 2 + 0.2);
+  group.add(signMesh5);
+
+  for (let r = 0; r < 2; r++) {
+    const rackPost1 = cylinder(0.1, 0.1, 2.2, C.trunk, 5);
+    rackPost1.position.set(-FHW/2 - 2.5, 1.1, -1.5 + r * 3.5);
+    const rackPost2 = cylinder(0.1, 0.1, 2.2, C.trunk, 5);
+    rackPost2.position.set(-FHW/2 - 0.5, 1.1, -1.5 + r * 3.5);
+    const rackBar = box(2.1, 0.1, 0.1, C.trunk);
+    rackBar.position.set(-FHW/2 - 1.5, 2.1, -1.5 + r * 3.5);
+    group.add(rackPost1, rackPost2, rackBar);
+    for (let f = 0; f < 4; f++) {
+      const fishShape = box(0.5, 0.18, 0.08, 0xc8a870);
+      fishShape.position.set(-FHW/2 - 2.2 + f * 0.55, 1.85 - f * 0.03, -1.5 + r * 3.5 + 0.1);
+      fishShape.rotation.z = -0.12;
+      group.add(fishShape);
+    }
+  }
+
+  const iceChest = box(1.5, 0.8, 0.9, 0xddeeff);
+  iceChest.position.set(FHW / 2 + 1.2, 0.4, FHD / 2 - 0.5);
+  group.add(iceChest);
+  const iceLid = box(1.55, 0.12, 0.95, 0xc8e8ff);
+  iceLid.position.set(FHW / 2 + 1.2, 0.86, FHD / 2 - 0.5);
+  group.add(iceLid);
+
+  const ropeGeo = new THREE.TorusGeometry(0.38, 0.07, 5, 12);
+  const ropeM = new THREE.Mesh(ropeGeo, new THREE.MeshLambertMaterial({ color: 0xb89e5c }));
+  ropeM.rotation.x = Math.PI / 2;
+  ropeM.position.set(-2, 0.1, FHD / 2 + 1.5);
+  group.add(ropeM);
+
+  group.userData.label = 'Fishery';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// CAD-135: Wizard's Library — tall narrow, dark purple, magical windows
+// ---------------------------------------------------------------------------
+
+function makeWizardLibrary() {
+  const group = new THREE.Group();
+  const WW = 9, WH = 12, WD = 7;
+
+  const walls = box(WW, WH, WD, C.wizLibrary);
+  walls.position.y = WH / 2;
+  group.add(walls);
+
+  const wizRoofMat = new THREE.MeshLambertMaterial({ color: 0x1a0a3e });
+  const wizRoofGeo = new THREE.ConeGeometry(6.5, 5, 4);
+  const wizRoof = new THREE.Mesh(wizRoofGeo, wizRoofMat);
+  wizRoof.position.y = WH + 2.5;
+  wizRoof.rotation.y = Math.PI / 4;
+  group.add(wizRoof);
+
+  const glowMat = new THREE.MeshLambertMaterial({ color: 0x00ffff, emissive: 0x00cccc, emissiveIntensity: 0.8 });
+  for (const wy of [WH * 0.35, WH * 0.65]) {
+    const win = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 0.18), glowMat);
+    win.position.set(0, wy, WD / 2);
+    group.add(win);
+  }
+  const winSide = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.5, 1.2), glowMat);
+  winSide.position.set(-WW / 2, WH * 0.5, 0);
+  group.add(winSide);
+
+  const magicLight = new THREE.PointLight(0x6600cc, 1.5, 20);
+  magicLight.position.set(0, WH * 0.55, 0);
+  group.add(magicLight);
+
+  const wizDoor = box(1.5, 3.2, 0.3, 0x1a0a3e);
+  wizDoor.position.set(0, 1.6, WD / 2 + 0.15);
+  group.add(wizDoor);
+  const archMat = new THREE.MeshLambertMaterial({ color: 0x7b00cc });
+  const wizArch = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.18, 6, 10, Math.PI), archMat);
+  wizArch.rotation.z = Math.PI;
+  wizArch.position.set(0, 3.3, WD / 2 + 0.15);
+  group.add(wizArch);
+
+  const sc6 = document.createElement('canvas');
+  sc6.width = 512; sc6.height = 96;
+  const sctx6 = sc6.getContext('2d');
+  sctx6.fillStyle = '#1a0a3e';
+  sctx6.fillRect(0, 0, 512, 96);
+  sctx6.fillStyle = '#00ffff';
+  sctx6.font = 'bold 40px sans-serif';
+  sctx6.textAlign = 'center';
+  sctx6.textBaseline = 'middle';
+  sctx6.fillText("🌙 Wizard's Library", 256, 48);
+  const signMesh6 = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.5, 1.05),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc6), transparent: true })
+  );
+  signMesh6.position.set(0, WH * 0.85, WD / 2 + 0.22);
+  group.add(signMesh6);
+
+  const cauldron = cylinder(0.8, 0.6, 0.85, 0x111111, 10);
+  cauldron.position.set(WW / 2 + 1.5, 0.43, 1.5);
+  group.add(cauldron);
+  const cauldronBrew = cylinder(0.75, 0.55, 0.2, 0x00aa44, 10);
+  cauldronBrew.material = new THREE.MeshLambertMaterial({ color: 0x00aa44, emissive: 0x004422, emissiveIntensity: 0.5 });
+  cauldronBrew.position.set(WW / 2 + 1.5, 0.85, 1.5);
+  group.add(cauldronBrew);
+
+  const tPost = cylinder(0.08, 0.08, 1.6, 0x666666, 6);
+  tPost.position.set(-WW / 2 - 1.5, 0.8, 0);
+  group.add(tPost);
+  const tScope = cylinder(0.22, 0.20, 1.8, 0x333333, 8);
+  tScope.rotation.z = 0.6;
+  tScope.position.set(-WW / 2 - 0.9, 2.0, 0);
+  group.add(tScope);
+
+  group.userData.label = "Wizard's Library";
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// CAD-134: Centralised Maintenance — grey corrugated, garage door, solar rigs
+// ---------------------------------------------------------------------------
+
+function makeMaintenanceBuilding() {
+  const group = new THREE.Group();
+  const MW = 16, MH = 8, MD = 12;
+
+  const mWalls = box(MW, MH, MD, C.maintenance);
+  mWalls.position.y = MH / 2;
+  group.add(mWalls);
+
+  for (let i = 0; i < 6; i++) {
+    const strip = box(MW + 2, 0.25, MD / 6, 0x4a5568);
+    strip.position.set(0, MH + 0.12, -MD/2 + i * (MD/6) + 0.8);
+    strip.rotation.x = -0.04;
+    group.add(strip);
+  }
+
+  const garageDoor = box(6.5, 4.2, 0.3, 0x2d3748);
+  garageDoor.position.set(-3, 2.1, MD / 2 + 0.15);
+  group.add(garageDoor);
+  for (let i = 1; i <= 3; i++) {
+    const panel = box(6.5, 0.12, 0.15, 0x1a202c);
+    panel.position.set(-3, i * 1.05, MD / 2 + 0.32);
+    group.add(panel);
+  }
+
+  const persoDoor = box(1.5, 2.6, 0.3, C.door);
+  persoDoor.position.set(4.5, 1.3, MD / 2 + 0.15);
+  group.add(persoDoor);
+
+  const sc7 = document.createElement('canvas');
+  sc7.width = 512; sc7.height = 80;
+  const sctx7 = sc7.getContext('2d');
+  sctx7.fillStyle = '#2d3748';
+  sctx7.fillRect(0, 0, 512, 80);
+  sctx7.fillStyle = '#fbbf24';
+  sctx7.font = 'bold 38px sans-serif';
+  sctx7.textAlign = 'center';
+  sctx7.textBaseline = 'middle';
+  sctx7.fillText('🔧 Maintenance', 256, 40);
+  const signMesh7 = new THREE.Mesh(
+    new THREE.PlaneGeometry(6.5, 1.0),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc7), transparent: true })
+  );
+  signMesh7.position.set(1, MH * 0.78, MD / 2 + 0.2);
+  group.add(signMesh7);
+
+  const mBench = box(MW - 4, 0.14, 1.8, 0x8b6914);
+  mBench.position.set(0, 4.5, MD / 2 - 1.2);
+  group.add(mBench);
+  for (const bxPos of [-5.5, 5.5]) {
+    const leg = box(0.18, 4.5, 0.18, 0x7a5230);
+    leg.position.set(bxPos, 2.25, MD/2-1.2);
+    group.add(leg);
+  }
+
+  const hookMatM = new THREE.MeshLambertMaterial({ color: 0x9a9a9a });
+  for (let i = -4; i <= 4; i++) {
+    const hook = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.0, 5), hookMatM);
+    hook.rotation.z = Math.PI / 2;
+    hook.position.set(i * 1.6, 6.5, MD / 2 - 0.4);
+    group.add(hook);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const testPanel = box(3.2, 0.15, 2.5, C.solar);
+    testPanel.position.set(-MW/2 - 2 - i * 4.5, 2.0, 1.5);
+    testPanel.rotation.x = -0.4;
+    const testPole = cylinder(0.12, 0.12, 2.0, C.solarFrame, 4);
+    testPole.position.set(-MW/2 - 2 - i * 4.5, 1.0, 1.5);
+    group.add(testPanel, testPole);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const pipe = cylinder(0.12, 0.12, MH * 0.7, 0x718096, 8);
+    pipe.position.set(MW / 2 + 0.3, MH * 0.35, -MD/2 + 2 + i * 4);
+    group.add(pipe);
+  }
+
+  group.userData.label = 'Maintenance';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// CAD-146: VR Experience — curved pod, glowing accents, queue line
+// ---------------------------------------------------------------------------
+
+function makeVRPod() {
+  const group = new THREE.Group();
+
+  const podMat = new THREE.MeshLambertMaterial({ color: C.vrPod });
+  const podBody = new THREE.Mesh(new THREE.CylinderGeometry(6, 7, 5, 12), podMat);
+  podBody.position.y = 3.5;
+  group.add(podBody);
+
+  const domeMatVR = new THREE.MeshLambertMaterial({ color: 0x0d0d2e });
+  const domeGeoVR = new THREE.SphereGeometry(5.5, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+  const podDome = new THREE.Mesh(domeGeoVR, domeMatVR);
+  podDome.position.y = 6;
+  group.add(podDome);
+
+  const accentMat = new THREE.MeshLambertMaterial({ color: 0x6600ff, emissive: 0x3300aa, emissiveIntensity: 0.9 });
+  const accentRing = new THREE.Mesh(new THREE.TorusGeometry(6.5, 0.3, 8, 24), accentMat);
+  accentRing.position.y = 3.5;
+  group.add(accentRing);
+
+  const accentMat2 = new THREE.MeshLambertMaterial({ color: 0x00ccff, emissive: 0x0066aa, emissiveIntensity: 0.8 });
+  const accentRing2 = new THREE.Mesh(new THREE.TorusGeometry(5.8, 0.18, 8, 24), accentMat2);
+  accentRing2.rotation.x = Math.PI / 6;
+  accentRing2.position.y = 5.8;
+  group.add(accentRing2);
+
+  const vrLight = new THREE.PointLight(0x6600ff, 2.0, 18);
+  vrLight.position.set(0, 5, 0);
+  group.add(vrLight);
+
+  const doorGlow = new THREE.MeshLambertMaterial({ color: 0x00ccff, emissive: 0x006688, emissiveIntensity: 0.5 });
+  const entryDoor = new THREE.Mesh(new THREE.BoxGeometry(2.0, 3.0, 0.3), doorGlow);
+  entryDoor.position.set(0, 1.5, 7.0);
+  group.add(entryDoor);
+
+  const stanchionMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+  const cordMat = new THREE.MeshLambertMaterial({ color: 0x6600ff, emissive: 0x220044, emissiveIntensity: 0.3 });
+  for (let i = 0; i < 3; i++) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 1.5, 8), stanchionMat);
+    post.position.set(-4 + i * 4, 0.75, 9.5);
+    group.add(post);
+    if (i < 2) {
+      const cord = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.06, 0.06), cordMat);
+      cord.position.set(-2 + i * 4, 1.3, 9.5);
+      group.add(cord);
+    }
+  }
+
+  const sc8 = document.createElement('canvas');
+  sc8.width = 512; sc8.height = 96;
+  const sctx8 = sc8.getContext('2d');
+  sctx8.fillStyle = '#0d0d2e';
+  sctx8.fillRect(0, 0, 512, 96);
+  sctx8.fillStyle = '#00ccff';
+  sctx8.shadowColor = '#00ccff';
+  sctx8.shadowBlur = 12;
+  sctx8.font = 'bold 40px sans-serif';
+  sctx8.textAlign = 'center';
+  sctx8.textBaseline = 'middle';
+  sctx8.fillText('🥽 VR Experience', 256, 48);
+  const signMesh8 = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.5, 1.0),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc8), transparent: true })
+  );
+  signMesh8.position.set(0, 8.5, 5.8);
+  group.add(signMesh8);
+
+  group.userData.label = 'VR Experience';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
 // Place helper — sets position at terrain height
 // ---------------------------------------------------------------------------
 
@@ -2457,6 +3067,77 @@ export function buildScene(scene) {
   const cloudList = buildClouds(scene);
   makeSunDisc(scene);
 
+
+  // =====================================================================
+  // CAD-153: CYCLE SHOP (-30, -90) — near south quarter / pub
+  // =====================================================================
+  const cycleShop = makeCycleShop();
+  placeOnTerrain(cycleShop, -30, -90);
+  cycleShop.rotation.y = 0.2;
+  scene.add(cycleShop);
+  makePath(scene, -30, -70, -30, -90, 3);
+
+  // =====================================================================
+  // CAD-150: FITNESS CENTER (110, -55) — east side, near aquarium area
+  // =====================================================================
+  const fitnessCenter = makeFitnessCenter();
+  placeOnTerrain(fitnessCenter, 110, -55);
+  fitnessCenter.rotation.y = -0.4;
+  scene.add(fitnessCenter);
+
+  // =====================================================================
+  // CAD-152: SPORTS COURTS (110, -30) — adjacent to fitness center
+  // =====================================================================
+  const sportsCourts = makeSportsCourts();
+  placeOnTerrain(sportsCourts, 110, -30);
+  sportsCourts.rotation.y = -0.1;
+  scene.add(sportsCourts);
+  makePath(scene, 150, -80, 110, -50, 3);
+
+  // =====================================================================
+  // CAD-151: SCIENCE CENTER (-80, -150) — elevated hilltop area
+  // =====================================================================
+  const scienceCenter = makeScienceCenter();
+  placeOnTerrain(scienceCenter, -80, -150);
+  scienceCenter.rotation.y = 0.6;
+  scene.add(scienceCenter);
+  makePath(scene, -100, -180, -80, -150, 3);
+
+  // =====================================================================
+  // CAD-139: FISHERY (30, 230) — harbour/dock area
+  // =====================================================================
+  const fishery = makeFishery();
+  placeOnTerrain(fishery, 30, 230);
+  fishery.rotation.y = -0.3;
+  scene.add(fishery);
+
+  // =====================================================================
+  // CAD-135: WIZARD'S LIBRARY (-140, -80) — slightly apart, up hill
+  // =====================================================================
+  const wizardLibrary = makeWizardLibrary();
+  placeOnTerrain(wizardLibrary, -140, -80);
+  wizardLibrary.rotation.y = 1.2;
+  scene.add(wizardLibrary);
+  makePath(scene, -80, 40, -140, -80, 3);
+
+  // =====================================================================
+  // CAD-134: MAINTENANCE BUILDING (-105, 70) — near workshop/mill edge
+  // =====================================================================
+  const maintenanceBuilding = makeMaintenanceBuilding();
+  placeOnTerrain(maintenanceBuilding, -105, 70);
+  maintenanceBuilding.rotation.y = 0.5;
+  scene.add(maintenanceBuilding);
+  makePath(scene, -80, 40, -105, 70, 3);
+
+  // =====================================================================
+  // CAD-146: VR EXPERIENCE POD (140, -30) — east side near aquarium path
+  // =====================================================================
+  const vrPod = makeVRPod();
+  placeOnTerrain(vrPod, 140, -30);
+  vrPod.rotation.y = -0.8;
+  scene.add(vrPod);
+  makePath(scene, 150, -80, 140, -30, 3);
+
   // =====================================================================
   // BUILDING COLLIDERS — OBB rectangles { cx, cz, hw, hd, rot }
   // hw = half-width (local x), hd = half-depth (local z), rot = world rot
@@ -2638,6 +3319,21 @@ export function buildScene(scene) {
 
     // Collider for the gantry
     colliders.push({ cx: KX + gantryX, cz: KZ - 2, hw: startW / 2 + 1.5, hd: 0.5, rot: 0 });
+
+    // Cycle Shop (-30, -90)  10x8, rot 0.2
+    { cx: -30,  cz: -90,  hw: 5,   hd: 4,   rot: 0.2  },
+    // Fitness Center (110, -55)  14x10, rot -0.4
+    { cx: 110,  cz: -55,  hw: 7,   hd: 5,   rot: -0.4 },
+    // Science Center (-80, -150)  13x11, rot 0.6
+    { cx: -80,  cz: -150, hw: 6.5, hd: 5.5, rot: 0.6  },
+    // Fishery (30, 230)  12x8, rot -0.3
+    { cx:  30,  cz: 230,  hw: 6,   hd: 4,   rot: -0.3 },
+    // Wizard's Library (-140, -80)  9x7, rot 1.2
+    { cx: -140, cz: -80,  hw: 4.5, hd: 3.5, rot: 1.2  },
+    // Maintenance (-105, 70)  16x12, rot 0.5
+    { cx: -105, cz: 70,   hw: 8,   hd: 6,   rot: 0.5  },
+    // VR Pod (140, -30)  cylinder approx radius 7
+    { cx: 140,  cz: -30,  hw: 7,   hd: 7,   rot: 0    },
   }
 
   const fish = aquarium.userData.fish || [];
