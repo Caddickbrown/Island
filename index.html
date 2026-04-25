@@ -65,7 +65,8 @@
   import * as THREE from 'three';
   import { buildScene, AREAS, initEconomy, tryPickupItem, tryGiveItem,
            updateSupplyChain, updateRadio, toggleRadio, isNearBoombox,
-           updateNotification, showNotification } from './scene.js';
+           updateNotification, showNotification,
+           createCafeHelpMiniGame } from './scene.js';
   import { PlayerController } from './player.js';
   import { NPCManager, findOpenShift, startSubInShift, updateSubIn } from './npcs.js';
   import { WildlifeManager } from './wildlife.js';
@@ -115,6 +116,9 @@
   // --- Economy ---
   initEconomy();
 
+  // --- Café Help Mini-Game (CAD-269) ---
+  playerCtrl.miniGame = createCafeHelpMiniGame();
+
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
 
@@ -153,6 +157,9 @@
     const delta = Math.min(clock.getDelta(), 0.1); // cap delta to avoid jumps
 
     playerCtrl.update(delta);
+    if (playerCtrl.miniGame && playerCtrl.miniGame.update) {
+      playerCtrl.miniGame.update(delta, playerCtrl.player.position);
+    }
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
