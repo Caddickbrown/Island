@@ -897,3 +897,561 @@ export function consumeGratitudeLine(npcName) {
   }
   return null;
 }
+
+
+// ===========================================================================
+// CAD-142 — Island Energy System
+// ===========================================================================
+// Simulates a renewable energy balance for the island.
+// Solar panels and wind turbines (visual objects exist in scene.js) produce
+// energy; buildings draw it. A simple stored-energy buffer tracks surplus/
+// deficit. The Centralised Maintenance building (to be added) can display this.
+// ===========================================================================
+
+const ENERGY_CONSUMERS = [
+  { name: 'Bakery',        draw: 3.2 },
+  { name: 'Post Office',   draw: 0.8 },
+  { name: 'Library',       draw: 1.0 },
+  { name: 'Workshop',      draw: 2.5 },
+  { name: 'Pub',           draw: 1.8 },
+  { name: 'Café',          draw: 1.5 },
+  { name: 'School',        draw: 1.2 },
+  { name: 'Mill',          draw: 2.0 },
+  { name: 'Harbour Dock',  draw: 1.0 },
+  { name: 'Farm (Pump)',   draw: 0.6 },
+  { name: 'Street Lights', draw: 0.9 },
+];
+
+const TOTAL_BASE_CONSUMPTION = ENERGY_CONSUMERS.reduce((s, c) => s + c.draw, 0); // ~16.5 kW equivalent
+
+class IslandEnergySystem {
+  constructor() {
+    this.stored       = 80;    // start at 80% of max (kWh equivalent, max 120)
+    this.maxStored    = 120;
+    this.production   = 0;
+    this.consumption  = TOTAL_BASE_CONSUMPTION;
+    this.status       = 'normal'; // 'abundant' | 'normal' | 'low'
+  }
+
+  update(deltaSec, dayFraction, weather) {
+    // Solar output: peaks at solar noon (dayFraction 0.5), zero at night
+    const solarEfficiency = weather === 'stormy' ? 0.1
+                          : weather === 'cloudy'  ? 0.4
+                          : 1.0;
+    // dayFraction 0-1 over the full 24h sim day; solar active ~0.25-0.75
+    const solarWindow = Math.max(0, Math.sin((dayFraction - 0.25) * Math.PI / 0.5));
+    const solarOutput = 12.0 * solarEfficiency * solarWindow;
+
+    // Wind output: stronger at night/morning; reduced in calm weather
+    const windBase = weather === 'stormy' ? 1.4
+                   : weather === 'cloudy'  ? 1.0
+                   : weather === 'calm'    ? 0.3
+                   : 0.8;
+    const windOutput = 6.0 * windBase;
+
+    this.production  = solarOutput + windOutput;
+    this.consumption = TOTAL_BASE_CONSUMPTION;
+
+    // Night-time lights add a little draw after sunset
+    const isNight = dayFraction < 0.2 || dayFraction > 0.8;
+    if (isNight) this.consumption += 1.2;
+
+    const netKw = this.production - this.consumption;
+    // Convert kW to kWh for this delta slice (deltaSec / 3600, but scaled for game time)
+    // 1 real second = 10 sim minutes, so energy accumulates faster for flavour
+    this.stored += (netKw * deltaSec * 10) / 3600;
+    this.stored = Math.max(0, Math.min(this.maxStored, this.stored));
+
+    const pct = this.stored / this.maxStored;
+    this.status = pct > 0.6 ? 'abundant' : pct > 0.25 ? 'normal' : 'low';
+  }
+
+  getStatus() {
+    return {
+      stored:      parseFloat(this.stored.toFixed(1)),
+      production:  parseFloat(this.production.toFixed(1)),
+      consumption: parseFloat(this.consumption.toFixed(1)),
+      status:      this.status,
+    };
+  }
+}
+
+const _energySystem = new IslandEnergySystem();
+
+/** Update the island energy simulation. Call each frame from the game loop. */
+export function updateEnergySystem(deltaSec, dayFraction, weather = 'clear') {
+  _energySystem.update(deltaSec, dayFraction, weather);
+}
+
+/** Returns current energy status object. */
+export function getEnergyStatus() {
+  return _energySystem.getStatus();
+}
+
+// Low-energy dialogue lines injected into NPC speech when status === 'low'
+const LOW_ENERGY_DIALOGUE = [
+  "The energy reserves are getting a bit low — hopefully the wind picks up.",
+  "Better not leave any lights on tonight, the batteries are running thin.",
+  "Otto mentioned we might need to ration power this evening.",
+  "The solar panels weren't getting much today. Fingers crossed for wind.",
+  "Did you notice the lights flickering? Energy's running low again.",
+];
+
+/**
+ * If energy status is 'low', returns a random low-energy dialogue line;
+ * otherwise returns null. Use this in any NPC getDialogue() to inject
+ * energy-awareness into conversation.
+ */
+export function getLowEnergyDialogue() {
+  if (_energySystem.status !== 'low') return null;
+  return LOW_ENERGY_DIALOGUE[Math.floor(Math.random() * LOW_ENERGY_DIALOGUE.length)];
+}
+
+
+// ===========================================================================
+// CAD-234 — Solar Charging Station (Harbour)
+// ===========================================================================
+// A solar charging point at the harbour for electric buggies.
+// NPCs driving buggies will occasionally path here to recharge.
+// Physical prop should be placed at harbour coords in scene.js
+// near dock { x:0, z:262 }.
+// ===========================================================================
+
+class SolarChargingStation {
+  constructor() {
+    this.chargeLevel = 75; // 0-100 %
+    // Base charge rate: 10 % per real minute in full sun
+    this._chargeRate = 10 / 60; // % per real second in full sun
+    // Track which NPC buggy (if any) is currently charging
+    this.chargingNpc   = null;
+    this.chargingTimer = 0;
+  }
+
+  update(deltaSec, dayFraction, weather = 'clear') {
+    // Charging rate follows solar production
+    const solarWindow = Math.max(0, Math.sin((dayFraction - 0.25) * Math.PI / 0.5));
+    const weatherMod  = weather === 'stormy' ? 0.1
+                      : weather === 'cloudy'  ? 0.4
+                      : 1.0;
+    const rate = this._chargeRate * solarWindow * weatherMod;
+    this.chargeLevel = Math.min(100, this.chargeLevel + rate * deltaSec);
+
+    // Count down any active buggy-charging session
+    if (this.chargingNpc) {
+      this.chargingTimer -= deltaSec;
+      if (this.chargingTimer <= 0) {
+        this.chargingNpc  = null;
+        this.chargingTimer = 0;
+      }
+    }
+  }
+
+  /** Called when a buggy NPC arrives to charge. Drains station by up to 20 %. */
+  refuelBuggy(npcName) {
+    const refuelAmount = Math.min(20, this.chargeLevel);
+    this.chargeLevel   = Math.max(0, this.chargeLevel - refuelAmount);
+    this.chargingNpc   = npcName;
+    this.chargingTimer = 30; // 30 real seconds at the station
+    return refuelAmount;
+  }
+
+  getChargeLevel() {
+    return parseFloat(this.chargeLevel.toFixed(1));
+  }
+
+  isOccupied() {
+    return this.chargingNpc !== null;
+  }
+}
+
+const _solarCharging = new SolarChargingStation();
+
+/** Update solar charging station simulation. Call each frame. */
+export function updateSolarCharging(deltaSec, dayFraction, weather = 'clear') {
+  _solarCharging.update(deltaSec, dayFraction, weather);
+}
+
+/** Returns current charge level (0-100). */
+export function getSolarChargeLevel() {
+  return _solarCharging.getChargeLevel();
+}
+
+/**
+ * Trigger an NPC buggy refuelling event at the harbour station.
+ * Returns amount of charge transferred.
+ */
+export function refuelBuggyAtStation(npcName) {
+  return _solarCharging.refuelBuggy(npcName);
+}
+
+/** Returns true if an NPC buggy is currently at the station. */
+export function isChargingStationOccupied() {
+  return _solarCharging.isOccupied();
+}
+
+// Buggy NPC names that occasionally visit the charging station
+const BUGGY_NPC_NAMES = ['Otto', 'Felix'];
+let _buggyChargeCheckTimer = 0;
+const BUGGY_CHARGE_CHECK_INTERVAL = 120; // check every 2 real minutes
+
+/**
+ * Tick the "should a buggy NPC visit the charging station?" logic.
+ * Returns the name of an NPC heading to charge, or null.
+ */
+export function tickBuggyChargingBehaviour(deltaSec) {
+  if (_solarCharging.isOccupied()) return null;
+  _buggyChargeCheckTimer += deltaSec;
+  if (_buggyChargeCheckTimer < BUGGY_CHARGE_CHECK_INTERVAL) return null;
+  _buggyChargeCheckTimer = 0;
+  // 30 % chance one of the buggy NPCs decides to charge
+  if (Math.random() < 0.3) {
+    const name = BUGGY_NPC_NAMES[Math.floor(Math.random() * BUGGY_NPC_NAMES.length)];
+    _solarCharging.refuelBuggy(name);
+    return name;
+  }
+  return null;
+}
+
+
+// ===========================================================================
+// CAD-233 — Community Kitchen Garden (near Town Square)
+// ===========================================================================
+// Six vegetable plots near the town square. Growth advances over real time.
+// NPCs (especially Eddy on a day off, or any passing NPC) tend the garden.
+// Physical raised-bed props/signs to be added to scene.js near
+// townSquare { x:0, z:0 }, e.g. at x:-15, z:15.
+// ===========================================================================
+
+const PLOT_NAMES = ['carrots', 'tomatoes', 'courgettes', 'herbs', 'beans', 'squash'];
+// Growth stages: 0=seedling, 1=growing, 2=nearly ready, 3=harvest-ready, 4=harvested
+const GROWTH_STAGE_LABELS = ['Seedling', 'Growing', 'Nearly Ready', 'Harvest Ready', 'Harvested'];
+const GROWTH_SECONDS_PER_STAGE = 90; // ~1.5 real minutes per stage (full cycle ~6 min)
+const REGROW_SECONDS = 60;            // harvested plot regrows after 1 real minute
+
+class KitchenGarden {
+  constructor() {
+    this.plots = PLOT_NAMES.map((name, i) => ({
+      id:          i,
+      name,
+      stage:       Math.floor(Math.random() * 3), // start staggered
+      timer:       Math.random() * GROWTH_SECONDS_PER_STAGE,
+      beingTended: false,
+      tendTimer:   0,
+    }));
+    this._npcTendTimer = 0;
+  }
+
+  update(deltaSec) {
+    for (const plot of this.plots) {
+      if (plot.stage === 4) {
+        // Harvested: countdown to regrow
+        plot.timer += deltaSec;
+        if (plot.timer >= REGROW_SECONDS) {
+          plot.stage = 0;
+          plot.timer = 0;
+        }
+      } else if (plot.stage < 3) {
+        // Growing: advance through stages
+        const boost = plot.beingTended ? 1.5 : 1.0; // tending speeds growth
+        plot.timer += deltaSec * boost;
+        if (plot.timer >= GROWTH_SECONDS_PER_STAGE) {
+          plot.stage++;
+          plot.timer = 0;
+        }
+      }
+      // Stage 3 = harvest-ready: wait for player harvest, no auto-advance
+
+      // Count down tending timer
+      if (plot.beingTended) {
+        plot.tendTimer -= deltaSec;
+        if (plot.tendTimer <= 0) {
+          plot.beingTended = false;
+          plot.tendTimer   = 0;
+        }
+      }
+    }
+
+    // Occasionally an NPC tends a plot (flavour simulation)
+    this._npcTendTimer += deltaSec;
+    if (this._npcTendTimer > 45) {
+      this._npcTendTimer = 0;
+      // Pick a random un-tended, non-harvested plot
+      const available = this.plots.filter(p => !p.beingTended && p.stage < 4);
+      if (available.length > 0 && Math.random() < 0.4) {
+        const pick = available[Math.floor(Math.random() * available.length)];
+        pick.beingTended = true;
+        pick.tendTimer   = 20; // tended for 20 real seconds
+      }
+    }
+  }
+
+  harvest(plotIndex) {
+    const plot = this.plots[plotIndex];
+    if (!plot || plot.stage !== 3) return null;
+    plot.stage = 4;
+    plot.timer = 0;
+    return plot.name;
+  }
+
+  getState() {
+    return this.plots.map(p => ({
+      id:             p.id,
+      name:           p.name,
+      stage:          p.stage,
+      stageLabel:     GROWTH_STAGE_LABELS[p.stage],
+      beingTended:    p.beingTended,
+      readyToHarvest: p.stage === 3,
+    }));
+  }
+
+  hasHarvestReady() {
+    return this.plots.some(p => p.stage === 3);
+  }
+
+  applyCompostBoost(batches) {
+    // Each batch of compost shaves some time off all growing plots
+    const boostSeconds = batches * 15;
+    for (const plot of this.plots) {
+      if (plot.stage > 0 && plot.stage < 3) {
+        plot.timer = Math.min(plot.timer + boostSeconds, GROWTH_SECONDS_PER_STAGE - 1);
+      }
+    }
+  }
+}
+
+const _kitchenGarden = new KitchenGarden();
+
+/** Update kitchen garden simulation. Call each frame. */
+export function updateKitchenGarden(deltaSec) {
+  _kitchenGarden.update(deltaSec);
+}
+
+/** Returns array of plot state objects. */
+export function getGardenState() {
+  return _kitchenGarden.getState();
+}
+
+/**
+ * Harvest a specific plot by index. Returns crop name if successful, null if
+ * the plot is not at harvest-ready stage.
+ */
+export function harvestPlot(plotIndex) {
+  return _kitchenGarden.harvest(plotIndex);
+}
+
+// Harvest-ready dialogue lines for nearby NPCs
+const HARVEST_READY_DIALOGUE = [
+  "The kitchen garden's looking lovely — I think the tomatoes are ready to pick!",
+  "Someone should harvest those beans before they go over.",
+  "The herbs are ready — pop into the garden and grab a handful if you like.",
+  "Ooh, the courgettes are huge. Time for a harvest, I think!",
+  "The carrots are ready. Fresh veg for the café tonight, hopefully!",
+  "The squash have come up a treat this season!",
+];
+
+/**
+ * If any garden plot is harvest-ready, returns a relevant dialogue line.
+ * Otherwise returns null.
+ */
+export function getHarvestReadyDialogue() {
+  if (!_kitchenGarden.hasHarvestReady()) return null;
+  const readyPlots = _kitchenGarden.getState().filter(p => p.readyToHarvest);
+  const plot = readyPlots[Math.floor(Math.random() * readyPlots.length)];
+  const line = HARVEST_READY_DIALOGUE.find(l => l.toLowerCase().includes(plot.name));
+  return line || HARVEST_READY_DIALOGUE[Math.floor(Math.random() * HARVEST_READY_DIALOGUE.length)];
+}
+
+
+// ===========================================================================
+// CAD-232 — Composting & Foraging Systems
+// ===========================================================================
+// CompostSystem: kitchen waste moves through 3 stages to become ready compost,
+// which feeds back into the kitchen garden as a growth boost.
+// ForagingSystem: 5 spots around the island replenish on individual timers.
+// ===========================================================================
+
+// --- Compost System ---
+
+const COMPOST_STAGE_DURATION = 120; // 2 real minutes per compost stage
+const MAX_COMPOST_BATCHES    = 10;
+
+class CompostSystem {
+  constructor() {
+    // Each batch: { stage: 0|1|2, timer: number }
+    // Stage 0 = fresh waste, 1 = breaking down, 2 = ready
+    this.batches     = [];
+    this._readyCount = 0;
+  }
+
+  addWaste() {
+    if (this.batches.length >= MAX_COMPOST_BATCHES) return; // bin full
+    this.batches.push({ stage: 0, timer: 0 });
+  }
+
+  update(deltaSec) {
+    this._readyCount = 0;
+    for (const batch of this.batches) {
+      if (batch.stage < 2) {
+        batch.timer += deltaSec;
+        if (batch.timer >= COMPOST_STAGE_DURATION) {
+          batch.stage++;
+          batch.timer = 0;
+        }
+      }
+      if (batch.stage === 2) this._readyCount++;
+    }
+  }
+
+  collectReady() {
+    const ready = this.batches.filter(b => b.stage === 2).length;
+    this.batches    = this.batches.filter(b => b.stage < 2);
+    this._readyCount = 0;
+    if (ready > 0) _kitchenGarden.applyCompostBoost(ready);
+    return ready;
+  }
+
+  getReady() {
+    return this._readyCount;
+  }
+
+  getState() {
+    return {
+      total:   this.batches.length,
+      ready:   this._readyCount,
+      batches: this.batches.map(b => ({
+        stage:    b.stage,
+        progress: parseFloat((b.timer / COMPOST_STAGE_DURATION).toFixed(2)),
+      })),
+    };
+  }
+}
+
+const _compostSystem = new CompostSystem();
+
+/** Add a unit of kitchen waste to the compost bin. */
+export function addWaste() {
+  _compostSystem.addWaste();
+}
+
+/** Update compost simulation. Call each frame. */
+export function updateCompost(deltaSec) {
+  _compostSystem.update(deltaSec);
+}
+
+/** Returns the number of ready compost batches. */
+export function getCompostReady() {
+  return _compostSystem.getReady();
+}
+
+/** Collect all ready compost (feeds back to kitchen garden). Returns batch count. */
+export function collectCompost() {
+  return _compostSystem.collectReady();
+}
+
+/** Full compost state for UI display. */
+export function getCompostState() {
+  return _compostSystem.getState();
+}
+
+// Auto-add waste periodically (flavour — NPCs generate kitchen waste)
+let _wasteTimer = 0;
+const WASTE_INTERVAL = 60; // one batch of waste per real minute
+
+function tickWasteGeneration(deltaSec) {
+  _wasteTimer += deltaSec;
+  if (_wasteTimer >= WASTE_INTERVAL) {
+    _wasteTimer = 0;
+    _compostSystem.addWaste();
+  }
+}
+
+
+// --- Foraging System ---
+// NOTE: Physical marker props for each spot should be added to scene.js
+// at the coordinates listed below (small glowing orb, foliage cluster, etc.)
+
+const FORAGING_SPOT_DEFS = [
+  { id: 'berries',   label: 'Wild Berries',     x:  160, z: -140, replenishTime: 180 },
+  { id: 'mushrooms', label: 'Forest Mushrooms',  x:  185, z:  110, replenishTime: 240 },
+  { id: 'seaglass',  label: 'Sea Glass',          x:   30, z: -220, replenishTime: 120 },
+  { id: 'driftwood', label: 'Driftwood',           x:  -40, z: -210, replenishTime: 150 },
+  { id: 'herbs',     label: 'Wild Herbs',          x:  -95, z: -175, replenishTime: 200 },
+];
+
+class ForagingSystem {
+  constructor() {
+    this.spots = FORAGING_SPOT_DEFS.map(s => ({ ...s, available: true, timer: 0 }));
+  }
+
+  update(deltaSec) {
+    for (const spot of this.spots) {
+      if (!spot.available) {
+        spot.timer += deltaSec;
+        if (spot.timer >= spot.replenishTime) {
+          spot.available = true;
+          spot.timer     = 0;
+        }
+      }
+    }
+  }
+
+  getSpots() {
+    return this.spots.map(s => ({
+      id:                s.id,
+      label:             s.label,
+      x:                 s.x,
+      z:                 s.z,
+      available:         s.available,
+      replenishProgress: s.available ? 1 : parseFloat((s.timer / s.replenishTime).toFixed(2)),
+    }));
+  }
+
+  harvest(spotId) {
+    const spot = this.spots.find(s => s.id === spotId);
+    if (!spot || !spot.available) return null;
+    spot.available = false;
+    spot.timer     = 0;
+    return spot.label;
+  }
+}
+
+const _foragingSystem = new ForagingSystem();
+
+/** Returns array of foraging spot descriptors with availability and replenish progress. */
+export function getForagingSpots() {
+  return _foragingSystem.getSpots();
+}
+
+/**
+ * Harvest a foraging spot by ID. Returns item label if successful, null if
+ * the spot is depleted or the ID is invalid.
+ */
+export function harvestSpot(spotId) {
+  return _foragingSystem.harvest(spotId);
+}
+
+/** Update foraging replenishment timers. Call each frame. */
+export function updateForaging(deltaSec) {
+  _foragingSystem.update(deltaSec);
+}
+
+
+// ===========================================================================
+// Master island-systems update — single call for the game loop
+// ===========================================================================
+
+/**
+ * Update all four environmental/systems simulations in one call.
+ *
+ * @param {number} deltaSec    - Time since last frame in real seconds
+ * @param {number} dayFraction - Current time of day as 0-1 fraction (0=midnight, 0.5=noon)
+ * @param {string} [weather]   - 'clear' | 'cloudy' | 'stormy' | 'calm'
+ */
+export function updateIslandSystems(deltaSec, dayFraction, weather = 'clear') {
+  updateEnergySystem(deltaSec, dayFraction, weather);
+  updateSolarCharging(deltaSec, dayFraction, weather);
+  updateKitchenGarden(deltaSec);
+  updateCompost(deltaSec);
+  updateForaging(deltaSec);
+  tickWasteGeneration(deltaSec);
+}
