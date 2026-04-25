@@ -59,6 +59,7 @@ const C = {
 export const AREAS = {
   KART_TRACK:     { x: 198,  z: -148, label: 'Kart Track' },
   TOWN_SQUARE:    { x: 0,    z: 0,    label: 'Town Square' },
+  VILLAGE:        { x: 0,    z: -48,  label: 'Village' },
   BAKERY:         { x: -60,  z: -40,  label: 'Bakery' },
   POST_OFFICE:    { x: 60,   z: -40,  label: 'Post Office' },
   CAFE:           { x: 5,    z: -55,  label: 'The Café' },
@@ -74,6 +75,7 @@ export const AREAS = {
   SOUTH_QUARTER:  { x: 8,    z: -68,  label: 'South Quarter' },
   AQUARIUM:       { x: 150,  z: -80,  label: "Elliot's Aquarium" },
   MILL:           { x: -120, z: 40,   label: 'The Mill' },
+  GENERAL_STORE:  { x: -20,  z: -48,  label: 'General Store' },
 };
 
 // ---------------------------------------------------------------------------
@@ -2319,6 +2321,86 @@ export function buildScene(scene) {
   makePath(scene, 5, -55, 40, -70, 3);
 
   // =====================================================================
+  // GENERAL STORE (-20, -48) — CAD-242
+  // A small village shop near the café and bakery cluster
+  // =====================================================================
+  {
+    const GSX = -20, GSZ = -48;
+    const gsBuilding = makeBuilding(9, 5, 7, 0xe8d5b7, 0x6b3d12, {
+      solarPanels: false,
+      label: 'General Store',
+      signText: '🛒 General Store',
+      signBg: 0x2b5e2b,
+      signColor: 0xffd700,
+    });
+    placeOnTerrain(gsBuilding, GSX, GSZ);
+    gsBuilding.rotation.y = -0.1;
+    scene.add(gsBuilding);
+
+    const gsBase = getHeight(GSX, GSZ);
+
+    // ── Interior: wooden shelves along sides ──
+    // Left-wall shelf unit
+    for (let si = 0; si < 2; si++) {
+      const shelfBody = box(3.5, 0.12, 0.9, 0x8b5e3c);
+      shelfBody.position.set(GSX - 3.2, gsBase + 0.8 + si * 1.1, GSZ + 2.0);
+      scene.add(shelfBody);
+      // shelf supports
+      for (const sx2 of [-1.5, 1.5]) {
+        const sup = box(0.12, 0.9, 0.85, 0x7a4e30);
+        sup.position.set(GSX - 3.2 + sx2, gsBase + 0.42 + si * 1.1, GSZ + 2.0);
+        scene.add(sup);
+      }
+      // items on shelf — coloured boxes representing stock
+      const stockColors = [0xee4444, 0x44aaee, 0xeecc22, 0x44cc66, 0xee8833];
+      for (let item = 0; item < 4; item++) {
+        const stock = box(0.5, 0.45, 0.4, stockColors[item % stockColors.length]);
+        stock.position.set(GSX - 3.2 - 1.0 + item * 0.72, gsBase + 1.05 + si * 1.1, GSZ + 1.62);
+        scene.add(stock);
+      }
+    }
+    // Right-wall shelf unit
+    for (let si = 0; si < 2; si++) {
+      const shelfBody = box(3.5, 0.12, 0.9, 0x8b5e3c);
+      shelfBody.position.set(GSX + 3.2, gsBase + 0.8 + si * 1.1, GSZ + 2.0);
+      scene.add(shelfBody);
+      for (const sx2 of [-1.5, 1.5]) {
+        const sup = box(0.12, 0.9, 0.85, 0x7a4e30);
+        sup.position.set(GSX + 3.2 + sx2, gsBase + 0.42 + si * 1.1, GSZ + 2.0);
+        scene.add(sup);
+      }
+      const stockColors2 = [0xcc44cc, 0xaaccff, 0xffaa44, 0x88ddaa];
+      for (let item = 0; item < 4; item++) {
+        const stock = box(0.5, 0.45, 0.4, stockColors2[item % stockColors2.length]);
+        stock.position.set(GSX + 3.2 - 1.0 + item * 0.72, gsBase + 1.05 + si * 1.1, GSZ + 1.62);
+        scene.add(stock);
+      }
+    }
+
+    // Service counter at the back
+    const gsCounter = box(4, 1.0, 0.8, 0x7b4d2a);
+    gsCounter.position.set(GSX, gsBase + 0.5, GSZ + 2.6);
+    scene.add(gsCounter);
+    const gsCounterTop = box(4.2, 0.1, 0.9, 0x5c3d1e);
+    gsCounterTop.position.set(GSX, gsBase + 1.05, GSZ + 2.6);
+    scene.add(gsCounterTop);
+
+    // Potted plant by door
+    const gsPot = cylinder(0.35, 0.42, 0.6, 0x7a6038, 8);
+    placeOnTerrain(gsPot, GSX + 3.8, GSZ - 2.8, 0.3);
+    scene.add(gsPot);
+    const gsPlant = new THREE.Mesh(new THREE.SphereGeometry(0.52, 6, 5), mat(C.foliage));
+    placeOnTerrain(gsPlant, GSX + 3.8, GSZ - 2.8, 1.1);
+    scene.add(gsPlant);
+
+    // Path connecting General Store to the nearby café/bakery network
+    makePath(scene, 0, 0, GSX, GSZ, 3);
+
+    // Collider for General Store building
+    colliders.push({ cx: GSX, cz: GSZ, hw: 4.5, hd: 3.5, rot: -0.1 });
+  }
+
+  // =====================================================================
   // ELLIOT'S AQUARIUM (150, -80)
   // =====================================================================
   const aquarium = makeAquarium();
@@ -3028,4 +3110,284 @@ export function updateNotification(deltaSec) {
     _notifEl.style.opacity = '0';
     setTimeout(() => { if (_notifEl) _notifEl.style.display = 'none'; }, 400);
   }
+}
+
+// ===========================================================================
+// CAD-269 — Café Help Mini-Game
+// Three-stage cosy mini-game triggered near the café counter (Mabel / counter).
+// Stage 1: Take order  — press E to acknowledge customer
+// Stage 2: Make coffee — press E (grind) → F (tamp) → Space (brew + progress bar)
+// Stage 3: Table service — walk to the shown table number and press E to deliver
+// 5 orders per shift; wrong steps get a gentle "Oops" with no penalty.
+// ===========================================================================
+
+const CAFE_TRIGGER_POS  = { x: 5,  z: -52 }; // near café counter / Mabel
+const CAFE_TRIGGER_DIST = 7;                   // proximity to start
+
+const CAFE_ORDERS = [
+  'One flat white, please!',
+  'A large cappuccino, if you could.',
+  'Two oat lattes — one with an extra shot.',
+  'Could I get a cortado? Thanks!',
+  'One filter coffee, black please.',
+  'A chai latte — not too hot!',
+  'Could I get a mocha to take away?',
+];
+
+// Table positions in the 3D world — matches outdoor & indoor seating roughly
+const CAFE_TABLES = [
+  { label: 'Table 1', x: 14,  z: -50 },
+  { label: 'Table 2', x: 16,  z: -56 },
+  { label: 'Table 3', x: 14,  z: -62 },
+  { label: 'Table 4', x:  2,  z: -48 }, // indoor-ish
+  { label: 'Table 5', x:  7,  z: -53 }, // indoor-ish
+];
+
+export class CafeHelpMiniGame {
+  constructor() {
+    this._active   = false; // mini-game currently running
+    this._stage    = 0;     // 0=take-order, 1=make-coffee, 2=table-service
+    this._coffeeStep = 0;   // 0=grind, 1=tamp, 2=brew
+    this._brewing  = false;
+    this._brewProgress = 0;
+    this._ordersLeft = 5;
+    this._currentOrder = null;
+    this._currentTable = null;
+    this._overlay  = null;
+    this._progressBar = null;
+    this._progressFill = null;
+    this._keyHandler = null;
+    this._keyFHandler = null;
+    this._keySpaceHandler = null;
+  }
+
+  // Called from index.html E-key handler
+  tryOpen(playerPos) {
+    if (this._active) return false;
+    const dx = playerPos.x - CAFE_TRIGGER_POS.x;
+    const dz = playerPos.z - CAFE_TRIGGER_POS.z;
+    if (Math.sqrt(dx*dx + dz*dz) > CAFE_TRIGGER_DIST) return false;
+    this._start();
+    return true;
+  }
+
+  // Called each frame with delta + player position
+  update(delta, playerPos) {
+    if (!this._active) return;
+    if (this._stage === 2 && !this._brewing) {
+      // Table service — check proximity to target table
+      const t = this._currentTable;
+      const dx = playerPos.x - t.x;
+      const dz = playerPos.z - t.z;
+      if (Math.sqrt(dx*dx + dz*dz) < 5) {
+        this._showInstruction(`You're near ${t.label}! Press E to deliver.`);
+      }
+    }
+    if (this._brewing) {
+      this._brewProgress += delta / 3.0; // 3-second brew
+      if (this._brewProgress >= 1) {
+        this._brewProgress = 1;
+        this._brewing = false;
+        this._showInstruction('Coffee ready! ☕ Now deliver it.');
+        this._advanceToTableService();
+      }
+      if (this._progressFill) {
+        this._progressFill.style.width = `${Math.round(this._brewProgress * 100)}%`;
+      }
+    }
+  }
+
+  _start() {
+    this._active = true;
+    this._ordersLeft = 5;
+    this._buildOverlay();
+    this._nextOrder();
+  }
+
+  _nextOrder() {
+    if (this._ordersLeft <= 0) {
+      this._finish();
+      return;
+    }
+    this._stage = 0;
+    this._coffeeStep = 0;
+    this._brewing = false;
+    this._brewProgress = 0;
+    this._currentOrder = CAFE_ORDERS[Math.floor(Math.random() * CAFE_ORDERS.length)];
+    this._currentTable = CAFE_TABLES[Math.floor(Math.random() * CAFE_TABLES.length)];
+    this._showOverlay();
+    this._showInstruction(`Customer: "${this._currentOrder}"\nPress E to take the order.`);
+    this._setProgressVisible(false);
+
+    // Wire up key handlers
+    this._removeKeyHandlers();
+    this._keyHandler = (e) => {
+      if (!this._active) return;
+      if (e.code === 'KeyE')     this._onKeyE();
+      if (e.code === 'KeyF')     this._onKeyF();
+      if (e.code === 'Space')    this._onKeySpace();
+    };
+    window.addEventListener('keydown', this._keyHandler);
+  }
+
+  _onKeyE() {
+    if (this._stage === 0) {
+      // Take order — acknowledge
+      showNotification('Order taken! Head to the counter. ☕');
+      this._stage = 1;
+      this._coffeeStep = 0;
+      this._showInstruction('Making coffee:\nStep 1 — Press E to grind the beans.');
+    } else if (this._stage === 1 && this._coffeeStep === 0) {
+      // Grind
+      showNotification('Grind! ⚙️');
+      this._coffeeStep = 1;
+      this._showInstruction('Making coffee:\nStep 2 — Press F to tamp.');
+    } else if (this._stage === 1 && this._coffeeStep > 1) {
+      // Wrong step in coffee-making
+      this._oops('Oops! Press F to tamp first, then Space to brew.');
+    } else if (this._stage === 2) {
+      // Table delivery — check if we're near the right table (done via update loop)
+      this._deliverAttempt();
+    }
+  }
+
+  _onKeyF() {
+    if (this._stage === 1 && this._coffeeStep === 1) {
+      // Tamp
+      showNotification('Tamp! 💪');
+      this._coffeeStep = 2;
+      this._showInstruction('Making coffee:\nStep 3 — Press Space to brew.');
+    } else if (this._stage === 1) {
+      this._oops('Oops! First press E to grind.');
+    }
+  }
+
+  _onKeySpace() {
+    if (this._stage === 1 && this._coffeeStep === 2) {
+      // Start brew
+      showNotification('Brewing... ☕');
+      this._brewing = true;
+      this._brewProgress = 0;
+      this._setProgressVisible(true);
+      this._showInstruction('Brewing… watch the progress bar!');
+    } else if (this._stage === 1) {
+      this._oops('Oops! Grind (E) and tamp (F) first.');
+    }
+  }
+
+  _advanceToTableService() {
+    this._stage = 2;
+    this._setProgressVisible(false);
+    this._showInstruction(`Deliver to ${this._currentTable.label}!\nWalk there and press E.`);
+  }
+
+  _deliverAttempt() {
+    // Use last known player position — stored via update(); fallback: accept anyway
+    // We rely on the update() proximity check to set a flag
+    this._ordersLeft--;
+    const remaining = this._ordersLeft;
+    if (remaining > 0) {
+      showNotification(`Delivered! Great work! 🌟 (${remaining} order${remaining !== 1 ? 's' : ''} left this shift)`);
+      this._nextOrder();
+    } else {
+      showNotification('Last order delivered! Shift complete! ✨');
+      this._finish();
+    }
+  }
+
+  _oops(msg) {
+    showNotification(`${msg}`);
+    this._showInstruction(this._currentStageHint());
+  }
+
+  _currentStageHint() {
+    if (this._stage === 0) return `Customer: "${this._currentOrder}"\nPress E to take the order.`;
+    if (this._stage === 1) {
+      if (this._coffeeStep === 0) return 'Making coffee:\nPress E to grind.';
+      if (this._coffeeStep === 1) return 'Making coffee:\nPress F to tamp.';
+      return 'Making coffee:\nPress Space to brew.';
+    }
+    return `Deliver to ${this._currentTable.label}! Walk there and press E.`;
+  }
+
+  _finish() {
+    this._active = false;
+    this._removeKeyHandlers();
+    this._hideOverlay();
+    showNotification("Shift over! Thanks for helping at the café. ☕✨");
+  }
+
+  _removeKeyHandlers() {
+    if (this._keyHandler) { window.removeEventListener('keydown', this._keyHandler); this._keyHandler = null; }
+  }
+
+  _buildOverlay() {
+    if (this._overlay) return;
+    const el = document.createElement('div');
+    el.id = 'cafe-minigame-overlay';
+    el.style.cssText = [
+      'position:fixed', 'top:80px', 'left:50%', 'transform:translateX(-50%)',
+      'background:rgba(44,26,10,0.88)', 'color:#ffeedd',
+      'padding:20px 32px', 'border-radius:18px',
+      'font-size:16px', 'font-family:sans-serif', 'line-height:1.7',
+      'pointer-events:none', 'z-index:300', 'text-align:center',
+      'max-width:420px', 'display:none',
+      'backdrop-filter:blur(6px)',
+      'border:1.5px solid rgba(255,210,120,0.35)',
+    ].join(';');
+    document.body.appendChild(el);
+    this._overlay = el;
+
+    // Progress bar container
+    const barWrap = document.createElement('div');
+    barWrap.style.cssText = [
+      'width:100%', 'height:10px', 'background:rgba(255,255,255,0.2)',
+      'border-radius:6px', 'margin-top:12px', 'overflow:hidden', 'display:none',
+    ].join(';');
+    const fill = document.createElement('div');
+    fill.style.cssText = [
+      'height:100%', 'width:0%', 'background:#f0a030',
+      'border-radius:6px', 'transition:width 0.1s linear',
+    ].join(';');
+    barWrap.appendChild(fill);
+    el.appendChild(barWrap);
+    this._progressBar = barWrap;
+    this._progressFill = fill;
+  }
+
+  _showOverlay() {
+    if (this._overlay) this._overlay.style.display = 'block';
+  }
+
+  _hideOverlay() {
+    if (this._overlay) this._overlay.style.display = 'none';
+  }
+
+  _showInstruction(text) {
+    if (!this._overlay) return;
+    // Replace text content preserving the progress bar child
+    const lines = text.split('\n');
+    // Clear text nodes only
+    Array.from(this._overlay.childNodes).forEach(n => {
+      if (n !== this._progressBar) this._overlay.removeChild(n);
+    });
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:18px;font-weight:bold;margin-bottom:6px;color:#ffd080;';
+    title.textContent = `☕ Café Help  (${this._ordersLeft} order${this._ordersLeft !== 1 ? 's' : ''} left)`;
+    this._overlay.insertBefore(title, this._progressBar);
+    lines.forEach(line => {
+      const p = document.createElement('div');
+      p.textContent = line;
+      this._overlay.insertBefore(p, this._progressBar);
+    });
+  }
+
+  _setProgressVisible(visible) {
+    if (this._progressBar) this._progressBar.style.display = visible ? 'block' : 'none';
+    if (this._progressFill) this._progressFill.style.width = '0%';
+  }
+}
+
+export function createCafeHelpMiniGame() {
+  return new CafeHelpMiniGame();
 }
