@@ -54,9 +54,7 @@ const C = {
   fitnessCtr: 0x4a90d9,
   scienceCtr: 0xf5f5f5,
   fishery:    0x4a5568,
-  wizLibrary: 0x3a1a6e,
   maintenance:0x718096,
-  vrPod:      0x1a1a3e,
   boat:       0xc0392b,
   boatHull:   0xf5f0e8,
 };
@@ -89,9 +87,7 @@ export const AREAS = {
   FITNESS_CENTER: { x: 110,  z: -55,  label: 'Fitness Center' },
   SCIENCE_CENTER: { x: -80,  z: -150, label: 'Science Center' },
   FISHERY_AREA:   { x: 30,   z: 230,  label: 'Fishery' },
-  WIZARD_LIBRARY: { x: -140, z: -80,  label: "Wizard's Library" },
   MAINTENANCE:    { x: -105, z: 70,   label: 'Maintenance' },
-  VR_EXPERIENCE:  { x: 140,  z: -30,  label: 'VR Experience' },
 };
 
 // ---------------------------------------------------------------------------
@@ -1756,84 +1752,6 @@ function makeFishery() {
 }
 
 // ---------------------------------------------------------------------------
-// CAD-135: Wizard's Library — tall narrow, dark purple, magical windows
-// ---------------------------------------------------------------------------
-
-function makeWizardLibrary() {
-  const group = new THREE.Group();
-  const WW = 9, WH = 12, WD = 7;
-
-  const walls = box(WW, WH, WD, C.wizLibrary);
-  walls.position.y = WH / 2;
-  group.add(walls);
-
-  const wizRoofMat = new THREE.MeshLambertMaterial({ color: 0x1a0a3e });
-  const wizRoofGeo = new THREE.ConeGeometry(6.5, 5, 4);
-  const wizRoof = new THREE.Mesh(wizRoofGeo, wizRoofMat);
-  wizRoof.position.y = WH + 2.5;
-  wizRoof.rotation.y = Math.PI / 4;
-  group.add(wizRoof);
-
-  const glowMat = new THREE.MeshLambertMaterial({ color: 0x00ffff, emissive: 0x00cccc, emissiveIntensity: 0.8 });
-  for (const wy of [WH * 0.35, WH * 0.65]) {
-    const win = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 0.18), glowMat);
-    win.position.set(0, wy, WD / 2);
-    group.add(win);
-  }
-  const winSide = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.5, 1.2), glowMat);
-  winSide.position.set(-WW / 2, WH * 0.5, 0);
-  group.add(winSide);
-
-  const magicLight = new THREE.PointLight(0x6600cc, 1.5, 20);
-  magicLight.position.set(0, WH * 0.55, 0);
-  group.add(magicLight);
-
-  const wizDoor = box(1.5, 3.2, 0.3, 0x1a0a3e);
-  wizDoor.position.set(0, 1.6, WD / 2 + 0.15);
-  group.add(wizDoor);
-  const archMat = new THREE.MeshLambertMaterial({ color: 0x7b00cc });
-  const wizArch = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.18, 6, 10, Math.PI), archMat);
-  wizArch.rotation.z = Math.PI;
-  wizArch.position.set(0, 3.3, WD / 2 + 0.15);
-  group.add(wizArch);
-
-  const sc6 = document.createElement('canvas');
-  sc6.width = 512; sc6.height = 96;
-  const sctx6 = sc6.getContext('2d');
-  sctx6.fillStyle = '#1a0a3e';
-  sctx6.fillRect(0, 0, 512, 96);
-  sctx6.fillStyle = '#00ffff';
-  sctx6.font = 'bold 40px sans-serif';
-  sctx6.textAlign = 'center';
-  sctx6.textBaseline = 'middle';
-  sctx6.fillText("🌙 Wizard's Library", 256, 48);
-  const signMesh6 = new THREE.Mesh(
-    new THREE.PlaneGeometry(5.5, 1.05),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc6), transparent: true })
-  );
-  signMesh6.position.set(0, WH * 0.85, WD / 2 + 0.22);
-  group.add(signMesh6);
-
-  const cauldron = cylinder(0.8, 0.6, 0.85, 0x111111, 10);
-  cauldron.position.set(WW / 2 + 1.5, 0.43, 1.5);
-  group.add(cauldron);
-  const cauldronBrew = cylinder(0.75, 0.55, 0.2, 0x00aa44, 10);
-  cauldronBrew.material = new THREE.MeshLambertMaterial({ color: 0x00aa44, emissive: 0x004422, emissiveIntensity: 0.5 });
-  cauldronBrew.position.set(WW / 2 + 1.5, 0.85, 1.5);
-  group.add(cauldronBrew);
-
-  const tPost = cylinder(0.08, 0.08, 1.6, 0x666666, 6);
-  tPost.position.set(-WW / 2 - 1.5, 0.8, 0);
-  group.add(tPost);
-  const tScope = cylinder(0.22, 0.20, 1.8, 0x333333, 8);
-  tScope.rotation.z = 0.6;
-  tScope.position.set(-WW / 2 - 0.9, 2.0, 0);
-  group.add(tScope);
-
-  group.userData.label = "Wizard's Library";
-  return group;
-}
-
 // ---------------------------------------------------------------------------
 // CAD-134: Centralised Maintenance — grey corrugated, garage door, solar rigs
 // ---------------------------------------------------------------------------
@@ -1922,76 +1840,6 @@ function makeMaintenanceBuilding() {
 // ---------------------------------------------------------------------------
 // CAD-146: VR Experience — curved pod, glowing accents, queue line
 // ---------------------------------------------------------------------------
-
-function makeVRPod() {
-  const group = new THREE.Group();
-
-  const podMat = new THREE.MeshLambertMaterial({ color: C.vrPod });
-  const podBody = new THREE.Mesh(new THREE.CylinderGeometry(6, 7, 5, 12), podMat);
-  podBody.position.y = 3.5;
-  group.add(podBody);
-
-  const domeMatVR = new THREE.MeshLambertMaterial({ color: 0x0d0d2e });
-  const domeGeoVR = new THREE.SphereGeometry(5.5, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
-  const podDome = new THREE.Mesh(domeGeoVR, domeMatVR);
-  podDome.position.y = 6;
-  group.add(podDome);
-
-  const accentMat = new THREE.MeshLambertMaterial({ color: 0x6600ff, emissive: 0x3300aa, emissiveIntensity: 0.9 });
-  const accentRing = new THREE.Mesh(new THREE.TorusGeometry(6.5, 0.3, 8, 24), accentMat);
-  accentRing.position.y = 3.5;
-  group.add(accentRing);
-
-  const accentMat2 = new THREE.MeshLambertMaterial({ color: 0x00ccff, emissive: 0x0066aa, emissiveIntensity: 0.8 });
-  const accentRing2 = new THREE.Mesh(new THREE.TorusGeometry(5.8, 0.18, 8, 24), accentMat2);
-  accentRing2.rotation.x = Math.PI / 6;
-  accentRing2.position.y = 5.8;
-  group.add(accentRing2);
-
-  const vrLight = new THREE.PointLight(0x6600ff, 2.0, 18);
-  vrLight.position.set(0, 5, 0);
-  group.add(vrLight);
-
-  const doorGlow = new THREE.MeshLambertMaterial({ color: 0x00ccff, emissive: 0x006688, emissiveIntensity: 0.5 });
-  const entryDoor = new THREE.Mesh(new THREE.BoxGeometry(2.0, 3.0, 0.3), doorGlow);
-  entryDoor.position.set(0, 1.5, 7.0);
-  group.add(entryDoor);
-
-  const stanchionMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
-  const cordMat = new THREE.MeshLambertMaterial({ color: 0x6600ff, emissive: 0x220044, emissiveIntensity: 0.3 });
-  for (let i = 0; i < 3; i++) {
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 1.5, 8), stanchionMat);
-    post.position.set(-4 + i * 4, 0.75, 9.5);
-    group.add(post);
-    if (i < 2) {
-      const cord = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.06, 0.06), cordMat);
-      cord.position.set(-2 + i * 4, 1.3, 9.5);
-      group.add(cord);
-    }
-  }
-
-  const sc8 = document.createElement('canvas');
-  sc8.width = 512; sc8.height = 96;
-  const sctx8 = sc8.getContext('2d');
-  sctx8.fillStyle = '#0d0d2e';
-  sctx8.fillRect(0, 0, 512, 96);
-  sctx8.fillStyle = '#00ccff';
-  sctx8.shadowColor = '#00ccff';
-  sctx8.shadowBlur = 12;
-  sctx8.font = 'bold 40px sans-serif';
-  sctx8.textAlign = 'center';
-  sctx8.textBaseline = 'middle';
-  sctx8.fillText('🥽 VR Experience', 256, 48);
-  const signMesh8 = new THREE.Mesh(
-    new THREE.PlaneGeometry(5.5, 1.0),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc8), transparent: true })
-  );
-  signMesh8.position.set(0, 8.5, 5.8);
-  group.add(signMesh8);
-
-  group.userData.label = 'VR Experience';
-  return group;
-}
 
 // ---------------------------------------------------------------------------
 // Place helper — sets position at terrain height
@@ -3115,15 +2963,6 @@ export function buildScene(scene) {
   scene.add(fishery);
 
   // =====================================================================
-  // CAD-135: WIZARD'S LIBRARY (-140, -80) — slightly apart, up hill
-  // =====================================================================
-  const wizardLibrary = makeWizardLibrary();
-  placeOnTerrain(wizardLibrary, -140, -80);
-  wizardLibrary.rotation.y = 1.2;
-  scene.add(wizardLibrary);
-  makePath(scene, -80, 40, -140, -80, 3);
-
-  // =====================================================================
   // CAD-134: MAINTENANCE BUILDING (-105, 70) — near workshop/mill edge
   // =====================================================================
   const maintenanceBuilding = makeMaintenanceBuilding();
@@ -3131,15 +2970,6 @@ export function buildScene(scene) {
   maintenanceBuilding.rotation.y = 0.5;
   scene.add(maintenanceBuilding);
   makePath(scene, -80, 40, -105, 70, 3);
-
-  // =====================================================================
-  // CAD-146: VR EXPERIENCE POD (140, -30) — east side near aquarium path
-  // =====================================================================
-  const vrPod = makeVRPod();
-  placeOnTerrain(vrPod, 140, -30);
-  vrPod.rotation.y = -0.8;
-  scene.add(vrPod);
-  makePath(scene, 150, -80, 140, -30, 3);
 
   // =====================================================================
   // BUILDING COLLIDERS — OBB rectangles { cx, cz, hw, hd, rot }
@@ -3332,12 +3162,8 @@ export function buildScene(scene) {
     colliders.push({ cx: -80,  cz: -150, hw: 6.5, hd: 5.5, rot: 0.6  });
     // Fishery (30, 230)  12x8, rot -0.3
     colliders.push({ cx:  30,  cz: 230,  hw: 6,   hd: 4,   rot: -0.3 });
-    // Wizard's Library (-140, -80)  9x7, rot 1.2
-    colliders.push({ cx: -140, cz: -80,  hw: 4.5, hd: 3.5, rot: 1.2  });
     // Maintenance (-105, 70)  16x12, rot 0.5
     colliders.push({ cx: -105, cz: 70,   hw: 8,   hd: 6,   rot: 0.5  });
-    // VR Pod (140, -30)  cylinder approx radius 7
-    colliders.push({ cx: 140,  cz: -30,  hw: 7,   hd: 7,   rot: 0    });
   }
 
   const fish = aquarium.userData.fish || [];
