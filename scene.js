@@ -1297,7 +1297,7 @@ function makeLibraryBuilding() {
     for (let b = 0; b < 6; b++) {
       const bk = new THREE.Mesh(
         new THREE.BoxGeometry(0.45, 4.5, 0.5),
-        new THREE.MeshLambertMaterial({ color: bookCols[(b + sz + 20) % bookCols.length] })
+        new THREE.MeshLambertMaterial({ color: bookCols[Math.abs(Math.floor(b + sz + 20)) % bookCols.length] })
       );
       bk.position.set(-LW/2 + 0.9, 4, sz - 1.4 + b * 0.55);
       group.add(bk);
@@ -1312,7 +1312,7 @@ function makeLibraryBuilding() {
     for (let b = 0; b < 6; b++) {
       const bk = new THREE.Mesh(
         new THREE.BoxGeometry(0.45, 4.5, 0.5),
-        new THREE.MeshLambertMaterial({ color: bookCols[(b + sz + 7) % bookCols.length] })
+        new THREE.MeshLambertMaterial({ color: bookCols[Math.abs(Math.floor(b + sz + 7)) % bookCols.length] })
       );
       bk.position.set(LW/2 - 0.9, 4, sz - 1.4 + b * 0.55);
       group.add(bk);
@@ -2094,6 +2094,9 @@ function buildTerrain(scene) {
 // ---------------------------------------------------------------------------
 
 export function buildScene(scene) {
+
+  // BUILDING COLLIDERS — initialized early so sections below can push into it
+  const colliders = [];
 
   // === Lighting ===
   const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.7);
@@ -3144,7 +3147,8 @@ export function buildScene(scene) {
   // Library uses per-wall segments so player can walk through the door gap.
   // The open garage has no front wall so is intentionally not listed.
   // =====================================================================
-  const colliders = [
+  // Push the standard building colliders into the array initialised at the top of buildScene
+  colliders.push(
     // Bakery (-60, -40)  12×9 building, rot 0.3
     { cx: -60, cz: -40, hw: 6,   hd: 4.5, rot: 0.3  },
     // Post Office (60, -40)  10×8, rot -0.2
@@ -3180,8 +3184,8 @@ export function buildScene(scene) {
     // Front-left panel local (-8.25, -12):  wx=65.564, wz=41.909
     { cx: 65.56, cz: 41.91, hw: 5.8, hd: 0.3, rot: 1.1 },
     // Front-right panel local (8.25, -12):  wx=73.048, wz=27.205
-    { cx: 73.05, cz: 27.21, hw: 5.8, hd: 0.3, rot: 1.1 },
-  ];
+    { cx: 73.05, cz: 27.21, hw: 5.8, hd: 0.3, rot: 1.1 }
+  );
 
 
   // =====================================================================
