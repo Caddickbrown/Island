@@ -592,7 +592,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   composer.addPass(bloomPass);
 
   // --- Build world ---
-  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight } = buildScene(scene);
+  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight, buildings } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
@@ -742,13 +742,21 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   const DIALOGUE_DURATION = 5;
 
   // --- Interior zone detection ---
+  // buildingKey matches the key in the buildings object returned by buildScene()
   const INTERIOR_ZONES = [
-    { cx:   8, cz:  -83, hw: 8,  hd: 7,  label: 'café'        },
-    { cx: -90, cz:  -60, hw: 10, hd: 8,  label: 'bakery'      },
-    { cx:  90, cz:  -60, hw: 8,  hd: 7,  label: 'post office' },
-    { cx:  60, cz: -105, hw: 9,  hd: 7,  label: 'school'      },
-    { cx: 120, cz:   60, hw: 9,  hd: 7,  label: 'library'     },
+    { cx:   8, cz:  -83, hw: 8,  hd: 7,  label: 'café',        buildingKey: 'cafe'       },
+    { cx: -90, cz:  -60, hw: 10, hd: 8,  label: 'bakery',      buildingKey: 'bakery'     },
+    { cx:  90, cz:  -60, hw: 8,  hd: 7,  label: 'post office', buildingKey: 'postOffice' },
+    { cx:  60, cz: -105, hw: 9,  hd: 7,  label: 'school',      buildingKey: 'school'     },
+    { cx: 120, cz:   60, hw: 9,  hd: 7,  label: 'library',     buildingKey: 'library'    },
+    { cx: -45, cz: -105, hw: 8,  hd: 6,  label: 'pub',         buildingKey: 'pub'        },
+    { cx: -120,cz:   60, hw: 11, hd: 10, label: 'workshop',    buildingKey: 'workshop'   },
   ];
+
+  // Wire building groups to zones after buildScene() runs
+  for (const zone of INTERIOR_ZONES) {
+    zone._group = buildings && buildings[zone.buildingKey] || null;
+  }
 
   let insideBuilding = null;
 
@@ -770,22 +778,22 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
     playerCtrl.update(delta);
 
-    // Interior overhead camera
+    // Interior zone — hide building roof when inside, normal camera throughout
     const zone = checkInteriorZone(playerCtrl.player.position);
     if (zone !== insideBuilding) {
+      // Restore previous building's roof
+      if (insideBuilding && insideBuilding._group) {
+        const rm = insideBuilding._group.userData.roofMesh;
+        if (rm) rm.visible = true;
+      }
       insideBuilding = zone;
+      // Hide new building's roof
+      if (insideBuilding && insideBuilding._group) {
+        const rm = insideBuilding._group.userData.roofMesh;
+        if (rm) rm.visible = false;
+      }
     }
-    playerCtrl.indoorCamera = !!insideBuilding;
-    if (insideBuilding) {
-      // Overhead camera: straight down from 28 units above floor level
-      // Roof is removed for hollow buildings so we see straight in
-      camera.position.set(insideBuilding.cx, 28, insideBuilding.cz);
-      camera.lookAt(insideBuilding.cx, 0, insideBuilding.cz);
-      camera.up.set(0, 0, -1); // north is "up" on screen
-    } else {
-      camera.up.set(0, 1, 0); // restore normal up
-      // Normal camera is handled by PlayerController
-    }
+    playerCtrl.indoorCamera = false; // normal camera always — roof hide does the work
     if (playerCtrl.miniGame && playerCtrl.miniGame.update) {
       playerCtrl.miniGame.update(delta, playerCtrl.player.position);
     }

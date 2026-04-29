@@ -235,18 +235,35 @@ function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = fa
     group.add(walls);
   }
 
-  if (!hollow) {
-    const roofH = h * 0.35;
-    const roof = box(w + 1, roofH, d + 1, roofColor);
-    roof.position.y = h + roofH / 2 - 0.3;
-    group.add(roof);
-  }
+  // Roof — always created so we can hide it when player enters (hollow buildings store ref)
+  const roofH = h * 0.35;
+  const roof = box(w + 1, roofH, d + 1, roofColor);
+  roof.position.y = h + roofH / 2 - 0.3;
+  group.add(roof);
+  group.userData.roofMesh = roof; // toggled visible/invisible by interior zone system
 
   const doorW = Math.min(w * 0.25, 2);
   const doorH = Math.min(h * 0.5, 3);
-  const door = box(doorW, doorH, 0.3, C.door);
-  door.position.set(0, doorH / 2, d / 2 + 0.15);
-  group.add(door);
+  if (hollow) {
+    // Wood door frame trim — looks much better than a solid door in the gap
+    const fCol = 0x6b4c2a;
+    const frameSideL = box(0.22, doorH + 0.3, 0.45, fCol);
+    frameSideL.position.set(-doorW / 2 - 0.11, doorH / 2 + 0.15, d / 2);
+    group.add(frameSideL);
+    const frameSideR = box(0.22, doorH + 0.3, 0.45, fCol);
+    frameSideR.position.set( doorW / 2 + 0.11, doorH / 2 + 0.15, d / 2);
+    group.add(frameSideR);
+    const frameTop = box(doorW + 0.7, 0.35, 0.45, fCol);
+    frameTop.position.set(0, doorH + 0.17, d / 2);
+    group.add(frameTop);
+    const step = box(doorW + 0.5, 0.18, 0.65, fCol);
+    step.position.set(0, 0.09, d / 2 + 0.32);
+    group.add(step);
+  } else {
+    const door = box(doorW, doorH, 0.3, C.door);
+    door.position.set(0, doorH / 2, d / 2 + 0.15);
+    group.add(door);
+  }
 
   if (solarPanels) {
     const panelW = w * 0.4;
@@ -1278,6 +1295,7 @@ function makeLibraryBuilding() {
   const roof = new THREE.Mesh(new THREE.BoxGeometry(LW + 2, 1.0, LD + 2), roofMat);
   roof.position.set(0, LH + 0.5, 0);
   group.add(roof);
+  group.userData.roofMesh = roof; // hidden when player is inside
 
   // Exterior sign above door (outside the -z face)
   const sc = document.createElement('canvas');
@@ -3360,7 +3378,7 @@ export function buildScene(scene) {
   // =====================================================================
   // THE ANCHOR — Pub/Inn (-45, -105)
   // =====================================================================
-  const pub = makeBuilding(13, 7, 10, 0xc8a56e, 0x5c3d1e, { solarPanels: false, label: 'The Anchor', signText: '⚓ The Anchor', signBg: 0x1a1a2e, signColor: 0xffd700 });
+  const pub = makeBuilding(13, 7, 10, 0xc8a56e, 0x5c3d1e, { solarPanels: false, label: 'The Anchor', signText: '⚓ The Anchor', signBg: 0x1a1a2e, signColor: 0xffd700, hollow: true });
   placeOnTerrain(pub, -45, -105);
   pub.rotation.y = 0.1;
   scene.add(pub);
@@ -4170,7 +4188,8 @@ export function buildScene(scene) {
   }));
   scene.add(fireflies);
 
-  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight };
+  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight,
+    buildings: { cafe: cafeBuilding, bakery, postOffice, school, pub, library, workshop } };
 }
 
 
