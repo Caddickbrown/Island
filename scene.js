@@ -2158,6 +2158,14 @@ export function buildScene(scene) {
   const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.0);
   sunLight.position.set(200, 250, 150);
   sunLight.castShadow = true;
+  sunLight.shadow.mapSize.width  = 2048;
+  sunLight.shadow.mapSize.height = 2048;
+  sunLight.shadow.camera.left   = -500;
+  sunLight.shadow.camera.right  =  500;
+  sunLight.shadow.camera.top    =  500;
+  sunLight.shadow.camera.bottom = -500;
+  sunLight.shadow.camera.near   = 0.5;
+  sunLight.shadow.camera.far    = 1000;
   scene.add(sunLight);
 
   const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.3);
@@ -2169,9 +2177,48 @@ export function buildScene(scene) {
   scene.fog = new THREE.FogExp2(0xc9e8f5, 0.0015);
 
   // === Sea ===
-  const seaGeo = new THREE.PlaneGeometry(1680, 1680);
+  const seaGeo = new THREE.PlaneGeometry(1680, 1680, 64, 64);
   seaGeo.rotateX(-Math.PI / 2);
-  const sea = new THREE.Mesh(seaGeo, mat(C.sea));
+  const seaMat = new THREE.ShaderMaterial({
+    transparent: true,
+    side: THREE.FrontSide,
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: `
+      uniform float uTime;
+      varying vec2 vUv;
+      varying float vDepth;
+      void main() {
+        vUv = uv;
+        vec3 pos = position;
+        float wave1 = sin(pos.x * 0.05 + uTime * 0.8) * 0.3;
+        float wave2 = cos(pos.z * 0.04 + uTime * 0.6) * 0.25;
+        pos.y += wave1 + wave2;
+        vDepth = pos.y;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      varying vec2 vUv;
+      varying float vDepth;
+      void main() {
+        vec3 deep    = vec3(0.04, 0.18, 0.35);
+        vec3 shallow = vec3(0.15, 0.55, 0.65);
+        vec3 col = mix(deep, shallow, clamp(vDepth * 2.0 + 0.5, 0.0, 1.0));
+
+        float sparkle1 = fract(sin(dot(vUv * 80.0 + uTime * 0.3, vec2(127.1, 311.7))) * 43758.5);
+        sparkle1 = step(0.97, sparkle1);
+
+        vec2 glintUv = vUv * 12.0 + vec2(uTime * 0.08, uTime * 0.05);
+        float glint = sin(glintUv.x * 3.0) * sin(glintUv.y * 2.5);
+        glint = pow(max(0.0, glint), 6.0) * 0.4;
+
+        col += sparkle1 * 0.35 + glint;
+        gl_FragColor = vec4(col, 0.88);
+      }
+    `,
+  });
+  const sea = new THREE.Mesh(seaGeo, seaMat);
   sea.position.y = -0.8;
   scene.add(sea);
 
@@ -3694,7 +3741,7 @@ export function buildScene(scene) {
   }));
   scene.add(fireflies);
 
-  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox, fireflies };
+  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox, fireflies, sea };
 }
 
 

@@ -499,13 +499,19 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.158.0/build/three.module.js"
+    "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+    "three/addons/postprocessing/EffectComposer.js": "https://unpkg.com/three@0.158.0/examples/jsm/postprocessing/EffectComposer.js",
+    "three/addons/postprocessing/RenderPass.js": "https://unpkg.com/three@0.158.0/examples/jsm/postprocessing/RenderPass.js",
+    "three/addons/postprocessing/UnrealBloomPass.js": "https://unpkg.com/three@0.158.0/examples/jsm/postprocessing/UnrealBloomPass.js"
   }
 }
 </script>
 
 <script type="module">
   import * as THREE from 'three';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
   import { buildScene, AREAS, initEconomy, tryPickupItem, tryGiveItem,
            updateSupplyChain, updateRadio, toggleRadio, isNearBoombox,
            updateNotification, showNotification,
@@ -520,6 +526,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
   document.body.appendChild(renderer.domElement);
@@ -549,8 +556,19 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   // --- Camera ---
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1500);
 
+  // --- Post-processing ---
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.35,   // strength — subtle
+    0.5,    // radius
+    0.82    // threshold — only genuinely bright things glow
+  );
+  composer.addPass(bloomPass);
+
   // --- Build world ---
-  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies } = buildScene(scene);
+  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies, sea } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
@@ -652,6 +670,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     // Firefly animation
     if (fireflies) fireflies.material.uniforms.uTime.value = clock.getElapsedTime();
 
+    // Sea shader time
+    if (sea) sea.material.uniforms.uTime.value = clock.getElapsedTime();
+
     // Fish swim — lazy elliptical orbits, tail wag, face direction of travel
     for (const f of fish) {
       const d = f.userData;
@@ -726,16 +747,18 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       titleEl.textContent = areaLabel;
     }
 
-    renderer.render(scene, camera);
+    composer.render();
   }
 
   animate();
 
   // --- Resize ---
   window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const width = window.innerWidth, height = window.innerHeight;
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(width, height);
+    composer.setSize(width, height);
   });
 
   // --- Key handlers ---
