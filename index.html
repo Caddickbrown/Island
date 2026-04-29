@@ -544,6 +544,10 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   import { NPCManager, findOpenShift, startSubInShift, updateSubIn } from './npcs.js';
   import { WildlifeManager } from './wildlife.js';
   import { AnimalManager } from './animals.js';
+  import { BakeryMinigame }  from './minigame_bakery.js';
+  import { FishingMinigame } from './minigame_fishing.js';
+  import { PubMinigame }     from './minigame_pub.js';
+  import { SchoolMinigame }  from './minigame_school.js';
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -603,6 +607,20 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
   // --- Café Help Mini-Game (CAD-269) ---
   playerCtrl.miniGame = createCafeHelpMiniGame();
+
+  // --- Building Minigames ---
+  // Each keyed to the buildingKey in INTERIOR_ZONES
+  const _bakeryGame  = new BakeryMinigame(scene, camera);
+  const _fishingGame = new FishingMinigame(scene, camera);
+  const _pubGame     = new PubMinigame();
+  const _schoolGame  = new SchoolMinigame();
+  const BUILDING_MINIGAMES = {
+    bakery: _bakeryGame,
+    pub:    _pubGame,
+    school: _schoolGame,
+  };
+  // Fishing is triggered at the dock (location-based)
+  const FISHING_TRIGGER = { x: 0, z: 370, radius: 18 };
 
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
@@ -797,6 +815,11 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     if (playerCtrl.miniGame && playerCtrl.miniGame.update) {
       playerCtrl.miniGame.update(delta, playerCtrl.player.position);
     }
+    // Update building minigames
+    for (const game of Object.values(BUILDING_MINIGAMES)) {
+      if (game.active && game.update) game.update(delta);
+    }
+    if (_fishingGame.active && _fishingGame.update) _fishingGame.update(delta);
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
@@ -895,8 +918,22 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       if (greetingTimer <= 0) greetingToast.style.opacity = '0';
     }
 
-    interactHint.style.opacity = nearbyNPC ? '1' : '0';
-    if (nearbyNPC) interactHint.textContent = `Press E to talk to ${nearbyNPC.name}`;
+    // Interact hint priority: building minigame > fishing > NPC
+    const _bGame = insideBuilding && BUILDING_MINIGAMES[insideBuilding.buildingKey];
+    const _fdx = playerPos.x - FISHING_TRIGGER.x;
+    const _fdz = playerPos.z - FISHING_TRIGGER.z;
+    const _nearFishing = Math.sqrt(_fdx*_fdx + _fdz*_fdz) < FISHING_TRIGGER.radius;
+    if (_bGame && !_bGame.active) {
+      const _labels = { bakery: '🍞 Press E to bake bread', pub: '🍺 Press E to serve at The Anchor', school: '📚 Press E to teach the class' };
+      interactHint.textContent = _labels[insideBuilding.buildingKey] || `Press E to play`;
+      interactHint.style.opacity = '1';
+    } else if (_nearFishing && !_fishingGame.active) {
+      interactHint.textContent = '🎣 Press E to go fishing';
+      interactHint.style.opacity = '1';
+    } else {
+      interactHint.style.opacity = nearbyNPC ? '1' : '0';
+      if (nearbyNPC) interactHint.textContent = `Press E to talk to ${nearbyNPC.name}`;
+    }
 
     // Dialogue timeout
     if (dialogueTimer > 0) {
@@ -965,7 +1002,20 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       return;
     }
 
-    // 3. Mini-game (PlayerController owns this if it exists)
+    // 3. Building minigames — trigger when inside zone and pressing E
+    if (insideBuilding) {
+      const bGame = BUILDING_MINIGAMES[insideBuilding.buildingKey];
+      if (bGame && !bGame.active) { bGame.start(); return; }
+    }
+    // Fishing — triggered near the dock
+    {
+      const fdx = playerPos.x - FISHING_TRIGGER.x;
+      const fdz = playerPos.z - FISHING_TRIGGER.z;
+      if (Math.sqrt(fdx*fdx + fdz*fdz) < FISHING_TRIGGER.radius && !_fishingGame.active) {
+        _fishingGame.start(); return;
+      }
+    }
+    // Legacy mini-game (PlayerController owns this if it exists)
     if (playerCtrl.miniGame && playerCtrl.miniGame.tryOpen) {
       if (playerCtrl.miniGame.tryOpen(playerPos)) return;
     }
