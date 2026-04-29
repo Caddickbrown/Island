@@ -3321,20 +3321,19 @@ export function buildScene(scene) {
     colliders.push({ cx: KX + gantryX, cz: KZ - 2, hw: startW / 2 + 1.5, hd: 0.5, rot: 0 });
 
     // Cycle Shop (-30, -90)  10x8, rot 0.2
-    { cx: -30,  cz: -90,  hw: 5,   hd: 4,   rot: 0.2  },
+    colliders.push({ cx: -30,  cz: -90,  hw: 5,   hd: 4,   rot: 0.2  });
     // Fitness Center (110, -55)  14x10, rot -0.4
-    { cx: 110,  cz: -55,  hw: 7,   hd: 5,   rot: -0.4 },
+    colliders.push({ cx: 110,  cz: -55,  hw: 7,   hd: 5,   rot: -0.4 });
     // Science Center (-80, -150)  13x11, rot 0.6
-    { cx: -80,  cz: -150, hw: 6.5, hd: 5.5, rot: 0.6  },
+    colliders.push({ cx: -80,  cz: -150, hw: 6.5, hd: 5.5, rot: 0.6  });
     // Fishery (30, 230)  12x8, rot -0.3
-    { cx:  30,  cz: 230,  hw: 6,   hd: 4,   rot: -0.3 },
+    colliders.push({ cx:  30,  cz: 230,  hw: 6,   hd: 4,   rot: -0.3 });
     // Wizard's Library (-140, -80)  9x7, rot 1.2
-    { cx: -140, cz: -80,  hw: 4.5, hd: 3.5, rot: 1.2  },
+    colliders.push({ cx: -140, cz: -80,  hw: 4.5, hd: 3.5, rot: 1.2  });
     // Maintenance (-105, 70)  16x12, rot 0.5
-    { cx: -105, cz: 70,   hw: 8,   hd: 6,   rot: 0.5  },
+    colliders.push({ cx: -105, cz: 70,   hw: 8,   hd: 6,   rot: 0.5  });
     // VR Pod (140, -30)  cylinder approx radius 7
-    { cx: 140,  cz: -30,  hw: 7,   hd: 7,   rot: 0    },
-  }
+    colliders.push({ cx: 140,  cz: -30,  hw: 7,   hd: 7,   rot: 0    });
 
   const fish = aquarium.userData.fish || [];
 
