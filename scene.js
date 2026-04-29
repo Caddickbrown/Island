@@ -89,6 +89,10 @@ export const AREAS = {
   SCIENCE_CENTER: { x: -120, z: -225, label: 'Science Center' },
   FISHERY_AREA:   { x: 45,   z: 345,  label: 'Fishery' },
   MAINTENANCE:    { x: -158, z: 105,  label: 'Maintenance' },
+  LIGHTHOUSE:     { x: 63,   z: 372,  label: 'The Lighthouse' },
+  RADIO_STATION:  { x: 165,  z: 75,   label: 'Radio Station' },
+  CLIFFTOPS:      { x: -150, z: -270, label: 'The Clifftops' },
+  EAST_BEACH:     { x: 225,  z: -233, label: 'East Beach' },
 };
 
 // ---------------------------------------------------------------------------
@@ -1753,6 +1757,172 @@ function makeFishery() {
 }
 
 // ---------------------------------------------------------------------------
+// Lighthouse — tower, lantern room, keeper's cottage, light beam
+// ---------------------------------------------------------------------------
+
+function makeLighthouse() {
+  const group = new THREE.Group();
+
+  // Main tower — tapered cylinder
+  const towerMat = new THREE.MeshLambertMaterial({ color: 0xf5f0e8 });
+  const towerGeo = new THREE.CylinderGeometry(1.2, 1.8, 14, 12);
+  const tower = new THREE.Mesh(towerGeo, towerMat);
+  tower.position.y = 7;
+  group.add(tower);
+
+  // Red stripe band near the top
+  const stripeMat = new THREE.MeshLambertMaterial({ color: 0xcc2222 });
+  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(1.22, 1.22, 1.2, 12), stripeMat);
+  stripe.position.y = 10.5;
+  group.add(stripe);
+
+  // Lantern room platform
+  const platformMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+  const platform = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.6, 0.3, 12), platformMat);
+  platform.position.y = 14.15;
+  group.add(platform);
+
+  // Lantern room glass walls
+  const lanternMat = new THREE.MeshLambertMaterial({ color: 0xffd700, transparent: true, opacity: 0.7 });
+  const lanternRoom = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.0, 8), lanternMat);
+  lanternRoom.position.y = 15.3;
+  group.add(lanternRoom);
+
+  // Lantern room roof (conical)
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
+  const roofGeo = new THREE.ConeGeometry(1.3, 1.5, 8);
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.position.y = 17.05;
+  group.add(roof);
+
+  // Railing around platform
+  const railMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.8, 4), railMat);
+    post.position.set(Math.cos(angle) * 1.6, 14.7, Math.sin(angle) * 1.6);
+    group.add(post);
+  }
+  const railRing = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.05, 4, 16), railMat);
+  railRing.rotation.x = Math.PI / 2;
+  railRing.position.y = 15.1;
+  group.add(railRing);
+
+  // Door
+  const doorMat = new THREE.MeshLambertMaterial({ color: 0x4a2800 });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.6, 0.2), doorMat);
+  door.position.set(0, 0.8, 1.82);
+  group.add(door);
+
+  // Keeper's cottage attached to the side
+  const cottageMat = new THREE.MeshLambertMaterial({ color: 0xe8ddd0 });
+  const cottage = new THREE.Mesh(new THREE.BoxGeometry(4.5, 3.0, 4.0), cottageMat);
+  cottage.position.set(-3.8, 1.5, 0);
+  group.add(cottage);
+
+  // Cottage roof
+  const cottageRoofGeo = new THREE.ConeGeometry(3.5, 1.5, 4);
+  const cottageRoof = new THREE.Mesh(cottageRoofGeo, new THREE.MeshLambertMaterial({ color: 0x8b4513 }));
+  cottageRoof.rotation.y = Math.PI / 4;
+  cottageRoof.position.set(-3.8, 3.75, 0);
+  group.add(cottageRoof);
+
+  // Cottage door
+  const cottageDoor = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.15), doorMat);
+  cottageDoor.position.set(-3.8, 0.75, 2.08);
+  group.add(cottageDoor);
+
+  // Cottage window
+  const winMat = new THREE.MeshLambertMaterial({ color: 0xaaddff, transparent: true, opacity: 0.6 });
+  const win = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.12), winMat);
+  win.position.set(-5.32, 1.8, 0);
+  group.add(win);
+
+  group.userData.label = 'Lighthouse';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Radio Station building — concrete block, antenna mast, satellite dish
+// ---------------------------------------------------------------------------
+
+function makeRadioStation() {
+  const group = new THREE.Group();
+  const RSW = 8, RSH = 5, RSD = 7;
+
+  // Main building
+  const walls = new THREE.Mesh(
+    new THREE.BoxGeometry(RSW, RSH, RSD),
+    new THREE.MeshLambertMaterial({ color: 0xb0b8c8 })
+  );
+  walls.position.y = RSH / 2;
+  group.add(walls);
+
+  // Flat roof with slight overhang
+  const roofTop = new THREE.Mesh(
+    new THREE.BoxGeometry(RSW + 0.6, 0.25, RSD + 0.6),
+    new THREE.MeshLambertMaterial({ color: 0x8899aa })
+  );
+  roofTop.position.y = RSH + 0.12;
+  group.add(roofTop);
+
+  // Door
+  const door = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 2.2, 0.2),
+    new THREE.MeshLambertMaterial({ color: 0x2d3a4a })
+  );
+  door.position.set(-1.5, 1.1, RSD / 2 + 0.1);
+  group.add(door);
+
+  // Sign
+  const sc = document.createElement('canvas');
+  sc.width = 512; sc.height = 80;
+  const sctx = sc.getContext('2d');
+  sctx.fillStyle = '#1a2a3a';
+  sctx.fillRect(0, 0, 512, 80);
+  sctx.fillStyle = '#7ec8e3';
+  sctx.font = 'bold 40px sans-serif';
+  sctx.textAlign = 'center';
+  sctx.textBaseline = 'middle';
+  sctx.fillText('📻 Island Radio', 256, 40);
+  const signMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.0, 0.85),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true })
+  );
+  signMesh.position.set(1.0, RSH * 0.82, RSD / 2 + 0.15);
+  group.add(signMesh);
+
+  // Antenna mast on roof
+  const mastMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 6.5, 6), mastMat);
+  mast.position.set(2.5, RSH + 3.5, 0);
+  group.add(mast);
+
+  // Crossarms on mast
+  for (let i = 0; i < 3; i++) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(2.4 - i * 0.5, 0.08, 0.08), mastMat);
+    arm.position.set(2.5, RSH + 1.5 + i * 1.8, 0);
+    group.add(arm);
+  }
+
+  // Satellite dish
+  const dishGeo = new THREE.SphereGeometry(0.8, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.55);
+  const dish = new THREE.Mesh(dishGeo, new THREE.MeshLambertMaterial({ color: 0xdddddd }));
+  dish.rotation.x = Math.PI * 0.35;
+  dish.position.set(-2.5, RSH + 1.2, RSD / 2 - 0.5);
+  group.add(dish);
+
+  // Window
+  const winMat = new THREE.MeshLambertMaterial({ color: 0xaaccee, transparent: true, opacity: 0.6 });
+  const win = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.12), winMat);
+  win.position.set(2.0, RSH * 0.6, RSD / 2 + 0.06);
+  group.add(win);
+
+  group.userData.label = 'Radio Station';
+  return group;
+}
+
+// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CAD-134: Centralised Maintenance — grey corrugated, garage door, solar rigs
 // ---------------------------------------------------------------------------
@@ -2451,6 +2621,66 @@ export function buildScene(scene) {
   scene.add(forestBench);
 
   // =====================================================================
+  // JIN'S RESEARCH STATION (262, 158) — botanist's field camp
+  // Folding table with specimen jars, notebook, stool, and field stake
+  // =====================================================================
+  {
+    const jinBase = getHeight(262, 158);
+    const jinMat = color => new THREE.MeshLambertMaterial({ color });
+
+    // Folding table — thin plywood top, metal legs
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 1.2), jinMat(0xd4b483));
+    tableTop.position.set(262, jinBase + 0.88, 158);
+    scene.add(tableTop);
+
+    // Table legs (4)
+    [[0.95, 0.48], [-0.95, 0.48], [0.95, -0.48], [-0.95, -0.48]].forEach(([ox, oz]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.84, 4), jinMat(0x888888));
+      leg.position.set(262 + ox, jinBase + 0.42, 158 + oz);
+      scene.add(leg);
+    });
+
+    // Specimen jars (3 small glass cylinders on the table)
+    [[-0.6, 0], [0, 0.1], [0.55, -0.05]].forEach(([ox, oz], i) => {
+      const jarH = 0.22 + i * 0.06;
+      const jar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.07, 0.07, jarH, 7),
+        new THREE.MeshLambertMaterial({ color: 0x99ddf0, transparent: true, opacity: 0.55 })
+      );
+      jar.position.set(262 + ox, jinBase + 0.88 + jarH / 2 + 0.04, 158 + oz);
+      scene.add(jar);
+      // Lid
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.04, 7), jinMat(0xb0b0b0));
+      lid.position.set(262 + ox, jinBase + 0.88 + jarH + 0.06, 158 + oz);
+      scene.add(lid);
+    });
+
+    // Notebook (flat book on table)
+    const notebook = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.65), jinMat(0x2e7d32));
+    notebook.position.set(262 + 0.6, jinBase + 0.92, 158 - 0.25);
+    notebook.rotation.y = 0.15;
+    scene.add(notebook);
+
+    // Stool beside the table
+    const stoolTop = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.08, 8), jinMat(0xb87c44));
+    stoolTop.position.set(262 - 1.5, jinBase + 0.56, 158 + 0.2);
+    scene.add(stoolTop);
+    [[0.14, 0.14], [-0.14, 0.14], [0.14, -0.14], [-0.14, -0.14]].forEach(([ox, oz]) => {
+      const sleg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.54, 4), jinMat(0x666666));
+      sleg.position.set(262 - 1.5 + ox, jinBase + 0.27, 158 + 0.2 + oz);
+      scene.add(sleg);
+    });
+
+    // Field stake with flag — marks the research plot
+    const stake = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.6, 5), jinMat(0x8b4513));
+    stake.position.set(262 + 1.4, jinBase + 0.8, 158 - 0.7);
+    scene.add(stake);
+    const flag = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.32, 0.02), jinMat(0xf5c518));
+    flag.position.set(262 + 1.67, jinBase + 1.38, 158 - 0.69);
+    scene.add(flag);
+  }
+
+  // =====================================================================
   // PETRA'S TREEHOUSE (282, 192) — raised platform in the forest canopy
   // =====================================================================
   {
@@ -3042,6 +3272,22 @@ export function buildScene(scene) {
   scene.add(fishery);
 
   // =====================================================================
+  // LIGHTHOUSE (63, 372) — near the dock, harbour beacon
+  // =====================================================================
+  const lighthouse = makeLighthouse();
+  placeOnTerrain(lighthouse, 63, 372);
+  lighthouse.rotation.y = -0.8;
+  scene.add(lighthouse);
+
+  // =====================================================================
+  // RADIO STATION (165, 75) — forest-edge broadcast building
+  // =====================================================================
+  const radioStation = makeRadioStation();
+  placeOnTerrain(radioStation, 165, 75);
+  radioStation.rotation.y = 0.6;
+  scene.add(radioStation);
+
+  // =====================================================================
   // CAD-134: MAINTENANCE BUILDING (-158, 105) — near workshop/mill edge
   // =====================================================================
   const maintenanceBuilding = makeMaintenanceBuilding();
@@ -3243,6 +3489,12 @@ export function buildScene(scene) {
     colliders.push({ cx:  45,  cz: 345,  hw: 6,   hd: 4,   rot: -0.3 });
     // Maintenance (-158, 105)  16x12, rot 0.5
     colliders.push({ cx: -158, cz: 105,  hw: 8,   hd: 6,   rot: 0.5  });
+    // Lighthouse (63, 372)  tower r=1.8, rot -0.8
+    colliders.push({ cx:  63,  cz: 372,  hw: 1.8, hd: 1.8, rot: 0    });
+    // Lighthouse keeper's cottage (63-3.8, 372)  4.5x4, rot -0.8
+    colliders.push({ cx:  59,  cz: 372,  hw: 2.3, hd: 2.0, rot: -0.8 });
+    // Radio Station (165, 75)  8x7, rot 0.6
+    colliders.push({ cx: 165,  cz:  75,  hw: 4,   hd: 3.5, rot: 0.6  });
   }
 
   const fish = aquarium.userData.fish || [];

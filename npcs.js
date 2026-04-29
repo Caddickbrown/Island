@@ -56,6 +56,19 @@ const AREAS = {
   claraHome:   { x: 78,   z: -123 },
   rexHome:     { x: 84,   z: -90  },
   ottoHome:    { x: -141, z: 42   },
+  // New NPC homes (1.5x scaled from master)
+  lighthouse:  { x: 63,   z: 372  },  // Lena's workplace and home
+  treehouse:   { x: 282,  z: 192  },  // Petra's Treehouse
+  forestPath:  { x: 270,  z: 180  },  // Jin's forest research area
+  hilltop:     { x: -150, z: -270 },  // Old Will's hilltop retreat
+  eastBeach:   { x: 225,  z: -233 },  // Kai's beach spot
+  village:     { x: 0,    z: -72  },  // Bea's play area
+  petraHome:   { x: 282,  z: 192  },  // Petra lives in her treehouse
+  jinHome:     { x: 263,  z: 158  },  // Jin camps near research station
+  willHome:    { x: -158, z: -285 },  // Old Will's hilltop cottage
+  lenaHome:    { x: 63,   z: 375  },  // Lena lives at lighthouse
+  kaiHome:     { x: 225,  z: -225 },  // Kai's beach camp
+  beaHome:     { x: -15,  z: -82  },  // Bea's family home near village
 };
 
 // ---------------------------------------------------------------------------
@@ -155,6 +168,55 @@ const SCHEDULES = {
     [13, 18, 'workshop',    'Welding ⚙️'],
     [18, 20, 'pub',         'Evening pint 🍺'],
     [20, 6,  'ottoHome',    'Sleeping 💤'],
+  ],
+  Petra: [
+    [6,  10, 'treehouse',   'Morning painting 🎨'],
+    [10, 13, 'townSquare',  'Selling art 🖼️'],
+    [13, 14, 'cafe',        'Lunch break ☕'],
+    [14, 18, 'forestPath',  'Sketching in the woods 🌲'],
+    [18, 21, 'treehouse',   'Evening painting 🎨'],
+    [21, 6,  'petraHome',   'Sleeping 💤'],
+  ],
+  Jin: [
+    [5,  8,  'forestPath',  'Early specimens 🌿'],
+    [8,  13, 'jinHome',     'Analysing samples 🔬'],
+    [13, 14, 'townSquare',  'Lunch break 🥗'],
+    [14, 18, 'forestPath',  'Field research 🌿'],
+    [18, 20, 'library',     'Reading journals 📚'],
+    [20, 5,  'jinHome',     'Sleeping 💤'],
+  ],
+  'Old Will': [
+    [7,  9,  'hilltop',     'Morning watch 🌅'],
+    [9,  11, 'townSquare',  'Morning stroll 🚶'],
+    [11, 13, 'pub',         'Long lunch 🍺'],
+    [13, 17, 'hilltop',     'Whittling 🪵'],
+    [17, 19, 'beach',       'Watching the tide 🌊'],
+    [19, 7,  'willHome',    'Sleeping 💤'],
+  ],
+  Lena: [
+    [5,  8,  'lighthouse',  'Tending the light 🔦'],
+    [8,  12, 'dock',        'Watching ships 🚢'],
+    [12, 13, 'cafe',        'Quick lunch ☕'],
+    [13, 17, 'lighthouse',  'Maintenance work 🔧'],
+    [17, 19, 'southBeach',  'Evening walk 🌅'],
+    [19, 5,  'lenaHome',    'Sleeping 💤'],
+  ],
+  Kai: [
+    [8,  10, 'eastBeach',   'Morning swim 🏊'],
+    [10, 13, 'townSquare',  'Exploring 🗺️'],
+    [13, 14, 'cafe',        'Lunch ☕'],
+    [14, 17, 'dock',        'Learning to fish 🎣'],
+    [17, 19, 'eastBeach',   'Evening bonfire 🔥'],
+    [19, 8,  'kaiHome',     'Sleeping 💤'],
+  ],
+  Bea: [
+    [8,  9,  'beaHome',     'Breakfast 🥣'],
+    [9,  12, 'school',      'At school 📚'],
+    [12, 13, 'village',     'Playing 🎮'],
+    [13, 15, 'school',      'Afternoon class 📚'],
+    [15, 18, 'forestPath',  'Adventure play 🌲'],
+    [18, 20, 'village',     'Running around 🏃'],
+    [20, 8,  'beaHome',     'Sleeping 💤'],
   ],
 };
 
@@ -338,6 +400,55 @@ class NPC {
         dome.position.set(0, 2.38, 0); this.group.add(dome);
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.05, 0.28), m(0xf6c90e));
         brim.position.set(0, 2.24, 0.28); this.group.add(brim);
+        break;
+      }
+      case 'Artist': {
+        // Beret — flat angled cap
+        const beret = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55), m(0x8b0000));
+        beret.rotation.z = 0.3;
+        beret.position.set(0.06, 2.28, 0); this.group.add(beret);
+        break;
+      }
+      case 'Botanist': {
+        // Wide straw hat with green band (field researcher)
+        const bbrim = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.56, 0.06, 10), m(0xd4a832));
+        bbrim.position.set(0, 2.26, 0); this.group.add(bbrim);
+        const bcrown = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.26, 10), m(0xc49828));
+        bcrown.position.set(0, 2.40, 0); this.group.add(bcrown);
+        const bband = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.08, 10), m(0x2e7d32));
+        bband.position.set(0, 2.27, 0); this.group.add(bband);
+        break;
+      }
+      case 'Elder': {
+        // Grey flat cap
+        const eCap = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.35, 0.11, 10), m(0x9e9e9e));
+        eCap.position.set(0, 2.28, 0); this.group.add(eCap);
+        const eBrim = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.05, 0.18), m(0x757575));
+        eBrim.position.set(0.02, 2.21, 0.27); this.group.add(eBrim);
+        break;
+      }
+      case 'Keeper': {
+        // Navy peaked cap (lighthouse keeper)
+        const kCap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.36, 0.14, 10), m(0x1a2a4a));
+        kCap.position.set(0, 2.29, 0); this.group.add(kCap);
+        const kPeak = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.05, 0.22), m(0x0d1b36));
+        kPeak.position.set(0, 2.21, 0.30); this.group.add(kPeak);
+        const kBadge = new THREE.Mesh(new THREE.SphereGeometry(0.06, 5, 4), m(0xffd700));
+        kBadge.position.set(0, 2.35, 0.30); this.group.add(kBadge);
+        break;
+      }
+      case 'Newcomer': {
+        // Simple backpack suggestion — small pack on back
+        const pack = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.50, 0.18), m(0xe67e22));
+        pack.position.set(0, 1.25, -0.42); this.group.add(pack);
+        break;
+      }
+      case 'Child': {
+        // Colourful bobble hat
+        const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.31, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.65), m(0xff4081));
+        beanie.position.set(0, 2.22, 0); this.group.add(beanie);
+        const bobble = new THREE.Mesh(new THREE.SphereGeometry(0.10, 6, 5), m(0xfff176));
+        bobble.position.set(0, 2.52, 0); this.group.add(bobble);
         break;
       }
       default: break;
@@ -731,9 +842,15 @@ const NPC_DEFS = [
   { name: 'Pete',   job: 'Farmer',      color: 0x8db87a, schedule: SCHEDULES.Pete   },
   { name: 'Barney', job: 'Barkeeper',   color: 0xd4a853, schedule: SCHEDULES.Barney },
   { name: 'Suki',   job: 'Barista',     color: 0xf4c77e, schedule: SCHEDULES.Suki   },
-  { name: 'Clara',  job: 'Teacher',     color: 0x74b9e8, schedule: SCHEDULES.Clara  },
-  { name: 'Rex',    job: 'Teacher',     color: 0x6ec97b, schedule: SCHEDULES.Rex    },
-  { name: 'Otto',   job: 'Engineer',    color: 0xe17055, schedule: SCHEDULES.Otto   },
+  { name: 'Clara',    job: 'Teacher',    color: 0x74b9e8, schedule: SCHEDULES.Clara    },
+  { name: 'Rex',      job: 'Teacher',    color: 0x6ec97b, schedule: SCHEDULES.Rex      },
+  { name: 'Otto',     job: 'Engineer',   color: 0xe17055, schedule: SCHEDULES.Otto     },
+  { name: 'Petra',    job: 'Artist',     color: 0xf48fb1, schedule: SCHEDULES.Petra    },
+  { name: 'Jin',      job: 'Botanist',   color: 0x81c784, schedule: SCHEDULES.Jin      },
+  { name: 'Old Will', job: 'Elder',      color: 0xbcaaa4, schedule: SCHEDULES['Old Will'] },
+  { name: 'Lena',     job: 'Keeper',     color: 0x80cbc4, schedule: SCHEDULES.Lena     },
+  { name: 'Kai',      job: 'Newcomer',   color: 0xffcc80, schedule: SCHEDULES.Kai      },
+  { name: 'Bea',      job: 'Child',      color: 0xf06292, schedule: SCHEDULES.Bea      },
 ];
 
 export class NPCManager {
@@ -771,6 +888,12 @@ export class NPCManager {
       Barista:    ['Fresh coffee just came off the press.', 'The terrace is lovely at this hour.', 'Shall I put something on for you?'],
       Teacher:    ['Learning never stops on this island.', 'The children asked such good questions today.', 'Education is the greatest gift we can give.'],
       Engineer:   ['Always something to fix or improve.', 'The solar system is running perfectly.', 'Good tools make good work.'],
+      Artist:     ['Every painting starts with just looking.', 'The light here is extraordinary at dusk.', 'I\'m working on a new series of the harbour.'],
+      Botanist:   ['Found a fascinating specimen this morning.', 'The forest holds so many secrets.', 'I\'m cataloguing every plant on this island.'],
+      Elder:      ['I\'ve been here longer than anyone.', 'The island has changed, but its heart hasn\'t.', 'Sit a while — there\'s no hurry here.'],
+      Keeper:     ['The light was on all night — all safe.', 'You can see for miles from the lantern room.', 'The ships know this coast because of that light.'],
+      Newcomer:   ['Still finding my way around!', 'Everyone\'s been so welcoming here.', 'I never expected to stay, but now I can\'t imagine leaving.'],
+      Child:      ['I found a really cool stick today!', 'Can we go to the forest? It\'s the best.', 'Race you to the beach!'],
     };
     const lines = jobLines[npc.job] || [`${timeGreet}! Lovely day on the island.`, 'It\'s good to see you around.', 'Take your time and enjoy the island.'];
     if (!npc._dialogueIndex) npc._dialogueIndex = 0;
