@@ -811,7 +811,15 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
         if (rm) rm.visible = false;
       }
     }
-    playerCtrl.indoorCamera = false; // normal camera always — roof hide does the work
+    // Overhead camera + roof hide together for best interior visibility
+    playerCtrl.indoorCamera = !!insideBuilding;
+    if (insideBuilding) {
+      camera.position.set(insideBuilding.cx, 22, insideBuilding.cz);
+      camera.lookAt(insideBuilding.cx, 0, insideBuilding.cz);
+      camera.up.set(0, 0, -1);
+    } else {
+      camera.up.set(0, 1, 0);
+    }
     if (playerCtrl.miniGame && playerCtrl.miniGame.update) {
       playerCtrl.miniGame.update(delta, playerCtrl.player.position);
     }
