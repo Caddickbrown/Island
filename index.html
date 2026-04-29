@@ -777,8 +777,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     }
     playerCtrl.indoorCamera = !!insideBuilding;
     if (insideBuilding) {
-      // Overhead camera: position above building centre, look straight down
-      camera.position.set(insideBuilding.cx, 22, insideBuilding.cz + 4);
+      // Overhead camera: straight down from 28 units above floor level
+      // Roof is removed for hollow buildings so we see straight in
+      camera.position.set(insideBuilding.cx, 28, insideBuilding.cz);
       camera.lookAt(insideBuilding.cx, 0, insideBuilding.cz);
       camera.up.set(0, 0, -1); // north is "up" on screen
     } else {
