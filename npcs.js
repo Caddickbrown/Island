@@ -257,34 +257,97 @@ class NPC {
     this._wanderTarget = null;
     this._wanderTimer = 0;
 
+    // Phase offset for idle bob animation (unique per NPC)
+    this.phaseOffset = Math.random() * Math.PI * 2;
+
     // Mesh group
     this.group = new THREE.Group();
-    const bodyMat = new THREE.MeshLambertMaterial({ color });
+
+    // Materials
+    const skinMat  = new THREE.MeshLambertMaterial({ color: 0xd4956a, flatShading: true });
+    const clothMat = new THREE.MeshLambertMaterial({ color, flatShading: true });
+    const darkMat  = new THREE.MeshLambertMaterial({ color: 0x2c3e50, flatShading: true });
+    const footMat  = new THREE.MeshLambertMaterial({ color: 0x1a252f, flatShading: true });
+
+    // Head (y=1.83 centre)
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 5), skinMat);
+    head.position.y = 1.83;
+    this.group.add(head);
+
+    // Neck
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 5), skinMat);
+    neck.position.y = 1.45;
+    this.group.add(neck);
 
     // Torso
-    const torso = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.35, 0.35, 1.2, 8),
-      bodyMat
-    );
-    torso.position.y = 1.1;
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.65, 6), clothMat);
+    torso.position.y = 1.05;
     this.group.add(torso);
 
-    // Head
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.3, 8, 6),
-      bodyMat
-    );
-    head.position.y = 2.0;
-    this.group.add(head);
+    // Hips
+    const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.20, 0.3, 6), darkMat);
+    hips.position.y = 0.68;
+    this.group.add(hips);
+
+    // Upper legs
+    const ulLegGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.42, 5);
+    const ulLegL = new THREE.Mesh(ulLegGeo, darkMat);
+    ulLegL.position.set(-0.12, 0.35, 0);
+    this.group.add(ulLegL);
+    const ulLegR = new THREE.Mesh(ulLegGeo, darkMat);
+    ulLegR.position.set(0.12, 0.35, 0);
+    this.group.add(ulLegR);
+
+    // Lower legs
+    const llLegGeo = new THREE.CylinderGeometry(0.085, 0.085, 0.4, 5);
+    const llLegL = new THREE.Mesh(llLegGeo, darkMat);
+    llLegL.position.set(-0.12, -0.07, 0);
+    this.group.add(llLegL);
+    const llLegR = new THREE.Mesh(llLegGeo, darkMat);
+    llLegR.position.set(0.12, -0.07, 0);
+    this.group.add(llLegR);
+
+    // Feet
+    const footGeo = new THREE.BoxGeometry(0.18, 0.1, 0.28);
+    const footL = new THREE.Mesh(footGeo, footMat);
+    footL.position.set(-0.12, -0.3, 0.04);
+    this.group.add(footL);
+    const footR = new THREE.Mesh(footGeo, footMat);
+    footR.position.set(0.12, -0.3, 0.04);
+    this.group.add(footR);
+
+    // Upper arms
+    const uArmGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.38, 5);
+    const uArmL = new THREE.Mesh(uArmGeo, clothMat);
+    uArmL.position.set(-0.4, 1.05, 0);
+    uArmL.rotation.z = 0.15;
+    this.group.add(uArmL);
+    const uArmR = new THREE.Mesh(uArmGeo, clothMat);
+    uArmR.position.set(0.4, 1.05, 0);
+    uArmR.rotation.z = -0.15;
+    this.group.add(uArmR);
+
+    // Lower arms
+    const lArmGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.36, 5);
+    const lArmL = new THREE.Mesh(lArmGeo, skinMat);
+    lArmL.position.set(-0.42, 0.72, 0);
+    this.group.add(lArmL);
+    const lArmR = new THREE.Mesh(lArmGeo, skinMat);
+    lArmR.position.set(0.42, 0.72, 0);
+    this.group.add(lArmR);
+
+    // Store arm references for idle animation
+    this._armL = uArmL;
+    this._armR = uArmR;
 
     // Eyes
     const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
     const eyeGeo = new THREE.SphereGeometry(0.065, 6, 5);
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.12, 2.05, 0.26);
+    eyeL.position.set(-0.12, 1.88, 0.26);
     this.group.add(eyeL);
     const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeR.position.set(0.12, 2.05, 0.26);
+    eyeR.position.set(0.12, 1.88, 0.26);
     this.group.add(eyeR);
 
     // Store head reference for animation
@@ -296,7 +359,7 @@ class NPC {
     // Label sprite — two-line format: "Name the Job" / activity
     this.labelText = '';
     this.label = this._createLabel(name, job, '');
-    this.label.position.y = 3.2;
+    this.label.position.y = 2.6;
     this.label.visible = false;
     this.group.add(this.label);
 
@@ -310,29 +373,30 @@ class NPC {
 
   _addAccessory(job) {
     const m = color => new THREE.MeshLambertMaterial({ color });
+    // Hat positions shifted down by 0.17 to match new head centre at y=1.83 (was y=2.0)
     switch (job) {
       case 'Baker': {
         // White chef's toque
         const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.10, 10), m(0xfcfcfc));
-        brim.position.set(0, 2.30, 0); this.group.add(brim);
+        brim.position.set(0, 2.13, 0); this.group.add(brim);
         const toque = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.30, 0.44, 10), m(0xfcfcfc));
-        toque.position.set(0, 2.54, 0); this.group.add(toque);
+        toque.position.set(0, 2.37, 0); this.group.add(toque);
         break;
       }
       case 'Postman': {
         // Red peaked cap
         const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.36, 0.14, 10), m(0xcc1111));
-        cap.position.set(0, 2.29, 0); this.group.add(cap);
+        cap.position.set(0, 2.12, 0); this.group.add(cap);
         const peak = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.05, 0.22), m(0xaa0000));
-        peak.position.set(0, 2.21, 0.30); this.group.add(peak);
+        peak.position.set(0, 2.04, 0.30); this.group.add(peak);
         break;
       }
       case 'Farmer': {
         // Wide-brim straw hat
         const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.58, 0.07, 10), m(0xc8942e));
-        brim.position.set(0, 2.26, 0); this.group.add(brim);
+        brim.position.set(0, 2.09, 0); this.group.add(brim);
         const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.30, 0.28, 10), m(0xb8841e));
-        crown.position.set(0, 2.42, 0); this.group.add(crown);
+        crown.position.set(0, 2.25, 0); this.group.add(crown);
         break;
       }
       case 'Librarian': {
@@ -340,115 +404,115 @@ class NPC {
         const gm = m(0x333333);
         [-0.13, 0.13].forEach(ox => {
           const frame = new THREE.Mesh(new THREE.TorusGeometry(0.072, 0.018, 5, 10), gm);
-          frame.position.set(ox, 2.04, 0.28);
+          frame.position.set(ox, 1.87, 0.28);
           frame.rotation.y = Math.PI / 2;
           this.group.add(frame);
         });
         const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.012, 0.012), gm);
-        bridge.position.set(0, 2.04, 0.28); this.group.add(bridge);
+        bridge.position.set(0, 1.87, 0.28); this.group.add(bridge);
         break;
       }
       case 'Fisherman': {
         // Yellow sou'wester
         const sowBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.50, 0.07, 10), m(0xf0c020));
-        sowBrim.position.set(0, 2.25, 0); this.group.add(sowBrim);
+        sowBrim.position.set(0, 2.08, 0); this.group.add(sowBrim);
         const sowCap = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.32, 0.20, 10), m(0xf0c020));
-        sowCap.position.set(0, 2.36, 0); this.group.add(sowCap);
+        sowCap.position.set(0, 2.19, 0); this.group.add(sowCap);
         const flap = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.20, 0.12), m(0xe8b818));
-        flap.position.set(0, 2.27, 0.28); this.group.add(flap);
+        flap.position.set(0, 2.10, 0.28); this.group.add(flap);
         break;
       }
       case 'Barkeeper': {
         // Dark flat cap
         const flatCap = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.36, 0.12, 10), m(0x3a3a3a));
-        flatCap.position.set(0, 2.28, 0); this.group.add(flatCap);
+        flatCap.position.set(0, 2.11, 0); this.group.add(flatCap);
         const flatBrim = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.05, 0.20), m(0x2a2a2a));
-        flatBrim.position.set(0.02, 2.21, 0.28); this.group.add(flatBrim);
+        flatBrim.position.set(0.02, 2.04, 0.28); this.group.add(flatBrim);
         break;
       }
       case 'Barista': {
         // Coffee-shop visor
         const visorRing = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.35, 0.10, 10), m(0x2d1a0e));
-        visorRing.position.set(0, 2.27, 0); this.group.add(visorRing);
+        visorRing.position.set(0, 2.10, 0); this.group.add(visorRing);
         const visorBrim = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.05, 0.20), m(0x2d1a0e));
-        visorBrim.position.set(0, 2.21, 0.30); this.group.add(visorBrim);
+        visorBrim.position.set(0, 2.04, 0.30); this.group.add(visorBrim);
         break;
       }
       case 'Teacher': {
         // Mortarboard
         const base = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.32, 0.14, 8), m(0x1a1a2e));
-        base.position.set(0, 2.33, 0); this.group.add(base);
+        base.position.set(0, 2.16, 0); this.group.add(base);
         const board = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.06, 0.72), m(0x1a1a2e));
-        board.position.set(0, 2.45, 0); this.group.add(board);
+        board.position.set(0, 2.28, 0); this.group.add(board);
         const tassel = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.01, 0.20, 4), m(0xd4a853));
-        tassel.position.set(0.20, 2.37, 0.20); this.group.add(tassel);
+        tassel.position.set(0.20, 2.20, 0.20); this.group.add(tassel);
         break;
       }
       case 'Shopkeeper': {
         // Flower hair decoration
         const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.10, 4), m(0x2ecc71));
-        stem.position.set(0.24, 2.18, -0.06); this.group.add(stem);
+        stem.position.set(0.24, 2.01, -0.06); this.group.add(stem);
         const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.10, 6, 5), m(0xff6eb4));
-        bloom.position.set(0.24, 2.26, -0.06); this.group.add(bloom);
+        bloom.position.set(0.24, 2.09, -0.06); this.group.add(bloom);
         break;
       }
       case 'Engineer': {
         // Yellow hard hat
         const hardHat = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.16, 10), m(0xf6c90e));
-        hardHat.position.set(0, 2.30, 0); this.group.add(hardHat);
+        hardHat.position.set(0, 2.13, 0); this.group.add(hardHat);
         const dome = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), m(0xf6c90e));
-        dome.position.set(0, 2.38, 0); this.group.add(dome);
+        dome.position.set(0, 2.21, 0); this.group.add(dome);
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.05, 0.28), m(0xf6c90e));
-        brim.position.set(0, 2.24, 0.28); this.group.add(brim);
+        brim.position.set(0, 2.07, 0.28); this.group.add(brim);
         break;
       }
       case 'Artist': {
         // Beret — flat angled cap
         const beret = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55), m(0x8b0000));
         beret.rotation.z = 0.3;
-        beret.position.set(0.06, 2.28, 0); this.group.add(beret);
+        beret.position.set(0.06, 2.11, 0); this.group.add(beret);
         break;
       }
       case 'Botanist': {
         // Wide straw hat with green band (field researcher)
         const bbrim = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.56, 0.06, 10), m(0xd4a832));
-        bbrim.position.set(0, 2.26, 0); this.group.add(bbrim);
+        bbrim.position.set(0, 2.09, 0); this.group.add(bbrim);
         const bcrown = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.26, 10), m(0xc49828));
-        bcrown.position.set(0, 2.40, 0); this.group.add(bcrown);
+        bcrown.position.set(0, 2.23, 0); this.group.add(bcrown);
         const bband = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.08, 10), m(0x2e7d32));
-        bband.position.set(0, 2.27, 0); this.group.add(bband);
+        bband.position.set(0, 2.10, 0); this.group.add(bband);
         break;
       }
       case 'Elder': {
         // Grey flat cap
         const eCap = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.35, 0.11, 10), m(0x9e9e9e));
-        eCap.position.set(0, 2.28, 0); this.group.add(eCap);
+        eCap.position.set(0, 2.11, 0); this.group.add(eCap);
         const eBrim = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.05, 0.18), m(0x757575));
-        eBrim.position.set(0.02, 2.21, 0.27); this.group.add(eBrim);
+        eBrim.position.set(0.02, 2.04, 0.27); this.group.add(eBrim);
         break;
       }
       case 'Keeper': {
         // Navy peaked cap (lighthouse keeper)
         const kCap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.36, 0.14, 10), m(0x1a2a4a));
-        kCap.position.set(0, 2.29, 0); this.group.add(kCap);
+        kCap.position.set(0, 2.12, 0); this.group.add(kCap);
         const kPeak = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.05, 0.22), m(0x0d1b36));
-        kPeak.position.set(0, 2.21, 0.30); this.group.add(kPeak);
+        kPeak.position.set(0, 2.04, 0.30); this.group.add(kPeak);
         const kBadge = new THREE.Mesh(new THREE.SphereGeometry(0.06, 5, 4), m(0xffd700));
-        kBadge.position.set(0, 2.35, 0.30); this.group.add(kBadge);
+        kBadge.position.set(0, 2.18, 0.30); this.group.add(kBadge);
         break;
       }
       case 'Newcomer': {
         // Simple backpack suggestion — small pack on back
         const pack = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.50, 0.18), m(0xe67e22));
-        pack.position.set(0, 1.25, -0.42); this.group.add(pack);
+        pack.position.set(0, 1.08, -0.38); this.group.add(pack);
         break;
       }
       case 'Child': {
         // Colourful bobble hat
         const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.31, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.65), m(0xff4081));
-        beanie.position.set(0, 2.22, 0); this.group.add(beanie);
+        beanie.position.set(0, 2.05, 0); this.group.add(beanie);
         const bobble = new THREE.Mesh(new THREE.SphereGeometry(0.10, 6, 5), m(0xfff176));
-        bobble.position.set(0, 2.52, 0); this.group.add(bobble);
+        bobble.position.set(0, 2.35, 0); this.group.add(bobble);
         break;
       }
       default: break;
@@ -545,7 +609,7 @@ class NPC {
       // Arrived home — nod head and stand still
       this.idleTime += delta;
       this._head.rotation.x = 0.38 + Math.sin(this.idleTime * 0.5) * 0.06;
-      this._head.position.y = 2.0;
+      this._head.position.y = 1.83;
     } else if (isSleeping) {
       // Walk directly to home centre (no wander sub-targets while sleeping)
       const hDir = new THREE.Vector3(areaCenter.x - pos.x, 0, areaCenter.z - pos.z).normalize();
@@ -578,12 +642,18 @@ class NPC {
         this.idleTime = 0;
       } else {
         this.idleTime += delta;
-        this._head.position.y = 2.0 + Math.sin(this.idleTime * 2) * 0.05;
+        this._head.position.y = 1.83 + Math.sin(this.idleTime * 2) * 0.05;
       }
     }
 
     // Snap to terrain height
     pos.y = getHeight(pos.x, pos.z);
+
+    // Idle bob animation — gentle breathing bob with per-NPC phase offset (applied after terrain snap)
+    const t = performance.now() * 0.001 + this.phaseOffset;
+    pos.y += Math.sin(t * 1.8) * 0.003;
+    this._armL.rotation.x = Math.sin(t * 1.8) * 0.08;
+    this._armR.rotation.x = -Math.sin(t * 1.8) * 0.08;
 
     // Show label when player is close
     const playerDist = pos.distanceTo(playerPosition);
