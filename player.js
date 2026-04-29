@@ -216,12 +216,14 @@ export class PlayerController {
     // If a mini-game overlay is open, freeze player movement
     if (this.miniGame && this.miniGame.active) {
       // Still update camera so the world stays visible behind the overlay
-      const camGroundY = getHeight(this.player.position.x, this.player.position.z);
-      const camX = this.player.position.x + Math.sin(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
-      const camZ = this.player.position.z + Math.cos(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
-      const camY = camGroundY + this.cameraHeight + this.cameraDistance * Math.sin(this.pitch);
-      this.camera.position.set(camX, camY, camZ);
-      this.camera.lookAt(this.player.position.x, camGroundY + 1.2, this.player.position.z);
+      if (!this.indoorCamera) {
+        const camGroundY = getHeight(this.player.position.x, this.player.position.z);
+        const camX = this.player.position.x + Math.sin(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
+        const camZ = this.player.position.z + Math.cos(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
+        const camY = camGroundY + this.cameraHeight + this.cameraDistance * Math.sin(this.pitch);
+        this.camera.position.set(camX, camY, camZ);
+        this.camera.lookAt(this.player.position.x, camGroundY + 1.2, this.player.position.z);
+      }
       return;
     }
 
@@ -299,18 +301,21 @@ export class PlayerController {
 
     // Third-person camera: completely ignores jump — stays fixed at ground level
     // and doesn't rotate to track the player in the air
-    const camGroundY = getHeight(this.player.position.x, this.player.position.z);
-    const camX = this.player.position.x + Math.sin(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
-    const camZ = this.player.position.z + Math.cos(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
-    const camY = camGroundY + this.cameraHeight + this.cameraDistance * Math.sin(this.pitch) + bobOffset;
+    // Skip camera update when the overhead indoor camera is active
+    if (!this.indoorCamera) {
+      const camGroundY = getHeight(this.player.position.x, this.player.position.z);
+      const camX = this.player.position.x + Math.sin(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
+      const camZ = this.player.position.z + Math.cos(this.yaw) * this.cameraDistance * Math.cos(this.pitch);
+      const camY = camGroundY + this.cameraHeight + this.cameraDistance * Math.sin(this.pitch) + bobOffset;
 
-    this.camera.position.set(camX, camY, camZ);
+      this.camera.position.set(camX, camY, camZ);
 
-    // Always look at ground-level player position — never follows jump height
-    this.camera.lookAt(
-      this.player.position.x,
-      camGroundY + 1.2,
-      this.player.position.z
-    );
+      // Always look at ground-level player position — never follows jump height
+      this.camera.lookAt(
+        this.player.position.x,
+        camGroundY + 1.2,
+        this.player.position.z
+      );
+    }
   }
 }

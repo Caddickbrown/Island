@@ -3498,32 +3498,32 @@ export function buildScene(scene) {
     { cx: -45, cz: -105, hw: 6.5, hd: 5,   rot: 0.1  },
 
     // Bakery (-90, -60) 12×9, rot 0.3 — per-wall colliders (hollow building)
-    { cx: -95.73, cz: -58.23, hw: 0.2, hd: 4.5, rot: 0.3 },  // left wall
-    { cx: -84.27, cz: -61.77, hw: 0.2, hd: 4.5, rot: 0.3 },  // right wall
-    { cx: -91.33, cz: -64.30, hw: 6.2, hd: 0.2, rot: 0.3 },  // back wall
-    { cx: -92.01, cz: -54.67, hw: 2.5, hd: 0.2, rot: 0.3 },  // front-left panel
-    { cx: -85.33, cz: -56.74, hw: 2.5, hd: 0.2, rot: 0.3 },  // front-right panel
+    { cx: -95.73, cz: -58.23, hw: 0.5, hd: 4.5, rot: 0.3 },  // left wall
+    { cx: -84.27, cz: -61.77, hw: 0.5, hd: 4.5, rot: 0.3 },  // right wall
+    { cx: -91.33, cz: -64.30, hw: 6.2, hd: 0.5, rot: 0.3 },  // back wall
+    { cx: -92.01, cz: -54.67, hw: 2.5, hd: 0.5, rot: 0.3 },  // front-left panel
+    { cx: -85.33, cz: -56.74, hw: 2.5, hd: 0.5, rot: 0.3 },  // front-right panel
 
     // Post Office (90, -60) 10×8, rot -0.2 — per-wall colliders (hollow building)
-    { cx:  85.10, cz: -60.99, hw: 0.2, hd: 4.0, rot: -0.2 }, // left wall
-    { cx:  94.90, cz: -59.01, hw: 0.2, hd: 4.0, rot: -0.2 }, // right wall
-    { cx:  90.79, cz: -63.92, hw: 5.2, hd: 0.2, rot: -0.2 }, // back wall
-    { cx:  86.27, cz: -56.68, hw: 2.0, hd: 0.2, rot: -0.2 }, // front-left panel
-    { cx:  92.15, cz: -55.48, hw: 2.0, hd: 0.2, rot: -0.2 }, // front-right panel
+    { cx:  85.10, cz: -60.99, hw: 0.5, hd: 4.0, rot: -0.2 }, // left wall
+    { cx:  94.90, cz: -59.01, hw: 0.5, hd: 4.0, rot: -0.2 }, // right wall
+    { cx:  90.79, cz: -63.92, hw: 5.2, hd: 0.5, rot: -0.2 }, // back wall
+    { cx:  86.27, cz: -56.68, hw: 2.0, hd: 0.5, rot: -0.2 }, // front-left panel
+    { cx:  92.15, cz: -55.48, hw: 2.0, hd: 0.5, rot: -0.2 }, // front-right panel
 
     // School (60, -105) 18×12, rot -0.15 — per-wall colliders (hollow building)
-    { cx:  51.10, cz: -106.34, hw: 0.2, hd: 6.0,  rot: -0.15 }, // left wall
-    { cx:  68.90, cz: -103.66, hw: 0.2, hd: 6.0,  rot: -0.15 }, // right wall
-    { cx:  60.90, cz: -110.93, hw: 9.2, hd: 0.2,  rot: -0.15 }, // back wall
-    { cx:  54.16, cz:  -99.81, hw: 4.0, hd: 0.2,  rot: -0.15 }, // front-left panel
-    { cx:  64.05, cz:  -98.32, hw: 4.0, hd: 0.2,  rot: -0.15 }, // front-right panel
+    { cx:  51.10, cz: -106.34, hw: 0.5, hd: 6.0,  rot: -0.15 }, // left wall
+    { cx:  68.90, cz: -103.66, hw: 0.5, hd: 6.0,  rot: -0.15 }, // right wall
+    { cx:  60.90, cz: -110.93, hw: 9.2, hd: 0.5,  rot: -0.15 }, // back wall
+    { cx:  54.16, cz:  -99.81, hw: 4.0, hd: 0.5,  rot: -0.15 }, // front-left panel
+    { cx:  64.05, cz:  -98.32, hw: 4.0, hd: 0.5,  rot: -0.15 }, // front-right panel
 
     // Café (8, -83) 10×8, rot 0.15 — per-wall colliders (hollow building)
-    { cx:   3.06, cz: -82.25, hw: 0.2, hd: 4.0, rot: 0.15 }, // left wall
-    { cx:  12.94, cz: -83.75, hw: 0.2, hd: 4.0, rot: 0.15 }, // right wall
-    { cx:   7.40, cz: -86.96, hw: 5.2, hd: 0.2, rot: 0.15 }, // back wall
-    { cx:   5.63, cz: -78.60, hw: 2.0, hd: 0.2, rot: 0.15 }, // front-left panel
-    { cx:  11.56, cz: -79.49, hw: 2.0, hd: 0.2, rot: 0.15 }, // front-right panel
+    { cx:   3.06, cz: -82.25, hw: 0.5, hd: 4.0, rot: 0.15 }, // left wall
+    { cx:  12.94, cz: -83.75, hw: 0.5, hd: 4.0, rot: 0.15 }, // right wall
+    { cx:   7.40, cz: -86.96, hw: 5.2, hd: 0.5, rot: 0.15 }, // back wall
+    { cx:   5.63, cz: -78.60, hw: 2.0, hd: 0.5, rot: 0.15 }, // front-left panel
+    { cx:  11.56, cz: -79.49, hw: 2.0, hd: 0.5, rot: 0.15 }, // front-right panel
     // Barn (-270, 105)  approx 14×10, rot 0.2
     { cx: -270, cz: 105, hw: 7,   hd: 5,   rot: 0.2  },
     // Greenhouse (-240, 135)  10×14, rot 0.2
@@ -3541,15 +3541,15 @@ export function buildScene(scene) {
     //   wz = libZ - sin(rot)*lx + cos(rot)*lz
     // cos(1.1)≈0.4536, sin(1.1)≈0.8912, libX=120, libZ=60
     // Left wall local (-14, 0):   wx=113.650, wz=72.477
-    { cx: 113.65, cz: 72.48, hw: 0.3, hd: 12,  rot: 1.1 },
+    { cx: 113.65, cz: 72.48, hw: 0.5, hd: 12,  rot: 1.1 },
     // Right wall local (14, 0):   wx=126.350, wz=47.523
-    { cx: 126.35, cz: 47.52, hw: 0.3, hd: 12,  rot: 1.1 },
+    { cx: 126.35, cz: 47.52, hw: 0.5, hd: 12,  rot: 1.1 },
     // Back wall local (0, 12):    wx=130.694, wz=65.443
-    { cx: 130.69, cz: 65.44, hw: 14.5, hd: 0.3, rot: 1.1 },
+    { cx: 130.69, cz: 65.44, hw: 14.5, hd: 0.5, rot: 1.1 },
     // Front-left panel local (-8.25, -12):  wx=105.564, wz=61.909
-    { cx: 105.56, cz: 61.91, hw: 5.8, hd: 0.3, rot: 1.1 },
+    { cx: 105.56, cz: 61.91, hw: 5.8, hd: 0.5, rot: 1.1 },
     // Front-right panel local (8.25, -12):  wx=113.048, wz=47.205
-    { cx: 113.05, cz: 47.21, hw: 5.8, hd: 0.3, rot: 1.1 }
+    { cx: 113.05, cz: 47.21, hw: 5.8, hd: 0.5, rot: 1.1 }
   );
 
 

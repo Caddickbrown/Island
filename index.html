@@ -732,6 +732,26 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   let greetingTimer = 0;
   const DIALOGUE_DURATION = 5;
 
+  // --- Interior zone detection ---
+  const INTERIOR_ZONES = [
+    { cx:   8, cz:  -83, hw: 8,  hd: 7,  label: 'café'        },
+    { cx: -90, cz:  -60, hw: 10, hd: 8,  label: 'bakery'      },
+    { cx:  90, cz:  -60, hw: 8,  hd: 7,  label: 'post office' },
+    { cx:  60, cz: -105, hw: 9,  hd: 7,  label: 'school'      },
+    { cx: 120, cz:   60, hw: 9,  hd: 7,  label: 'library'     },
+  ];
+
+  let insideBuilding = null;
+
+  function checkInteriorZone(playerPos) {
+    for (const z of INTERIOR_ZONES) {
+      if (Math.abs(playerPos.x - z.cx) < z.hw && Math.abs(playerPos.z - z.cz) < z.hd) {
+        return z;
+      }
+    }
+    return null;
+  }
+
   // --- Game loop ---
   const clock = new THREE.Clock();
 
@@ -740,6 +760,22 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     const delta = Math.min(clock.getDelta(), 0.1); // cap delta to avoid jumps
 
     playerCtrl.update(delta);
+
+    // Interior overhead camera
+    const zone = checkInteriorZone(playerCtrl.player.position);
+    if (zone !== insideBuilding) {
+      insideBuilding = zone;
+    }
+    playerCtrl.indoorCamera = !!insideBuilding;
+    if (insideBuilding) {
+      // Overhead camera: position above building centre, look straight down
+      camera.position.set(insideBuilding.cx, 22, insideBuilding.cz + 4);
+      camera.lookAt(insideBuilding.cx, 0, insideBuilding.cz);
+      camera.up.set(0, 0, -1); // north is "up" on screen
+    } else {
+      camera.up.set(0, 1, 0); // restore normal up
+      // Normal camera is handled by PlayerController
+    }
     if (playerCtrl.miniGame && playerCtrl.miniGame.update) {
       playerCtrl.miniGame.update(delta, playerCtrl.player.position);
     }
