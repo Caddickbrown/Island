@@ -681,6 +681,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       sunLight.intensity = ph.si;
     }
     if (scene.fog) scene.fog.color.setHex(ph.fog);
+    scene.background = new THREE.Color(ph.sky);
     // Fireflies glow at night (visible 19:00–06:00)
     if (fireflies) {
       const nighttime = gameHr >= 19 || gameHr < 6;
