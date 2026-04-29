@@ -138,10 +138,10 @@ export function getHeight(x, z) {
   h *= fade;
 
   // Flatten the dock area (near water level)
-  const dockDist = Math.sqrt(x * x + (z - 330) * (z - 330));
-  if (dockDist < 40) {
-    const dockFade = Math.max(0, 1 - dockDist / 40);
-    h *= (1 - dockFade * 0.9);
+  const dockDist = Math.sqrt(x * x + (z - 355) * (z - 355));
+  if (dockDist < 55) {
+    const dockFade = Math.max(0, 1 - dockDist / 55);
+    h *= (1 - dockFade * 0.95);
   }
 
   // Flatten town square area slightly
@@ -2576,7 +2576,7 @@ export function buildScene(scene) {
   // THE DOCK (0, 330)
   // =====================================================================
   const dock = makeDock();
-  dock.position.set(0, -1.0, 370); // push out toward water
+  dock.position.set(0, 0.2, 370); // sit just above sea level
   dock.rotation.y = 0;
   scene.add(dock);
 
@@ -4214,8 +4214,8 @@ export function updateNotification(deltaSec) {
 // 5 orders per shift; wrong steps get a gentle "Oops" with no penalty.
 // ===========================================================================
 
-const CAFE_TRIGGER_POS  = { x: 5,  z: -52 }; // near café counter / Mabel
-const CAFE_TRIGGER_DIST = 7;                   // proximity to start
+const CAFE_TRIGGER_POS  = { x: 8,  z: -83 }; // near café counter (scaled 1.5x)
+const CAFE_TRIGGER_DIST = 10;                  // proximity to start
 
 const CAFE_ORDERS = [
   'One flat white, please!',
