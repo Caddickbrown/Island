@@ -3334,6 +3334,7 @@ export function buildScene(scene) {
     colliders.push({ cx: -105, cz: 70,   hw: 8,   hd: 6,   rot: 0.5  });
     // VR Pod (140, -30)  cylinder approx radius 7
     colliders.push({ cx: 140,  cz: -30,  hw: 7,   hd: 7,   rot: 0    });
+  }
 
   const fish = aquarium.userData.fish || [];
 
