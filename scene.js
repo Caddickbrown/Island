@@ -72,6 +72,7 @@ export const AREAS = {
   DOCK:           { x: 0,    z: 370,  label: 'The Dock' },
   FARM:           { x: -270, z: 120,  label: 'The Farm' },
   FOREST:         { x: 270,  z: 180,  label: 'Forest Path' },
+  TREEHOUSE:      { x: 282,  z: 192,  label: "Petra's Treehouse" },
   HILLTOP:        { x: -150, z: -270, label: 'The Hilltop' },
   BEACH_SOUTH:    { x: 0,    z: -330, label: 'South Beach' },
   LIBRARY:        { x: 120,  z: 60,   label: 'Library' },
@@ -2448,6 +2449,80 @@ export function buildScene(scene) {
   placeOnTerrain(forestBench, 267, 174);
   forestBench.rotation.y = 2.4; // face the fire
   scene.add(forestBench);
+
+  // =====================================================================
+  // PETRA'S TREEHOUSE (282, 192) — raised platform in the forest canopy
+  // =====================================================================
+  {
+    const thBase = getHeight(282, 192);
+    const stiltsH = 5.5;
+    const platformY = thBase + stiltsH;
+    const stiltM = mat(0x6b4c2a);
+    const planksM = mat(0xc8a878);
+
+    // Four stilts
+    [[279, 189], [285, 189], [279, 195], [285, 195]].forEach(([sx, sz]) => {
+      const h = getHeight(sx, sz);
+      const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, stiltsH + (thBase - h) + 0.3, 6), stiltM);
+      stilt.position.set(sx, h + (stiltsH + (thBase - h)) / 2, sz);
+      scene.add(stilt);
+    });
+
+    // Platform floor
+    const platform = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.25, 5.5), planksM);
+    platform.position.set(282, platformY, 192);
+    scene.add(platform);
+
+    // Railing posts
+    const railingPts = [
+      [277.5, 189], [280.5, 189], [282.5, 189], [285.5, 189],
+      [277.5, 195], [285.5, 195],
+    ];
+    railingPts.forEach(([rx, rz]) => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.9, 4), stiltM);
+      post.position.set(rx, platformY + 0.57, rz);
+      scene.add(post);
+    });
+    const rail1 = new THREE.Mesh(new THREE.BoxGeometry(9.0, 0.06, 0.06), stiltM);
+    rail1.position.set(282, platformY + 0.9, 189); scene.add(rail1);
+    const rail2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 6.5), stiltM);
+    rail2.position.set(277.5, platformY + 0.9, 192); scene.add(rail2);
+    const rail3 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 6.5), stiltM);
+    rail3.position.set(285.5, platformY + 0.9, 192); scene.add(rail3);
+
+    // Cabin on the platform
+    const cabin = makeBuilding(4.5, 3.5, 4, 0xb8936a, 0x7a5030, { label: "Petra's Treehouse" });
+    cabin.position.set(282, platformY + 0.13, 192.5);
+    cabin.rotation.y = 0.4;
+    scene.add(cabin);
+    cabin.userData.buildingId = 'petras-treehouse';
+
+    // Rope ladder from ground to platform
+    const ladderSideM = mat(0x8a6840);
+    const rungM = mat(0x7a5830);
+    [-0.18, 0.18].forEach(ox => {
+      const side = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, stiltsH + 0.5, 4), ladderSideM);
+      side.position.set(280.5 + ox, thBase + (stiltsH / 2), 187.5);
+      scene.add(side);
+    });
+    for (let ri = 0; ri < 8; ri++) {
+      const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.36, 4), rungM);
+      rung.rotation.z = Math.PI / 2;
+      rung.position.set(280.5, thBase + 0.6 + ri * 0.72, 187.5);
+      scene.add(rung);
+    }
+
+    // Petra's paint canvas on the railing
+    const canvasFrame = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.04), mat(0x6b4c2a));
+    canvasFrame.position.set(285, platformY + 1.1, 191);
+    canvasFrame.rotation.y = -0.8;
+    scene.add(canvasFrame);
+    const painting = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.75, 0.02),
+      new THREE.MeshLambertMaterial({ color: 0xfff5e0 }));
+    painting.position.set(285, platformY + 1.1, 191.02);
+    painting.rotation.y = -0.8;
+    scene.add(painting);
+  }
 
   // =====================================================================
   // THE HILLTOP (-150, -270)
