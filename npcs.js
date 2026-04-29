@@ -246,7 +246,7 @@ const WANDER_RADIUS = 12;      // roam within this many units of the area centre
 const SLEEP_WANDER_RADIUS = 2; // tiny wander when at home / sleeping
 
 class NPC {
-  constructor(name, job, color, schedule) {
+  constructor(name, job, color, schedule, skinTone = 0xd4956a, hairColor = 0x3D1A00) {
     this.name = name;
     this.job = job;
     this.schedule = schedule;
@@ -263,95 +263,146 @@ class NPC {
     // Mesh group
     this.group = new THREE.Group();
 
-    // Materials
-    const skinMat  = new THREE.MeshLambertMaterial({ color: 0xd4956a, flatShading: true });
-    const clothMat = new THREE.MeshLambertMaterial({ color, flatShading: true });
-    const darkMat  = new THREE.MeshLambertMaterial({ color: 0x2c3e50, flatShading: true });
-    const footMat  = new THREE.MeshLambertMaterial({ color: 0x1a252f, flatShading: true });
+    // ---- Materials ----
+    const skinMat  = new THREE.MeshLambertMaterial({ color: skinTone,   flatShading: true });
+    const clothMat = new THREE.MeshLambertMaterial({ color,             flatShading: true });
+    const darkMat  = new THREE.MeshLambertMaterial({ color: 0x2c3e50,   flatShading: true });
+    const footMat  = new THREE.MeshLambertMaterial({ color: 0x1a252f,   flatShading: true });
+    const hairMat  = new THREE.MeshLambertMaterial({ color: hairColor,  flatShading: true });
 
-    // Head (y=1.83 centre)
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 5), skinMat);
+    // ---- HEAD (smoother sphere) ----
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 9), skinMat);
     head.position.y = 1.83;
     this.group.add(head);
+    this._head = head;
 
-    // Neck
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 5), skinMat);
-    neck.position.y = 1.45;
-    this.group.add(neck);
+    // Hair cap — sits on top half of head, partially hidden by hats
+    const hair = new THREE.Mesh(
+      new THREE.SphereGeometry(0.292, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.52),
+      hairMat
+    );
+    hair.position.y = 1.83;
+    this.group.add(hair);
 
-    // Torso
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.65, 6), clothMat);
-    torso.position.y = 1.05;
-    this.group.add(torso);
+    // Ears
+    const earGeo = new THREE.SphereGeometry(0.068, 7, 5);
+    const earL = new THREE.Mesh(earGeo, skinMat);
+    earL.position.set(-0.28, 1.82, 0.02);
+    this.group.add(earL);
+    const earR = new THREE.Mesh(earGeo, skinMat);
+    earR.position.set(0.28, 1.82, 0.02);
+    this.group.add(earR);
 
-    // Hips
-    const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.20, 0.3, 6), darkMat);
-    hips.position.y = 0.68;
-    this.group.add(hips);
-
-    // Upper legs
-    const ulLegGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.42, 5);
-    const ulLegL = new THREE.Mesh(ulLegGeo, darkMat);
-    ulLegL.position.set(-0.12, 0.35, 0);
-    this.group.add(ulLegL);
-    const ulLegR = new THREE.Mesh(ulLegGeo, darkMat);
-    ulLegR.position.set(0.12, 0.35, 0);
-    this.group.add(ulLegR);
-
-    // Lower legs
-    const llLegGeo = new THREE.CylinderGeometry(0.085, 0.085, 0.4, 5);
-    const llLegL = new THREE.Mesh(llLegGeo, darkMat);
-    llLegL.position.set(-0.12, -0.07, 0);
-    this.group.add(llLegL);
-    const llLegR = new THREE.Mesh(llLegGeo, darkMat);
-    llLegR.position.set(0.12, -0.07, 0);
-    this.group.add(llLegR);
-
-    // Feet
-    const footGeo = new THREE.BoxGeometry(0.18, 0.1, 0.28);
-    const footL = new THREE.Mesh(footGeo, footMat);
-    footL.position.set(-0.12, -0.3, 0.04);
-    this.group.add(footL);
-    const footR = new THREE.Mesh(footGeo, footMat);
-    footR.position.set(0.12, -0.3, 0.04);
-    this.group.add(footR);
-
-    // Upper arms
-    const uArmGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.38, 5);
-    const uArmL = new THREE.Mesh(uArmGeo, clothMat);
-    uArmL.position.set(-0.4, 1.05, 0);
-    uArmL.rotation.z = 0.15;
-    this.group.add(uArmL);
-    const uArmR = new THREE.Mesh(uArmGeo, clothMat);
-    uArmR.position.set(0.4, 1.05, 0);
-    uArmR.rotation.z = -0.15;
-    this.group.add(uArmR);
-
-    // Lower arms
-    const lArmGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.36, 5);
-    const lArmL = new THREE.Mesh(lArmGeo, skinMat);
-    lArmL.position.set(-0.42, 0.72, 0);
-    this.group.add(lArmL);
-    const lArmR = new THREE.Mesh(lArmGeo, skinMat);
-    lArmR.position.set(0.42, 0.72, 0);
-    this.group.add(lArmR);
-
-    // Store arm references for idle animation
-    this._armL = uArmL;
-    this._armR = uArmR;
+    // Nose
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.042, 6, 5), skinMat);
+    nose.position.set(0, 1.795, 0.295);
+    this.group.add(nose);
 
     // Eyes
     const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const eyeGeo = new THREE.SphereGeometry(0.065, 6, 5);
+    const eyeGeo = new THREE.SphereGeometry(0.052, 7, 6);
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.12, 1.88, 0.26);
+    eyeL.position.set(-0.10, 1.87, 0.265);
     this.group.add(eyeL);
     const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeR.position.set(0.12, 1.88, 0.26);
+    eyeR.position.set(0.10, 1.87, 0.265);
     this.group.add(eyeR);
 
-    // Store head reference for animation
-    this._head = head;
+    // ---- NECK ----
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.12, 0.22, 8), skinMat);
+    neck.position.y = 1.49;
+    this.group.add(neck);
+
+    // ---- TORSO ----
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.23, 0.65, 10), clothMat);
+    torso.position.y = 1.05;
+    this.group.add(torso);
+
+    // ---- HIPS ----
+    const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.21, 0.30, 10), darkMat);
+    hips.position.y = 0.68;
+    this.group.add(hips);
+
+    // ---- ARM PIVOTS (shoulder joint y=1.30) ----
+    // Left arm
+    this._armPivotL = new THREE.Group();
+    this._armPivotL.position.set(-0.36, 1.30, 0);
+    this._armPivotL.rotation.z = 0.10;  // slight outward hang
+    this.group.add(this._armPivotL);
+
+    // Shoulder sphere L
+    const shldrL = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), clothMat);
+    shldrL.position.y = 0;
+    this._armPivotL.add(shldrL);
+
+    const uArmL = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.38, 8), clothMat);
+    uArmL.position.y = -0.19;
+    this._armPivotL.add(uArmL);
+
+    const lArmL = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.065, 0.34, 8), skinMat);
+    lArmL.position.y = -0.56;
+    this._armPivotL.add(lArmL);
+
+    const handL = new THREE.Mesh(new THREE.SphereGeometry(0.082, 7, 6), skinMat);
+    handL.position.y = -0.77;
+    this._armPivotL.add(handL);
+
+    // Right arm
+    this._armPivotR = new THREE.Group();
+    this._armPivotR.position.set(0.36, 1.30, 0);
+    this._armPivotR.rotation.z = -0.10;
+    this.group.add(this._armPivotR);
+
+    const shldrR = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), clothMat);
+    shldrR.position.y = 0;
+    this._armPivotR.add(shldrR);
+
+    const uArmR = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.38, 8), clothMat);
+    uArmR.position.y = -0.19;
+    this._armPivotR.add(uArmR);
+
+    const lArmR = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.065, 0.34, 8), skinMat);
+    lArmR.position.y = -0.56;
+    this._armPivotR.add(lArmR);
+
+    const handR = new THREE.Mesh(new THREE.SphereGeometry(0.082, 7, 6), skinMat);
+    handR.position.y = -0.77;
+    this._armPivotR.add(handR);
+
+    // ---- LEG PIVOTS (hip joint y=0.53) ----
+    // Left leg
+    this._legPivotL = new THREE.Group();
+    this._legPivotL.position.set(-0.13, 0.53, 0);
+    this.group.add(this._legPivotL);
+
+    const ulLegL = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.095, 0.44, 8), darkMat);
+    ulLegL.position.y = -0.22;
+    this._legPivotL.add(ulLegL);
+
+    const llLegL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.085, 0.40, 8), darkMat);
+    llLegL.position.y = -0.64;
+    this._legPivotL.add(llLegL);
+
+    const footL = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.09, 0.30), footMat);
+    footL.position.set(-0.01, -0.87, 0.04);
+    this._legPivotL.add(footL);
+
+    // Right leg
+    this._legPivotR = new THREE.Group();
+    this._legPivotR.position.set(0.13, 0.53, 0);
+    this.group.add(this._legPivotR);
+
+    const ulLegR = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.095, 0.44, 8), darkMat);
+    ulLegR.position.y = -0.22;
+    this._legPivotR.add(ulLegR);
+
+    const llLegR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.085, 0.40, 8), darkMat);
+    llLegR.position.y = -0.64;
+    this._legPivotR.add(llLegR);
+
+    const footR = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.09, 0.30), footMat);
+    footR.position.set(0.01, -0.87, 0.04);
+    this._legPivotR.add(footR);
 
     // Job-specific hat / accessory
     this._addAccessory(job);
@@ -605,6 +656,8 @@ class NPC {
     const isSleeping = entry.area.toLowerCase().includes('home');
     const distToCenter = Math.sqrt((pos.x - areaCenter.x) ** 2 + (pos.z - areaCenter.z) ** 2);
 
+    let isWalking = false;
+
     if (isSleeping && distToCenter < 4) {
       // Arrived home — nod head and stand still
       this.idleTime += delta;
@@ -617,6 +670,7 @@ class NPC {
       pos.z += hDir.z * this.speed * delta;
       this.group.rotation.y = Math.atan2(hDir.x, hDir.z);
       this._head.rotation.x = 0;
+      isWalking = true;
     } else {
       // Normal wander behaviour
       this._head.rotation.x = 0;
@@ -640,6 +694,7 @@ class NPC {
         pos.z += dir.z * this.speed * delta;
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
         this.idleTime = 0;
+        isWalking = true;
       } else {
         this.idleTime += delta;
         this._head.position.y = 1.83 + Math.sin(this.idleTime * 2) * 0.05;
@@ -649,11 +704,25 @@ class NPC {
     // Snap to terrain height
     pos.y = getHeight(pos.x, pos.z);
 
-    // Idle bob animation — gentle breathing bob with per-NPC phase offset (applied after terrain snap)
+    // Animation — walking vs idle
     const t = performance.now() * 0.001 + this.phaseOffset;
-    pos.y += Math.sin(t * 1.8) * 0.003;
-    this._armL.rotation.x = Math.sin(t * 1.8) * 0.08;
-    this._armR.rotation.x = -Math.sin(t * 1.8) * 0.08;
+    pos.y += Math.sin(t * 1.8) * 0.003; // gentle breathing bob
+
+    if (isWalking) {
+      // Walking: leg swing + counter-swing arms
+      const walk = Math.sin(t * 4.5) * 0.44;
+      this._legPivotL.rotation.x = walk;
+      this._legPivotR.rotation.x = -walk;
+      this._armPivotL.rotation.x = -walk * 0.38;
+      this._armPivotR.rotation.x = walk * 0.38;
+    } else {
+      // Idle: gentle arm sway, legs ease back to neutral
+      const sway = Math.sin(t * 1.8) * 0.07;
+      this._armPivotL.rotation.x = sway;
+      this._armPivotR.rotation.x = -sway;
+      this._legPivotL.rotation.x *= 0.88;
+      this._legPivotR.rotation.x *= 0.88;
+    }
 
     // Show label when player is close
     const playerDist = pos.distanceTo(playerPosition);
@@ -902,25 +971,26 @@ class DeliveryDriver {
 // NPC Manager
 // ---------------------------------------------------------------------------
 
+// skinTone: face/hand colour | hairColor: hair cap colour
 const NPC_DEFS = [
-  { name: 'Mabel',  job: 'Baker',       color: 0xe8a87c, schedule: SCHEDULES.Mabel  },
-  { name: 'Gus',    job: 'Postman',     color: 0x5b9bd5, schedule: SCHEDULES.Gus    },
-  { name: 'Fern',   job: 'Farmer',      color: 0x7bc67e, schedule: SCHEDULES.Fern   },
-  { name: 'Olive',  job: 'Shopkeeper',  color: 0xd4a0d4, schedule: SCHEDULES.Olive  },
-  { name: 'Rosa',   job: 'Librarian',   color: 0xa29bfe, schedule: SCHEDULES.Rosa   },
-  { name: 'Jack',   job: 'Fisherman',   color: 0xc47d52, schedule: SCHEDULES.Jack   },
-  { name: 'Pete',   job: 'Farmer',      color: 0x8db87a, schedule: SCHEDULES.Pete   },
-  { name: 'Barney', job: 'Barkeeper',   color: 0xd4a853, schedule: SCHEDULES.Barney },
-  { name: 'Suki',   job: 'Barista',     color: 0xf4c77e, schedule: SCHEDULES.Suki   },
-  { name: 'Clara',    job: 'Teacher',    color: 0x74b9e8, schedule: SCHEDULES.Clara    },
-  { name: 'Rex',      job: 'Teacher',    color: 0x6ec97b, schedule: SCHEDULES.Rex      },
-  { name: 'Otto',     job: 'Engineer',   color: 0xe17055, schedule: SCHEDULES.Otto     },
-  { name: 'Petra',    job: 'Artist',     color: 0xf48fb1, schedule: SCHEDULES.Petra    },
-  { name: 'Jin',      job: 'Botanist',   color: 0x81c784, schedule: SCHEDULES.Jin      },
-  { name: 'Old Will', job: 'Elder',      color: 0xbcaaa4, schedule: SCHEDULES['Old Will'] },
-  { name: 'Lena',     job: 'Keeper',     color: 0x80cbc4, schedule: SCHEDULES.Lena     },
-  { name: 'Kai',      job: 'Newcomer',   color: 0xffcc80, schedule: SCHEDULES.Kai      },
-  { name: 'Bea',      job: 'Child',      color: 0xf06292, schedule: SCHEDULES.Bea      },
+  { name: 'Mabel',    job: 'Baker',      color: 0xe8a87c, skinTone: 0xf0c8a0, hairColor: 0x8B4513, schedule: SCHEDULES.Mabel       },
+  { name: 'Gus',      job: 'Postman',    color: 0x5b9bd5, skinTone: 0xd4956a, hairColor: 0x1a1a1a, schedule: SCHEDULES.Gus         },
+  { name: 'Fern',     job: 'Farmer',     color: 0x7bc67e, skinTone: 0xb87850, hairColor: 0x8B6014, schedule: SCHEDULES.Fern        },
+  { name: 'Olive',    job: 'Shopkeeper', color: 0xd4a0d4, skinTone: 0xe8b890, hairColor: 0x5C2E0A, schedule: SCHEDULES.Olive       },
+  { name: 'Rosa',     job: 'Librarian',  color: 0xa29bfe, skinTone: 0x8b5e3c, hairColor: 0xB22222, schedule: SCHEDULES.Rosa        },
+  { name: 'Jack',     job: 'Fisherman',  color: 0xc47d52, skinTone: 0xc08050, hairColor: 0x4A2C0A, schedule: SCHEDULES.Jack        },
+  { name: 'Pete',     job: 'Farmer',     color: 0x8db87a, skinTone: 0xa06840, hairColor: 0x3D1A00, schedule: SCHEDULES.Pete        },
+  { name: 'Barney',   job: 'Barkeeper',  color: 0xd4a853, skinTone: 0xd4956a, hairColor: 0x2C1A08, schedule: SCHEDULES.Barney      },
+  { name: 'Suki',     job: 'Barista',    color: 0xf4c77e, skinTone: 0xf5d5a0, hairColor: 0x1a1a1a, schedule: SCHEDULES.Suki        },
+  { name: 'Clara',    job: 'Teacher',    color: 0x74b9e8, skinTone: 0xf2c89c, hairColor: 0x8B6914, schedule: SCHEDULES.Clara       },
+  { name: 'Rex',      job: 'Teacher',    color: 0x6ec97b, skinTone: 0xe08858, hairColor: 0x5C2E0A, schedule: SCHEDULES.Rex         },
+  { name: 'Otto',     job: 'Engineer',   color: 0xe17055, skinTone: 0xd08040, hairColor: 0x3D1A00, schedule: SCHEDULES.Otto        },
+  { name: 'Petra',    job: 'Artist',     color: 0xf48fb1, skinTone: 0xf4c0a0, hairColor: 0xB22222, schedule: SCHEDULES.Petra       },
+  { name: 'Jin',      job: 'Botanist',   color: 0x81c784, skinTone: 0xd4a070, hairColor: 0x1a1a1a, schedule: SCHEDULES.Jin         },
+  { name: 'Old Will', job: 'Elder',      color: 0xbcaaa4, skinTone: 0xd4956a, hairColor: 0xC0C0C0, schedule: SCHEDULES['Old Will'] },
+  { name: 'Lena',     job: 'Keeper',     color: 0x80cbc4, skinTone: 0xe0a878, hairColor: 0xA0522D, schedule: SCHEDULES.Lena        },
+  { name: 'Kai',      job: 'Newcomer',   color: 0xffcc80, skinTone: 0xc07848, hairColor: 0x4A2C0A, schedule: SCHEDULES.Kai         },
+  { name: 'Bea',      job: 'Child',      color: 0xf06292, skinTone: 0xf8d4b0, hairColor: 0xFFD700, schedule: SCHEDULES.Bea         },
 ];
 
 export class NPCManager {
@@ -934,7 +1004,7 @@ export class NPCManager {
 
   _createNPCs() {
     for (const def of NPC_DEFS) {
-      const npc = new NPC(def.name, def.job, def.color, def.schedule);
+      const npc = new NPC(def.name, def.job, def.color, def.schedule, def.skinTone, def.hairColor);
       this.npcs.push(npc);
       this.scene.add(npc.group);
     }
