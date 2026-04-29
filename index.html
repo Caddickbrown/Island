@@ -625,8 +625,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   const clockPhaseEl = document.getElementById('clock-phase');
 
   // --- Day/night cycle ---
-  // 1 real second = 1 game minute (simDelta = delta/60 gives 1 game hour per 60s)
-  // Full day = 24 game minutes real time. Start at 8:00 AM.
+  // 1 real second = 3 game minutes (full day ~8 real minutes). Start at 8:00 AM.
   let gameHour = 8.0;
 
   // Colour keyframes: [hour, skyHex, groundHex, ambientHex, sunHex, sunIntensity, fogHex, ambientIntensity]
@@ -747,8 +746,8 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     wildlifeManager.update(delta);
     animalManager.update(delta);
 
-    // Sim time scalar: 1 real second = 1 game minute (1/60 sim hour)
-    const simDelta = delta / 60;
+    // Sim time scalar: 1 real second = 3 game minutes (full day ~8 real minutes)
+    const simDelta = delta / 20;
     gameHour = (gameHour + simDelta) % 24;
     updateDayNight(gameHour);
     clockTimeEl.textContent = formatGameTime(gameHour);
