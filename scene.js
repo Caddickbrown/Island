@@ -2166,7 +2166,7 @@ export function buildScene(scene) {
   // Outer ring & branches
   makePath(scene, -120, 60, -180, 60, 3); // Workshop → Mill
   makePath(scene, -180, 60, -270, 120, 3); // Mill → Farm
-  makePath(scene, 120, 60, 270, 180, 3);  // Library → Forest
+  makePath(scene, 120, 60, 195, 168, 3);  // Library → Forest entrance
   makePath(scene, -90, -60, -150, -270, 3); // Bakery → Hilltop
   makePath(scene, 90, -60, 0, -330, 3);  // Post Office → South Beach
   makePath(scene, -90, -60, 0, -330, 3); // Bakery → South Beach
@@ -2589,34 +2589,124 @@ export function buildScene(scene) {
   });
 
   // =====================================================================
-  // FOREST PATH (270, 180)
+  // FOREST (270, 180) — dense enclosed wood, discoveries inside
   // =====================================================================
-  // Dense tree cluster
-  const forestTrees = [
-    [240, 150], [255, 158], [248, 173], [263, 165], [278, 162],
-    [285, 173], [293, 188], [278, 195], [263, 203], [255, 188],
-    [300, 180], [293, 158], [270, 210], [248, 210], [300, 203],
-    [308, 165], [315, 188], [233, 165], [233, 195], [315, 210],
-    [240, 218], [285, 218], [263, 225], [308, 225], [225, 180],
-    [323, 195], [255, 143], [293, 143], [218, 173], [330, 180],
+
+  // --- Outer canopy wall — tall dark trees forming a barrier ---
+  const outerWall = [
+    // North edge
+    [245,135],[258,133],[272,132],[286,133],[300,136],[313,140],[323,148],
+    // East edge
+    [330,158],[333,170],[335,183],[334,196],[330,208],[325,218],[318,227],
+    // South edge
+    [308,233],[295,237],[281,238],[267,237],[253,234],[241,228],[231,220],
+    // West edge — gap around x:215,z:175 for the path entrance
+    [223,210],[217,198],[214,185],[215,172],[218,158],[224,147],[233,140],
   ];
-  forestTrees.forEach(([x, z]) => {
-    const height = 7 + Math.random() * 5;
-    const color = Math.random() > 0.3 ? C.foliage : C.foliageDark;
+  outerWall.forEach(([x, z]) => {
+    const height = 11 + Math.random() * 4;
+    const tree = makeTree(height, C.foliageDark);
+    placeOnTerrain(tree, x + Math.random() * 3 - 1.5, z + Math.random() * 3 - 1.5);
+    tree.rotation.y = Math.random() * Math.PI;
+    scene.add(tree);
+  });
+
+  // --- Mid-ring — mixed height trees, still dense ---
+  const midRing = [
+    [250,148],[262,144],[276,145],[290,148],[302,154],[312,163],
+    [317,175],[316,188],[312,200],[304,211],[292,218],[279,221],
+    [265,220],[252,216],[242,208],[235,196],[233,183],[235,170],
+    [240,159],[247,152],
+    // Extra fill around the inner area
+    [258,160],[272,156],[286,160],[298,167],[305,180],[302,193],
+    [290,204],[276,208],[262,206],[250,200],[244,189],[243,176],
+  ];
+  midRing.forEach(([x, z]) => {
+    const height = 8 + Math.random() * 5;
+    const color = Math.random() > 0.4 ? C.foliageDark : C.foliage;
     const tree = makeTree(height, color);
     placeOnTerrain(tree, x + Math.random() * 4 - 2, z + Math.random() * 4 - 2);
     tree.rotation.y = Math.random() * Math.PI;
     scene.add(tree);
   });
 
-  // Campfire in the forest clearing
+  // --- Undergrowth: ferns scattered between the trunks ---
+  const fernSpots = [
+    [253,163],[260,170],[268,165],[275,171],[284,165],[291,173],
+    [298,179],[305,186],[296,193],[287,199],[279,205],[269,202],
+    [258,198],[249,193],[243,185],[245,175],[252,170],[259,179],
+    [270,188],[282,178],[270,198],[255,186],[264,193],[248,180],
+    [278,185],[290,185],[264,172],[283,193],
+  ];
+  const fernMat = new THREE.MeshLambertMaterial({ color: 0x2d7a3a });
+  fernSpots.forEach(([fx, fz]) => {
+    for (let f = 0; f < 3; f++) {
+      const bx = fx + (Math.random() - 0.5) * 4;
+      const bz = fz + (Math.random() - 0.5) * 4;
+      const h = getHeight(bx, bz);
+      const frond = new THREE.Mesh(new THREE.ConeGeometry(0.55 + Math.random() * 0.3, 0.7, 5), fernMat);
+      frond.position.set(bx, h + 0.25, bz);
+      frond.rotation.x = 0.5 + Math.random() * 0.4;
+      frond.rotation.y = Math.random() * Math.PI * 2;
+      scene.add(frond);
+    }
+  });
+
+  // --- Mushroom clusters ---
+  const mushroomCapM = new THREE.MeshLambertMaterial({ color: 0xb03020 });
+  const mushroomStemM = new THREE.MeshLambertMaterial({ color: 0xf5f0e8 });
+  [[258,183],[271,175],[284,197],[295,183],[262,196],[275,163]].forEach(([mx,mz]) => {
+    for (let m = 0; m < 4; m++) {
+      const bx = mx + (Math.random() - 0.5) * 3;
+      const bz = mz + (Math.random() - 0.5) * 3;
+      const h = getHeight(bx, bz);
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.22, 6), mushroomStemM);
+      stem.position.set(bx, h + 0.11, bz);
+      scene.add(stem);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.16 + Math.random()*0.06, 7, 5, 0, Math.PI*2, 0, Math.PI*0.6), mushroomCapM);
+      cap.position.set(bx, h + 0.25, bz);
+      scene.add(cap);
+    }
+  });
+
+  // --- Fallen log ---
+  const logMat = mat(0x5a3a1a);
+  const log1 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 4.5, 8), logMat);
+  log1.rotation.z = Math.PI / 2;
+  log1.rotation.y = 0.7;
+  placeOnTerrain(log1, 268, 190, 0.3);
+  scene.add(log1);
+
+  // --- Winding path into the forest ---
+  // Entry from the west — three segments that curve inward
+  makePath(scene, 195, 168, 222, 172, 3.5);   // approach from outside
+  makePath(scene, 222, 172, 238, 178, 3);       // enter the canopy
+  makePath(scene, 238, 178, 253, 181, 2.5);     // bend right
+  makePath(scene, 253, 181, 264, 183, 2.5);     // reach the clearing
+
+  // Fork: left to Jin's station
+  makePath(scene, 264, 183, 262, 165, 2);
+
+  // Fork: right deeper to treehouse
+  makePath(scene, 264, 183, 278, 188, 2);
+
+  // --- Campfire clearing — central heart of the forest ---
   const campfire = makeCampfire();
-  placeOnTerrain(campfire, 275, 183);
+  placeOnTerrain(campfire, 272, 183);
   scene.add(campfire);
+
+  // A log-seat ring around the fire
+  [[268,180],[276,180],[280,185],[268,187]].forEach(([bx,bz],i) => {
+    const logSeat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 2.2, 6), logMat);
+    logSeat.rotation.z = Math.PI / 2;
+    logSeat.rotation.y = i * (Math.PI / 2) + 0.3;
+    placeOnTerrain(logSeat, bx, bz, 0.25);
+    scene.add(logSeat);
+  });
 
   // A small clearing bench beside the campfire
   const forestBench = makeBench();
-  placeOnTerrain(forestBench, 267, 174);
+  placeOnTerrain(forestBench, 265, 177);
   forestBench.rotation.y = 2.4; // face the fire
   scene.add(forestBench);
 
