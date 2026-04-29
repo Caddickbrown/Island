@@ -63,31 +63,31 @@ const C = {
 // Areas — named locations NPCs and player navigate between
 // ---------------------------------------------------------------------------
 export const AREAS = {
-  KART_TRACK:     { x: 198,  z: -148, label: 'Kart Track' },
+  KART_TRACK:     { x: 297,  z: -222, label: 'Kart Track' },
   TOWN_SQUARE:    { x: 0,    z: 0,    label: 'Town Square' },
-  VILLAGE:        { x: 0,    z: -48,  label: 'Village' },
-  BAKERY:         { x: -60,  z: -40,  label: 'Bakery' },
-  POST_OFFICE:    { x: 60,   z: -40,  label: 'Post Office' },
-  CAFE:           { x: 5,    z: -55,  label: 'The Café' },
-  DOCK:           { x: 0,    z: 262,  label: 'The Dock' },
-  FARM:           { x: -180, z: 80,   label: 'The Farm' },
-  FOREST:         { x: 180,  z: 120,  label: 'Forest Path' },
-  HILLTOP:        { x: -100, z: -180, label: 'The Hilltop' },
-  BEACH_SOUTH:    { x: 0,    z: -220, label: 'South Beach' },
-  LIBRARY:        { x: 80,   z: 40,   label: 'Library' },
-  WORKSHOP:       { x: -80,  z: 40,   label: 'Workshop' },
-  PUB:            { x: -30,  z: -70,  label: 'The Anchor' },
-  SCHOOL:         { x: 40,   z: -70,  label: 'School' },
-  SOUTH_QUARTER:  { x: 8,    z: -68,  label: 'South Quarter' },
-  AQUARIUM:       { x: 150,  z: -80,  label: "Elliot's Aquarium" },
-  MILL:           { x: -120, z: 40,   label: 'The Mill' },
-  GENERAL_STORE:  { x: -20,  z: -48,  label: 'General Store' },
-  CYCLE_SHOP:     { x: -30,  z: -90,  label: 'Cycle Shop' },
-  SPORTS_COURTS:  { x: 110,  z: -30,  label: 'Sports Courts' },
-  FITNESS_CENTER: { x: 110,  z: -55,  label: 'Fitness Center' },
-  SCIENCE_CENTER: { x: -80,  z: -150, label: 'Science Center' },
-  FISHERY_AREA:   { x: 30,   z: 230,  label: 'Fishery' },
-  MAINTENANCE:    { x: -105, z: 70,   label: 'Maintenance' },
+  VILLAGE:        { x: 0,    z: -72,  label: 'Village' },
+  BAKERY:         { x: -90,  z: -60,  label: 'Bakery' },
+  POST_OFFICE:    { x: 90,   z: -60,  label: 'Post Office' },
+  CAFE:           { x: 8,    z: -83,  label: 'The Café' },
+  DOCK:           { x: 0,    z: 370,  label: 'The Dock' },
+  FARM:           { x: -270, z: 120,  label: 'The Farm' },
+  FOREST:         { x: 270,  z: 180,  label: 'Forest Path' },
+  HILLTOP:        { x: -150, z: -270, label: 'The Hilltop' },
+  BEACH_SOUTH:    { x: 0,    z: -330, label: 'South Beach' },
+  LIBRARY:        { x: 120,  z: 60,   label: 'Library' },
+  WORKSHOP:       { x: -120, z: 60,   label: 'Workshop' },
+  PUB:            { x: -45,  z: -105, label: 'The Anchor' },
+  SCHOOL:         { x: 60,   z: -105, label: 'School' },
+  SOUTH_QUARTER:  { x: 12,   z: -102, label: 'South Quarter' },
+  AQUARIUM:       { x: 225,  z: -120, label: "Elliot's Aquarium" },
+  MILL:           { x: -180, z: 60,   label: 'The Mill' },
+  GENERAL_STORE:  { x: -30,  z: -72,  label: 'General Store' },
+  CYCLE_SHOP:     { x: -45,  z: -135, label: 'Cycle Shop' },
+  SPORTS_COURTS:  { x: 165,  z: -45,  label: 'Sports Courts' },
+  FITNESS_CENTER: { x: 165,  z: -83,  label: 'Fitness Center' },
+  SCIENCE_CENTER: { x: -120, z: -225, label: 'Science Center' },
+  FISHERY_AREA:   { x: 45,   z: 345,  label: 'Fishery' },
+  MAINTENANCE:    { x: -158, z: 105,  label: 'Maintenance' },
 };
 
 // ---------------------------------------------------------------------------
@@ -133,7 +133,7 @@ export function getHeight(x, z) {
   h *= fade;
 
   // Flatten the dock area (near water level)
-  const dockDist = Math.sqrt(x * x + (z - 220) * (z - 220));
+  const dockDist = Math.sqrt(x * x + (z - 330) * (z - 330));
   if (dockDist < 40) {
     const dockFade = Math.max(0, 1 - dockDist / 40);
     h *= (1 - dockFade * 0.9);
@@ -147,14 +147,14 @@ export function getHeight(x, z) {
   }
 
   // Boost hilltop area
-  const hillDist = Math.sqrt((x + 100) * (x + 100) + (z + 180) * (z + 180));
+  const hillDist = Math.sqrt((x + 150) * (x + 150) + (z + 270) * (z + 270));
   if (hillDist < 60) {
     const hillBoost = Math.max(0, 1 - hillDist / 60);
     h += hillBoost * 18;
   }
 
   // Flatten beach south
-  const beachDist = Math.sqrt(x * x + (z + 220) * (z + 220));
+  const beachDist = Math.sqrt(x * x + (z + 330) * (z + 330));
   if (beachDist < 50) {
     const beachFade = Math.max(0, 1 - beachDist / 50);
     h *= (1 - beachFade * 0.85);
@@ -1987,21 +1987,21 @@ export function buildScene(scene) {
 
   // === Path network ===
   // Central hub
-  makePath(scene, 0, 0, -60, -40, 4);    // Town → Bakery
-  makePath(scene, 0, 0, 60, -40, 4);     // Town → Post Office
-  makePath(scene, 0, 0, 80, 40, 4);      // Town → Library
-  makePath(scene, 0, 0, -80, 40, 4);     // Town → Workshop
-  makePath(scene, 0, 0, 0, 220, 4);      // Town → Dock (long south)
+  makePath(scene, 0, 0, -90, -60, 4);    // Town → Bakery
+  makePath(scene, 0, 0, 90, -60, 4);     // Town → Post Office
+  makePath(scene, 0, 0, 120, 60, 4);     // Town → Library
+  makePath(scene, 0, 0, -120, 60, 4);    // Town → Workshop
+  makePath(scene, 0, 0, 0, 330, 4);      // Town → Dock (long south)
   // Outer ring & branches
-  makePath(scene, -80, 40, -120, 40, 3); // Workshop → Mill
-  makePath(scene, -120, 40, -180, 80, 3); // Mill → Farm
-  makePath(scene, 80, 40, 180, 120, 3);  // Library → Forest
-  makePath(scene, -60, -40, -100, -180, 3); // Bakery → Hilltop
-  makePath(scene, 60, -40, 0, -220, 3);  // Post Office → South Beach
-  makePath(scene, -60, -40, 0, -220, 3); // Bakery → South Beach
+  makePath(scene, -120, 60, -180, 60, 3); // Workshop → Mill
+  makePath(scene, -180, 60, -270, 120, 3); // Mill → Farm
+  makePath(scene, 120, 60, 270, 180, 3);  // Library → Forest
+  makePath(scene, -90, -60, -150, -270, 3); // Bakery → Hilltop
+  makePath(scene, 90, -60, 0, -330, 3);  // Post Office → South Beach
+  makePath(scene, -90, -60, 0, -330, 3); // Bakery → South Beach
   // Cross paths
-  makePath(scene, -60, -40, 60, -40, 3); // Bakery ↔ Post Office
-  makePath(scene, -80, 40, 80, 40, 3);   // Workshop ↔ Library
+  makePath(scene, -90, -60, 90, -60, 3); // Bakery ↔ Post Office
+  makePath(scene, -120, 60, 120, 60, 3); // Workshop ↔ Library
 
   // =====================================================================
   // TOWN SQUARE (0, 0)
@@ -2016,8 +2016,8 @@ export function buildScene(scene) {
 
   // Benches around square
   for (let a = 0; a < 4; a++) {
-    const bx = Math.cos(a * Math.PI / 2) * 12;
-    const bz = Math.sin(a * Math.PI / 2) * 12;
+    const bx = Math.cos(a * Math.PI / 2) * 18;
+    const bz = Math.sin(a * Math.PI / 2) * 18;
     const bench = makeBench();
     placeOnTerrain(bench, bx, bz);
     bench.rotation.y = a * Math.PI / 2;
@@ -2026,16 +2026,16 @@ export function buildScene(scene) {
 
   // Bike racks near town square
   const bikeRack1 = makeBikeRack();
-  placeOnTerrain(bikeRack1, -8, 8);
+  placeOnTerrain(bikeRack1, -12, 12);
   scene.add(bikeRack1);
 
   const bikeRack2 = makeBikeRack();
-  placeOnTerrain(bikeRack2, 10, -6);
+  placeOnTerrain(bikeRack2, 15, -9);
   bikeRack2.rotation.y = Math.PI / 2;
   scene.add(bikeRack2);
 
   // A few trees near square
-  const squareTrees = [[15, 15], [-15, 12], [12, -15], [-12, -12]];
+  const squareTrees = [[23, 23], [-23, 18], [18, -23], [-18, -18]];
   squareTrees.forEach(([x, z]) => {
     const tree = makeTree(6 + Math.random() * 2);
     placeOnTerrain(tree, x, z);
@@ -2044,24 +2044,24 @@ export function buildScene(scene) {
 
   // Gardens near square
   const garden1 = makeGarden(3);
-  placeOnTerrain(garden1, -18, 0);
+  placeOnTerrain(garden1, -27, 0);
   scene.add(garden1);
 
   const garden2 = makeGarden(3);
-  placeOnTerrain(garden2, 18, 5);
+  placeOnTerrain(garden2, 27, 8);
   scene.add(garden2);
 
   // =====================================================================
-  // BAKERY (-60, -40)
+  // BAKERY (-90, -60)
   // =====================================================================
   const bakery = makeBuilding(12, 8, 9, C.bakery, C.roofDark, { solarPanels: true, label: 'Bakery', signText: '🍞 Bakery', signBg: 0xfde8c9, signColor: 0x6b2f00 });
-  placeOnTerrain(bakery, -60, -40);
+  placeOnTerrain(bakery, -90, -60);
   bakery.rotation.y = 0.3;
   scene.add(bakery);
 
   // ─── Bakery Interior ───────────────────────────────────────────────
   {
-    const bx = -60, bz = -40;
+    const bx = -90, bz = -60;
     const bBase = getHeight(bx, bz);
 
     // Wooden counter along back wall (z+3.5 inside 9-deep building)
@@ -2120,53 +2120,53 @@ export function buildScene(scene) {
   }
 
   // Bakery chimney — tall brick stack with animated smoke handled in main loop
-  const bakeryBase = getHeight(-60, -40);
+  const bakeryBase = getHeight(-90, -60);
   const chimneyStack = cylinder(0.45, 0.55, 6, 0x8b4513, 8);
-  chimneyStack.position.set(-57.5, bakeryBase + 8 + 3, -43);
+  chimneyStack.position.set(-86.5, bakeryBase + 8 + 3, -63);
   scene.add(chimneyStack);
   const chimneyTop = cylinder(0.6, 0.45, 0.6, 0x6b3410, 8);
-  chimneyTop.position.set(-57.5, bakeryBase + 11.3, -43);
+  chimneyTop.position.set(-86.5, bakeryBase + 11.3, -63);
   scene.add(chimneyTop);
 
   // Bakery awning — wide striped canopy over door (kept low, below sign)
   const awningL = box(6.5, 0.18, 2.2, 0xe17055);
-  awningL.position.set(-60, bakeryBase + 3.8, -35.6);
+  awningL.position.set(-90, bakeryBase + 3.8, -54);
   awningL.rotation.x = -0.28;
   scene.add(awningL);
   for (let i = -2; i <= 2; i++) {
     const stripe = box(0.6, 0.19, 2.2, 0xffffff);
-    stripe.position.set(-60 + i * 1.1, bakeryBase + 3.82, -35.6);
+    stripe.position.set(-90 + i * 1.1, bakeryBase + 3.82, -54);
     stripe.rotation.x = -0.28;
     scene.add(stripe);
   }
-  for (const sx of [-62.5, -57.5]) {
+  for (const sx of [-93, -87]) {
     const pole = cylinder(0.1, 0.1, 1.5, 0x8b6914, 5);
-    pole.position.set(sx, bakeryBase + 3.05, -36.4);
+    pole.position.set(sx, bakeryBase + 3.05, -54.6);
     scene.add(pole);
   }
 
 
   // Small awning / outdoor seating
   const bakeryBench = makeBench();
-  placeOnTerrain(bakeryBench, -52, -36);
+  placeOnTerrain(bakeryBench, -78, -54);
   scene.add(bakeryBench);
 
   // Garden beside bakery
   const bakeryGarden = makeGarden(3);
-  placeOnTerrain(bakeryGarden, -70, -35);
+  placeOnTerrain(bakeryGarden, -105, -53);
   scene.add(bakeryGarden);
 
   // =====================================================================
-  // POST OFFICE (60, -40)
+  // POST OFFICE (90, -60)
   // =====================================================================
   const postOffice = makeBuilding(10, 7, 8, C.postOffice, C.roofDark, { solarPanels: false, label: 'Post Office', signText: '📮 Post Office', signBg: 0xffffff, signColor: 0xcc2222 });
-  placeOnTerrain(postOffice, 60, -40);
+  placeOnTerrain(postOffice, 90, -60);
   postOffice.rotation.y = -0.2;
   scene.add(postOffice);
 
   // ─── Post Office Interior ──────────────────────────────────────────
   {
-    const px = 60, pz = -40;
+    const px = 90, pz = -60;
     const pBase = getHeight(px, pz);
 
     // Wooden counter with glass panel on top
@@ -2225,46 +2225,46 @@ export function buildScene(scene) {
     }
   }
 
-  const poBase = getHeight(60, -40);
+  const poBase = getHeight(90, -60);
 
   // Flagpole
   const flagPole = cylinder(0.12, 0.12, 9, 0xd0d0d0, 6);
-  flagPole.position.set(67, poBase + 4.5, -37);
+  flagPole.position.set(101, poBase + 4.5, -56);
   scene.add(flagPole);
   // Flag — red/white
   const flagMain = box(3.2, 1.8, 0.08, 0xdd2233);
-  flagMain.position.set(68.6, poBase + 8.4, -37);
+  flagMain.position.set(103, poBase + 8.4, -56);
   scene.add(flagMain);
   const flagStripe = box(3.2, 0.55, 0.09, 0xffffff);
-  flagStripe.position.set(68.6, poBase + 8.6, -37);
+  flagStripe.position.set(103, poBase + 8.6, -56);
   scene.add(flagStripe);
 
   // One large red pillar box at the Post Office entrance
   const pillarBox = makePostbox();
-  placeOnTerrain(pillarBox, 52, -36);
+  placeOnTerrain(pillarBox, 78, -54);
   scene.add(pillarBox);
 
   // Small American-style mailboxes at residential/delivery spots around the island
   const mailboxSpots = [
-    [-52, -36],   // Bakery side
-    [0,   12],    // Town Square north
-    [-12, -8],    // Town Square west
-    [80,  50],    // Library
-    [-80, 52],    // Workshop
-    [-175, 72],   // Farm entrance
-    [5,   215],   // Dock
-    [-25, -215],  // South Beach
-    [25,  -68],   // Residential east
-    [-35, -72],   // Residential west
-    [35,  18],    // Near post office path junction
-    [-65, -20],   // Near bakery
-    [80,  20],    // Near library
-    [-80, 20],    // Near workshop
-    [-30, -80],   // Residential area
-    [30,  -80],   // Residential area
-    [-170, 70],   // Near farm
-    [30,  200],   // Near Jack's cottage
-    [-42, -80],   // Near Barney's home
+    [-78, -54],   // Bakery side
+    [0,   18],    // Town Square north
+    [-18, -12],   // Town Square west
+    [120,  75],   // Library
+    [-120, 78],   // Workshop
+    [-263, 108],  // Farm entrance
+    [8,   323],   // Dock
+    [-38, -323],  // South Beach
+    [38,  -102],  // Residential east
+    [-53, -108],  // Residential west
+    [53,  27],    // Near post office path junction
+    [-98, -30],   // Near bakery
+    [120,  30],   // Near library
+    [-120, 30],   // Near workshop
+    [-45, -120],  // Residential area
+    [45,  -120],  // Residential area
+    [-255, 105],  // Near farm
+    [45,  300],   // Near Jack's cottage
+    [-63, -120],  // Near Barney's home
   ];
   for (const [px, pz] of mailboxSpots) {
     const mb = makeMailbox();
@@ -2274,93 +2274,93 @@ export function buildScene(scene) {
   }
 
   // =====================================================================
-  // LIBRARY (80, 40)
+  // LIBRARY (120, 60)
   // =====================================================================
   const library = makeLibraryBuilding();
-  placeOnTerrain(library, 80, 40);
+  placeOnTerrain(library, 120, 60);
   library.rotation.y = 1.1;
   scene.add(library);
 
   // Reading garden
   const readingGarden = makeGarden(4);
-  placeOnTerrain(readingGarden, 92, 50);
+  placeOnTerrain(readingGarden, 138, 75);
   scene.add(readingGarden);
 
   const libBench = makeBench();
-  placeOnTerrain(libBench, 72, 50);
+  placeOnTerrain(libBench, 108, 75);
   libBench.rotation.y = 0.5;
   scene.add(libBench);
 
   // Trees near library
-  [[70, 30], [90, 30], [95, 55]].forEach(([x, z]) => {
+  [[105, 45], [135, 45], [143, 83]].forEach(([x, z]) => {
     const tree = makeTree(5 + Math.random() * 3);
     placeOnTerrain(tree, x, z);
     scene.add(tree);
   });
 
   // =====================================================================
-  // WORKSHOP (-80, 40)
+  // WORKSHOP (-120, 60)
   // =====================================================================
-  // GARAGE / WORKSHOP (-80, 40) — open-front shed with truck inside
+  // GARAGE / WORKSHOP (-120, 60) — open-front shed with truck inside
   // =====================================================================
   const workshop = makeOpenGarage();
-  placeOnTerrain(workshop, -80, 40);
+  placeOnTerrain(workshop, -120, 60);
   workshop.rotation.y = 0.3;
   scene.add(workshop);
 
   // Solar panel array near workshop
   for (let i = 0; i < 4; i++) {
     const panel = box(4, 0.15, 3, C.solar);
-    placeOnTerrain(panel, -95 + i * 5, 55, 2);
+    placeOnTerrain(panel, -143 + i * 8, 83, 2);
     panel.rotation.x = -0.5;
     const pole = cylinder(0.15, 0.15, 2, C.solarFrame, 4);
-    placeOnTerrain(pole, -95 + i * 5, 55, 1);
+    placeOnTerrain(pole, -143 + i * 8, 83, 1);
     scene.add(panel, pole);
   }
 
   // Bike rack at workshop
   const workshopBikes = makeBikeRack();
-  placeOnTerrain(workshopBikes, -72, 48);
+  placeOnTerrain(workshopBikes, -108, 72);
   workshopBikes.rotation.y = 0.3;
   scene.add(workshopBikes);
 
   // =====================================================================
-  // THE DOCK (0, 220)
+  // THE DOCK (0, 330)
   // =====================================================================
   const dock = makeDock();
-  dock.position.set(0, -1.0, 262); // push out toward water
+  dock.position.set(0, -1.0, 370); // push out toward water
   dock.rotation.y = 0;
   scene.add(dock);
 
   // Boats
   const boat1 = makeBoat(1.2);
-  boat1.position.set(12, -0.3, 240);
+  boat1.position.set(12, -0.3, 348);
   boat1.rotation.y = 0.3;
   scene.add(boat1);
 
   const boat2 = makeBoat(0.8);
-  boat2.position.set(-10, -0.3, 245);
+  boat2.position.set(-10, -0.3, 353);
   boat2.rotation.y = -0.5;
   scene.add(boat2);
 
   // Dock bollard lights / crates
   const crate1 = box(2, 2, 2, C.dock);
-  crate1.position.set(5, 1, 225);
+  crate1.position.set(5, 1, 338);
   scene.add(crate1);
   const crate2 = box(1.5, 1.5, 1.5, C.dock);
-  crate2.position.set(6.5, 0.75, 224);
+  crate2.position.set(6.5, 0.75, 337);
   scene.add(crate2);
 
   // =====================================================================
-  // THE MILL (-120, 40) — between workshop and farm  (CAD-365)
+  // THE MILL (-180, 60) — between workshop and farm  (CAD-365)
   // =====================================================================
   const millGroup = buildMill();
-  placeOnTerrain(millGroup, -120, 40);
+  placeOnTerrain(millGroup, -180, 60);
   millGroup.rotation.y = 0.4;
   scene.add(millGroup);
 
   // A couple of trees around the mill
-  [[-130, 30], [-110, 52]].forEach(([x, z]) => {
+  [[-195, 45], [-165, 78]].forEach(([x, z]) => {
     const t = makeTree(5 + Math.random() * 2);
     placeOnTerrain(t, x, z);
     scene.add(t);
@@ -2370,64 +2370,64 @@ export function buildScene(scene) {
   buildDeliveryVan(scene);
 
   // =====================================================================
-  // THE FARM (-180, 80)
+  // THE FARM (-270, 120)
   // =====================================================================
   // Barn
   const barn = makeBarn();
-  placeOnTerrain(barn, -180, 70);
+  placeOnTerrain(barn, -270, 105);
   barn.rotation.y = 0.2;
   scene.add(barn);
 
   // Fields
   const field1 = makeField(25, 18);
-  placeOnTerrain(field1, -200, 100);
+  placeOnTerrain(field1, -300, 150);
   scene.add(field1);
 
   const field2 = makeField(20, 15);
-  placeOnTerrain(field2, -165, 105);
+  placeOnTerrain(field2, -248, 158);
   field2.rotation.y = 0.3;
   scene.add(field2);
 
   const field3 = makeField(18, 12);
-  placeOnTerrain(field3, -195, 65);
+  placeOnTerrain(field3, -293, 98);
   field3.rotation.y = -0.2;
   scene.add(field3);
 
   // Greenhouse
   const greenhouse = makeBuilding(10, 5, 14, C.greenhouse, 0x2ecc71, { solarPanels: false, label: 'Greenhouse' });
-  placeOnTerrain(greenhouse, -160, 90);
+  placeOnTerrain(greenhouse, -240, 135);
   greenhouse.rotation.y = 0.2;
   greenhouse.children[0].material = new THREE.MeshLambertMaterial({ color: C.greenhouse, transparent: true, opacity: 0.6 });
   scene.add(greenhouse);
 
   // Fences around farm
   const fence1 = makeFence(30, 8);
-  placeOnTerrain(fence1, -195, 85);
+  placeOnTerrain(fence1, -293, 128);
   scene.add(fence1);
 
   const fence2 = makeFence(25, 6);
-  placeOnTerrain(fence2, -175, 115);
+  placeOnTerrain(fence2, -263, 173);
   fence2.rotation.y = Math.PI / 2;
   scene.add(fence2);
 
   // Scattered farm trees
-  [[-205, 55], [-150, 75], [-210, 110]].forEach(([x, z]) => {
+  [[-308, 83], [-225, 113], [-315, 165]].forEach(([x, z]) => {
     const tree = makeTree(5 + Math.random() * 3);
     placeOnTerrain(tree, x, z);
     scene.add(tree);
   });
 
   // =====================================================================
-  // FOREST PATH (180, 120)
+  // FOREST PATH (270, 180)
   // =====================================================================
   // Dense tree cluster
   const forestTrees = [
-    [160, 100], [170, 105], [165, 115], [175, 110], [185, 108],
-    [190, 115], [195, 125], [185, 130], [175, 135], [170, 125],
-    [200, 120], [195, 105], [180, 140], [165, 140], [200, 135],
-    [205, 110], [210, 125], [155, 110], [155, 130], [210, 140],
-    [160, 145], [190, 145], [175, 150], [205, 150], [150, 120],
-    [215, 130], [170, 95], [195, 95], [145, 115], [220, 120],
+    [240, 150], [255, 158], [248, 173], [263, 165], [278, 162],
+    [285, 173], [293, 188], [278, 195], [263, 203], [255, 188],
+    [300, 180], [293, 158], [270, 210], [248, 210], [300, 203],
+    [308, 165], [315, 188], [233, 165], [233, 195], [315, 210],
+    [240, 218], [285, 218], [263, 225], [308, 225], [225, 180],
+    [323, 195], [255, 143], [293, 143], [218, 173], [330, 180],
   ];
   forestTrees.forEach(([x, z]) => {
     const height = 7 + Math.random() * 5;
@@ -2440,30 +2440,30 @@ export function buildScene(scene) {
 
   // Campfire in the forest clearing
   const campfire = makeCampfire();
-  placeOnTerrain(campfire, 183, 122);
+  placeOnTerrain(campfire, 275, 183);
   scene.add(campfire);
 
   // A small clearing bench beside the campfire
   const forestBench = makeBench();
-  placeOnTerrain(forestBench, 178, 116);
+  placeOnTerrain(forestBench, 267, 174);
   forestBench.rotation.y = 2.4; // face the fire
   scene.add(forestBench);
 
   // =====================================================================
-  // THE HILLTOP (-100, -180)
+  // THE HILLTOP (-150, -270)
   // =====================================================================
   const windmillGroup = makeWindmill();
-  placeOnTerrain(windmillGroup, -100, -180);
+  placeOnTerrain(windmillGroup, -150, -270);
   scene.add(windmillGroup);
 
   // Viewpoint bench
   const hilltopBench = makeBench();
-  placeOnTerrain(hilltopBench, -90, -175);
+  placeOnTerrain(hilltopBench, -135, -263);
   hilltopBench.rotation.y = 0.8;
   scene.add(hilltopBench);
 
   // A few trees on the hill
-  [[-110, -170], [-115, -190], [-85, -190]].forEach(([x, z]) => {
+  [[-165, -255], [-173, -285], [-128, -285]].forEach(([x, z]) => {
     const tree = makeTree(4 + Math.random() * 2);
     placeOnTerrain(tree, x, z);
     scene.add(tree);
@@ -2472,23 +2472,23 @@ export function buildScene(scene) {
   // Solar panel cluster on hilltop
   for (let i = 0; i < 3; i++) {
     const panel = box(5, 0.15, 3.5, C.solar);
-    placeOnTerrain(panel, -120 + i * 8, -185, 2.5);
+    placeOnTerrain(panel, -180 + i * 12, -278, 2.5);
     panel.rotation.x = -0.5;
     const pole = cylinder(0.15, 0.15, 2.5, C.solarFrame, 4);
-    placeOnTerrain(pole, -120 + i * 8, -185, 1.25);
+    placeOnTerrain(pole, -180 + i * 12, -278, 1.25);
     scene.add(panel, pole);
   }
 
   // =====================================================================
-  // SOUTH BEACH (0, -220)
+  // SOUTH BEACH (0, -330)
   // =====================================================================
   // Extra sand strip
   const sandStrip = flatPlane(80, 30, C.sand);
-  sandStrip.position.set(0, 0.05, -225);
+  sandStrip.position.set(0, 0.05, -338);
   scene.add(sandStrip);
 
   // Beach umbrellas (simple cone + pole)
-  const umbrellaPositions = [[-15, -215], [0, -220], [15, -218], [25, -225]];
+  const umbrellaPositions = [[-23, -323], [0, -330], [23, -327], [38, -338]];
   umbrellaPositions.forEach(([x, z]) => {
     const pole = cylinder(0.15, 0.15, 3, C.trunk, 4);
     pole.position.set(x, 1.5, z);
@@ -2501,7 +2501,7 @@ export function buildScene(scene) {
   // Driftwood / logs
   const log1 = cylinder(0.3, 0.25, 4, 0x9e8a6e, 5);
   log1.rotation.z = Math.PI / 2;
-  log1.position.set(-25, 0.3, -230);
+  log1.position.set(-38, 0.3, -345);
   log1.rotation.y = 0.4;
   scene.add(log1);
 
@@ -2509,18 +2509,18 @@ export function buildScene(scene) {
   // Scattered houses around town
   // =====================================================================
   const houses = [
-    { pos: [-30, -20], color: C.house1, rot: 0.3, label: 'House' },
-    { pos: [-40, 10],  color: C.house2, rot: -0.2, label: 'House' },
-    { pos: [35, 15],   color: C.house3, rot: 0.5, label: 'House' },
-    { pos: [40, -15],  color: C.house4, rot: -0.4, label: 'House' },
-    { pos: [-15, -60], color: C.house5, rot: 0.1, label: 'House' },
-    { pos: [25, -65],  color: C.house1, rot: -0.3, label: 'House' },
-    { pos: [-45, -60], color: C.house3, rot: 0.4, label: 'House' },
-    { pos: [45, 60],   color: C.house2, rot: -0.6, label: 'House' },
-    { pos: [-50, 70],  color: C.house4, rot: 0.2, label: 'House' },
-    { pos: [-120, -60], color: C.house5, rot: -0.1, label: 'House' },
-    { pos: [120, -20], color: C.house1, rot: 0.5, label: 'House' },
-    { pos: [-30, 120], color: C.house2, rot: -0.3, label: 'House' },
+    { pos: [-45, -30], color: C.house1, rot: 0.3, label: 'House' },
+    { pos: [-60, 15],  color: C.house2, rot: -0.2, label: 'House' },
+    { pos: [53, 23],   color: C.house3, rot: 0.5, label: 'House' },
+    { pos: [60, -23],  color: C.house4, rot: -0.4, label: 'House' },
+    { pos: [-23, -90], color: C.house5, rot: 0.1, label: 'House' },
+    { pos: [38, -98],  color: C.house1, rot: -0.3, label: 'House' },
+    { pos: [-68, -90], color: C.house3, rot: 0.4, label: 'House' },
+    { pos: [68, 90],   color: C.house2, rot: -0.6, label: 'House' },
+    { pos: [-75, 105], color: C.house4, rot: 0.2, label: 'House' },
+    { pos: [-180, -90], color: C.house5, rot: -0.1, label: 'House' },
+    { pos: [180, -30], color: C.house1, rot: 0.5, label: 'House' },
+    { pos: [-45, 180], color: C.house2, rot: -0.3, label: 'House' },
   ];
   houses.forEach(cfg => {
     const house = makeBuilding(8, 5.5, 7, cfg.color, C.roof, { solarPanels: Math.random() > 0.3, label: cfg.label });
@@ -2534,21 +2534,21 @@ export function buildScene(scene) {
   // =====================================================================
   const scatteredTrees = [
     // Along paths / midpoints
-    [0, 40], [0, 80], [0, 120], [0, 160], [0, 195],
-    [-30, 60], [30, 70], [-100, 60], [100, 80],
+    [0, 60], [0, 120], [0, 180], [0, 240], [0, 293],
+    [-45, 90], [45, 105], [-150, 90], [150, 120],
     // Northern area
-    [-40, -100], [20, -120], [-80, -100], [80, -100],
-    [-140, -120], [140, -80], [-60, -140], [60, -130],
+    [-60, -150], [30, -180], [-120, -150], [120, -150],
+    [-210, -180], [210, -120], [-90, -210], [90, -195],
     // Southern scatter
-    [40, 180], [-40, 170], [80, 170], [-80, 160],
+    [60, 270], [-60, 255], [120, 255], [-120, 240],
     // East/west scatter
-    [140, 20], [-140, 30], [120, 60], [-120, 50],
-    [160, 50], [-160, 40],
+    [210, 30], [-210, 45], [180, 90], [-180, 75],
+    [240, 75], [-240, 60],
     // Edge of island
-    [-200, -100], [200, -80], [-220, 0], [220, 30],
-    [0, -180], [-180, -40], [180, -30],
-    [-240, 40], [240, 60], [0, 260],
-    [-150, 160], [150, 170], [-230, 100], [230, 80],
+    [-300, -150], [300, -120], [-330, 0], [330, 45],
+    [0, -270], [-270, -60], [270, -45],
+    [-360, 60], [360, 90], [0, 390],
+    [-225, 240], [225, 255], [-345, 150], [345, 120],
   ];
   scatteredTrees.forEach(([x, z]) => {
     const dist = Math.sqrt(x * x + z * z);
@@ -2567,16 +2567,16 @@ export function buildScene(scene) {
   // =====================================================================
   // Garden near workshop
   const workshopGarden = makeGarden(5);
-  placeOnTerrain(workshopGarden, -70, 55);
+  placeOnTerrain(workshopGarden, -105, 83);
   scene.add(workshopGarden);
 
   // Garden near farm
   const farmGarden = makeGarden(4);
-  placeOnTerrain(farmGarden, -165, 60);
+  placeOnTerrain(farmGarden, -248, 90);
   scene.add(farmGarden);
 
   // Extra benches along paths
-  const benchSpots = [[-30, 0], [30, -5], [0, 100], [0, 150], [-40, -80]];
+  const benchSpots = [[-45, 0], [45, -8], [0, 150], [0, 225], [-60, -120]];
   benchSpots.forEach(([x, z]) => {
     const b = makeBench();
     placeOnTerrain(b, x, z);
@@ -2585,24 +2585,24 @@ export function buildScene(scene) {
   });
 
   // =====================================================================
-  // THE ANCHOR — Pub/Inn (-30, -70)
+  // THE ANCHOR — Pub/Inn (-45, -105)
   // =====================================================================
   const pub = makeBuilding(13, 7, 10, 0xc8a56e, 0x5c3d1e, { solarPanels: false, label: 'The Anchor', signText: '⚓ The Anchor', signBg: 0x1a1a2e, signColor: 0xffd700 });
-  placeOnTerrain(pub, -30, -70);
+  placeOnTerrain(pub, -45, -105);
   pub.rotation.y = 0.1;
   scene.add(pub);
 
   // =====================================================================
-  // SCHOOL (40, -70)
+  // SCHOOL (60, -105)
   // =====================================================================
   const school = makeBuilding(18, 7, 12, 0xf9ca24, 0x6ab04c, { solarPanels: true, label: 'School', signText: '🏫 School', signBg: 0xffffff, signColor: 0x333333 });
-  placeOnTerrain(school, 40, -70);
+  placeOnTerrain(school, 60, -105);
   school.rotation.y = -0.15;
   scene.add(school);
 
   // ─── School Interior ──────────────────────────────────────────────
   {
-    const sx2 = 40, sz2 = -70;
+    const sx2 = 60, sz2 = -105;
     const sBase = getHeight(sx2, sz2);
     const deskMat2 = new THREE.MeshLambertMaterial({ color: 0xc8a850 });
     const seatMat2 = new THREE.MeshLambertMaterial({ color: 0x6b8e23 });
@@ -2684,7 +2684,7 @@ export function buildScene(scene) {
   }
 
   // =====================================================================
-  // THE CAFÉ (5, -55)
+  // THE CAFÉ (8, -83)
   // =====================================================================
   const cafeBuilding = makeBuilding(10, 6, 8, 0xf0e6d3, 0x5c3d1e, {
     solarPanels: false,
@@ -2693,13 +2693,13 @@ export function buildScene(scene) {
     signBg: 0x2d1a0e,
     signColor: 0xffd700,
   });
-  placeOnTerrain(cafeBuilding, 5, -55);
+  placeOnTerrain(cafeBuilding, 8, -83);
   cafeBuilding.rotation.y = 0.15;
   scene.add(cafeBuilding);
 
   // ─── Café Interior ────────────────────────────────────────────────
   {
-    const cx = 5, cz = -55;
+    const cx = 8, cz = -83;
     const cBase = getHeight(cx, cz);
 
     // Counter along back wall with coffee machine
@@ -2766,13 +2766,13 @@ export function buildScene(scene) {
   }
 
   // Outdoor café seating
-  for (const [tx, tz] of [[14, -50], [16, -56], [14, -62]]) {
+  for (const [tx, tz] of [[21, -75], [24, -84], [21, -93]]) {
     const ct = makeCafeTable();
     placeOnTerrain(ct, tx, tz);
     scene.add(ct);
   }
   // Potted plants flanking café door
-  for (const [px, pz] of [[9, -52], [2, -52]]) {
+  for (const [px, pz] of [[14, -78], [3, -78]]) {
     const pot = cylinder(0.5, 0.6, 0.8, 0x8b6914, 8);
     placeOnTerrain(pot, px, pz, 0.4);
     scene.add(pot);
@@ -2781,16 +2781,16 @@ export function buildScene(scene) {
     scene.add(plant);
   }
   // Café paths
-  makePath(scene, 0, 0, 5, -55, 3);
-  makePath(scene, 5, -55, -30, -70, 3);
-  makePath(scene, 5, -55, 40, -70, 3);
+  makePath(scene, 0, 0, 8, -83, 3);
+  makePath(scene, 8, -83, -45, -105, 3);
+  makePath(scene, 8, -83, 60, -105, 3);
 
   // =====================================================================
-  // GENERAL STORE (-20, -48) — CAD-242
+  // GENERAL STORE (-30, -72) — CAD-242
   // A small village shop near the café and bakery cluster
   // =====================================================================
   {
-    const GSX = -20, GSZ = -48;
+    const GSX = -30, GSZ = -72;
     const gsBuilding = makeBuilding(9, 5, 7, 0xe8d5b7, 0x6b3d12, {
       solarPanels: false,
       label: 'General Store',
@@ -2859,17 +2859,17 @@ export function buildScene(scene) {
     scene.add(gsPlant);
 
     // Path connecting General Store to the nearby café/bakery network
-    makePath(scene, 0, 0, GSX, GSZ, 3);
+    makePath(scene, 0, 0, -30, -72, 3);
 
     // Collider for General Store building
-    colliders.push({ cx: GSX, cz: GSZ, hw: 4.5, hd: 3.5, rot: -0.1 });
+    colliders.push({ cx: -30, cz: -72, hw: 4.5, hd: 3.5, rot: -0.1 });
   }
 
   // =====================================================================
-  // ELLIOT'S AQUARIUM (150, -80)
+  // ELLIOT'S AQUARIUM (225, -120)
   // =====================================================================
   const aquarium = makeAquarium();
-  placeOnTerrain(aquarium, 150, -80);
+  placeOnTerrain(aquarium, 225, -120);
   aquarium.rotation.y = -0.6;  // faces roughly toward town
   scene.add(aquarium);
 
@@ -2877,11 +2877,11 @@ export function buildScene(scene) {
   const pondGeo = new THREE.CircleGeometry(3.5, 14);
   pondGeo.rotateX(-Math.PI / 2);
   const pond = new THREE.Mesh(pondGeo, mat(C.water));
-  placeOnTerrain(pond, 163, -92, 0.15);
+  placeOnTerrain(pond, 245, -138, 0.15);
   scene.add(pond);
 
   // Potted sea-plants flanking aquarium entrance
-  for (const [px, pz] of [[158, -94], [168, -90]]) {
+  for (const [px, pz] of [[237, -141], [252, -135]]) {
     const potA = cylinder(0.55, 0.65, 0.85, 0x1a6fa8, 8);
     placeOnTerrain(potA, px, pz, 0.42);
     scene.add(potA);
@@ -2891,24 +2891,24 @@ export function buildScene(scene) {
   }
 
   // Path: Post Office → Aquarium
-  makePath(scene, 60, -40, 150, -80, 3);
+  makePath(scene, 90, -60, 225, -120, 3);
 
   // =====================================================================
   // HOME PLAQUES — nameplate sign next to each NPC's front door
   // =====================================================================
   const homePlaqueData = [
-    [-71, -56, "Mabel's"],
-    [73,  -56, "Gus's"],
-    [-194, 92, "Fern's"],
-    [-11,  10, "Olive's"],
-    [91,   56, "Rosa's"],
-    [31,  202, "Jack's"],
-    [-194, 67, "Pete's"],
-    [-40, -76, "Barney's"],
-    [-4,  -61, "Suki's"],
-    [53,  -80, "Clara's"],
-    [57,  -58, "Rex's"],
-    [-92, 30, "Otto's"],
+    [-107, -84, "Mabel's"],
+    [110,  -84, "Gus's"],
+    [-291, 138, "Fern's"],
+    [-17,   15, "Olive's"],
+    [137,   84, "Rosa's"],
+    [47,   303, "Jack's"],
+    [-291, 101, "Pete's"],
+    [-60,  -114, "Barney's"],
+    [-6,   -92, "Suki's"],
+    [80,   -120, "Clara's"],
+    [86,   -87, "Rex's"],
+    [-138,  45, "Otto's"],
   ];
   for (const [px, pz, name] of homePlaqueData) {
     const plaque = makeHomePlaque(name);
@@ -2924,56 +2924,56 @@ export function buildScene(scene) {
 
 
   // =====================================================================
-  // CAD-153: CYCLE SHOP (-30, -90) — near south quarter / pub
+  // CAD-153: CYCLE SHOP (-45, -135) — near south quarter / pub
   // =====================================================================
   const cycleShop = makeCycleShop();
-  placeOnTerrain(cycleShop, -30, -90);
+  placeOnTerrain(cycleShop, -45, -135);
   cycleShop.rotation.y = 0.2;
   scene.add(cycleShop);
-  makePath(scene, -30, -70, -30, -90, 3);
+  makePath(scene, -45, -105, -45, -135, 3);
 
   // =====================================================================
-  // CAD-150: FITNESS CENTER (110, -55) — east side, near aquarium area
+  // CAD-150: FITNESS CENTER (165, -83) — east side, near aquarium area
   // =====================================================================
   const fitnessCenter = makeFitnessCenter();
-  placeOnTerrain(fitnessCenter, 110, -55);
+  placeOnTerrain(fitnessCenter, 165, -83);
   fitnessCenter.rotation.y = -0.4;
   scene.add(fitnessCenter);
 
   // =====================================================================
-  // CAD-152: SPORTS COURTS (110, -30) — adjacent to fitness center
+  // CAD-152: SPORTS COURTS (165, -45) — adjacent to fitness center
   // =====================================================================
   const sportsCourts = makeSportsCourts();
-  placeOnTerrain(sportsCourts, 110, -30);
+  placeOnTerrain(sportsCourts, 165, -45);
   sportsCourts.rotation.y = -0.1;
   scene.add(sportsCourts);
-  makePath(scene, 150, -80, 110, -50, 3);
+  makePath(scene, 225, -120, 165, -75, 3);
 
   // =====================================================================
-  // CAD-151: SCIENCE CENTER (-80, -150) — elevated hilltop area
+  // CAD-151: SCIENCE CENTER (-120, -225) — elevated hilltop area
   // =====================================================================
   const scienceCenter = makeScienceCenter();
-  placeOnTerrain(scienceCenter, -80, -150);
+  placeOnTerrain(scienceCenter, -120, -225);
   scienceCenter.rotation.y = 0.6;
   scene.add(scienceCenter);
-  makePath(scene, -100, -180, -80, -150, 3);
+  makePath(scene, -150, -270, -120, -225, 3);
 
   // =====================================================================
-  // CAD-139: FISHERY (30, 230) — harbour/dock area
+  // CAD-139: FISHERY (45, 345) — harbour/dock area
   // =====================================================================
   const fishery = makeFishery();
-  placeOnTerrain(fishery, 30, 230);
+  placeOnTerrain(fishery, 45, 345);
   fishery.rotation.y = -0.3;
   scene.add(fishery);
 
   // =====================================================================
-  // CAD-134: MAINTENANCE BUILDING (-105, 70) — near workshop/mill edge
+  // CAD-134: MAINTENANCE BUILDING (-158, 105) — near workshop/mill edge
   // =====================================================================
   const maintenanceBuilding = makeMaintenanceBuilding();
-  placeOnTerrain(maintenanceBuilding, -105, 70);
+  placeOnTerrain(maintenanceBuilding, -158, 105);
   maintenanceBuilding.rotation.y = 0.5;
   scene.add(maintenanceBuilding);
-  makePath(scene, -80, 40, -105, 70, 3);
+  makePath(scene, -120, 60, -158, 105, 3);
 
   // =====================================================================
   // BUILDING COLLIDERS — OBB rectangles { cx, cz, hw, hd, rot }
@@ -2983,42 +2983,42 @@ export function buildScene(scene) {
   // =====================================================================
   // Push the standard building colliders into the array initialised at the top of buildScene
   colliders.push(
-    // Bakery (-60, -40)  12×9 building, rot 0.3
-    { cx: -60, cz: -40, hw: 6,   hd: 4.5, rot: 0.3  },
-    // Post Office (60, -40)  10×8, rot -0.2
-    { cx:  60, cz: -40, hw: 5,   hd: 4,   rot: -0.2 },
-    // The Anchor pub (-30, -70)  13×10, rot 0.1
-    { cx: -30, cz: -70, hw: 6.5, hd: 5,   rot: 0.1  },
-    // School (40, -70)  18×12, rot -0.15
-    { cx:  40, cz: -70, hw: 9,   hd: 6,   rot: -0.15 },
-    // Café (5, -55)  10×8, rot 0.15
-    { cx:   5, cz: -55, hw: 5,   hd: 4,   rot: 0.15 },
-    // Barn (-180, 70)  approx 14×10, rot 0.2
-    { cx: -180, cz: 70, hw: 7,   hd: 5,   rot: 0.2  },
-    // Greenhouse (-160, 90)  10×14, rot 0.2
-    { cx: -160, cz: 90, hw: 5,   hd: 7,   rot: 0.2  },
-    // Windmill tower (-100, -180)  approx radius 3.5
-    { cx: -100, cz: -180, hw: 3.5, hd: 3.5, rot: 0  },
-    // Elliot's Aquarium (150, -80)  20×15, rot -0.6
-    { cx: 150,  cz: -80,  hw: 10,  hd: 7.5, rot: -0.6 },
-    // The Mill (-120, 40)  6×6 base, rot 0.4  (CAD-365)
-    { cx: -120, cz: 40,   hw: 3.5, hd: 3.5, rot: 0.4  },
+    // Bakery (-90, -60)  12×9 building, rot 0.3
+    { cx: -90, cz: -60, hw: 6,   hd: 4.5, rot: 0.3  },
+    // Post Office (90, -60)  10×8, rot -0.2
+    { cx:  90, cz: -60, hw: 5,   hd: 4,   rot: -0.2 },
+    // The Anchor pub (-45, -105)  13×10, rot 0.1
+    { cx: -45, cz: -105, hw: 6.5, hd: 5,   rot: 0.1  },
+    // School (60, -105)  18×12, rot -0.15
+    { cx:  60, cz: -105, hw: 9,   hd: 6,   rot: -0.15 },
+    // Café (8, -83)  10×8, rot 0.15
+    { cx:   8, cz: -83, hw: 5,   hd: 4,   rot: 0.15 },
+    // Barn (-270, 105)  approx 14×10, rot 0.2
+    { cx: -270, cz: 105, hw: 7,   hd: 5,   rot: 0.2  },
+    // Greenhouse (-240, 135)  10×14, rot 0.2
+    { cx: -240, cz: 135, hw: 5,   hd: 7,   rot: 0.2  },
+    // Windmill tower (-150, -270)  approx radius 3.5
+    { cx: -150, cz: -270, hw: 3.5, hd: 3.5, rot: 0  },
+    // Elliot's Aquarium (225, -120)  20×15, rot -0.6
+    { cx: 225,  cz: -120,  hw: 10,  hd: 7.5, rot: -0.6 },
+    // The Mill (-180, 60)  6×6 base, rot 0.4  (CAD-365)
+    { cx: -180, cz: 60,   hw: 3.5, hd: 3.5, rot: 0.4  },
 
     // Library — per-wall colliders (hollow building, player enters through door gap)
     // Local positions transformed to world using Three.js rotation.y = 1.1:
     //   wx = libX + cos(rot)*lx + sin(rot)*lz
     //   wz = libZ - sin(rot)*lx + cos(rot)*lz
-    // cos(1.1)≈0.4536, sin(1.1)≈0.8912, libX=80, libZ=40
-    // Left wall local (-14, 0):   wx=73.650, wz=52.477
-    { cx: 73.65, cz: 52.48, hw: 0.3, hd: 12,  rot: 1.1 },
-    // Right wall local (14, 0):   wx=86.350, wz=27.523
-    { cx: 86.35, cz: 27.52, hw: 0.3, hd: 12,  rot: 1.1 },
-    // Back wall local (0, 12):    wx=90.694, wz=45.443
-    { cx: 90.69, cz: 45.44, hw: 14.5, hd: 0.3, rot: 1.1 },
-    // Front-left panel local (-8.25, -12):  wx=65.564, wz=41.909
-    { cx: 65.56, cz: 41.91, hw: 5.8, hd: 0.3, rot: 1.1 },
-    // Front-right panel local (8.25, -12):  wx=73.048, wz=27.205
-    { cx: 73.05, cz: 27.21, hw: 5.8, hd: 0.3, rot: 1.1 }
+    // cos(1.1)≈0.4536, sin(1.1)≈0.8912, libX=120, libZ=60
+    // Left wall local (-14, 0):   wx=113.650, wz=72.477
+    { cx: 113.65, cz: 72.48, hw: 0.3, hd: 12,  rot: 1.1 },
+    // Right wall local (14, 0):   wx=126.350, wz=47.523
+    { cx: 126.35, cz: 47.52, hw: 0.3, hd: 12,  rot: 1.1 },
+    // Back wall local (0, 12):    wx=130.694, wz=65.443
+    { cx: 130.69, cz: 65.44, hw: 14.5, hd: 0.3, rot: 1.1 },
+    // Front-left panel local (-8.25, -12):  wx=105.564, wz=61.909
+    { cx: 105.56, cz: 61.91, hw: 5.8, hd: 0.3, rot: 1.1 },
+    // Front-right panel local (8.25, -12):  wx=113.048, wz=47.205
+    { cx: 113.05, cz: 47.21, hw: 5.8, hd: 0.3, rot: 1.1 }
   );
 
 
@@ -3035,7 +3035,7 @@ export function buildScene(scene) {
     const MAT_TIRE    = new THREE.MeshLambertMaterial({ color: 0x111111 });
     const MAT_BANNER  = new THREE.MeshLambertMaterial({ color: 0xcc1111, side: THREE.DoubleSide });
 
-    const KX = 198, KZ = -148;
+    const KX = 297, KZ = -222;
     const trackBase = getHeight(KX, KZ) + 0.12;
     const tg = new THREE.Group();
     tg.position.set(KX, trackBase, KZ);
@@ -3153,21 +3153,21 @@ export function buildScene(scene) {
     scene.add(tg);
 
     // Path connecting aquarium to kart track
-    makePath(scene, 155, -88, KX - 25, KZ + 6, 3);
+    makePath(scene, 233, -132, KX - 38, KZ + 9, 3);
 
     // Collider for the gantry
     colliders.push({ cx: KX + gantryX, cz: KZ - 2, hw: startW / 2 + 1.5, hd: 0.5, rot: 0 });
 
-    // Cycle Shop (-30, -90)  10x8, rot 0.2
-    colliders.push({ cx: -30,  cz: -90,  hw: 5,   hd: 4,   rot: 0.2  });
-    // Fitness Center (110, -55)  14x10, rot -0.4
-    colliders.push({ cx: 110,  cz: -55,  hw: 7,   hd: 5,   rot: -0.4 });
-    // Science Center (-80, -150)  13x11, rot 0.6
-    colliders.push({ cx: -80,  cz: -150, hw: 6.5, hd: 5.5, rot: 0.6  });
-    // Fishery (30, 230)  12x8, rot -0.3
-    colliders.push({ cx:  30,  cz: 230,  hw: 6,   hd: 4,   rot: -0.3 });
-    // Maintenance (-105, 70)  16x12, rot 0.5
-    colliders.push({ cx: -105, cz: 70,   hw: 8,   hd: 6,   rot: 0.5  });
+    // Cycle Shop (-45, -135)  10x8, rot 0.2
+    colliders.push({ cx: -45,  cz: -135, hw: 5,   hd: 4,   rot: 0.2  });
+    // Fitness Center (165, -83)  14x10, rot -0.4
+    colliders.push({ cx: 165,  cz: -83,  hw: 7,   hd: 5,   rot: -0.4 });
+    // Science Center (-120, -225)  13x11, rot 0.6
+    colliders.push({ cx: -120, cz: -225, hw: 6.5, hd: 5.5, rot: 0.6  });
+    // Fishery (45, 345)  12x8, rot -0.3
+    colliders.push({ cx:  45,  cz: 345,  hw: 6,   hd: 4,   rot: -0.3 });
+    // Maintenance (-158, 105)  16x12, rot 0.5
+    colliders.push({ cx: -158, cz: 105,  hw: 8,   hd: 6,   rot: 0.5  });
   }
 
   const fish = aquarium.userData.fish || [];

@@ -28,34 +28,34 @@ function advanceSimTime(deltaSec) {
 // Named areas — coordinates match scene.js building placements exactly
 // ---------------------------------------------------------------------------
 const AREAS = {
-  bakery:      { x: -60,  z: -40  },
-  postOffice:  { x: 60,   z: -40  },
+  bakery:      { x: -90,  z: -60  },
+  postOffice:  { x: 90,   z: -60  },
   townSquare:  { x: 0,    z: 0    },
-  library:     { x: 80,   z: 40   },
-  workshop:    { x: -80,  z: 40   },
-  dock:        { x: 0,    z: 262  },
-  farm:        { x: -180, z: 80   },
-  beach:       { x: 30,   z: -200 },
-  southBeach:  { x: 0,    z: -220 },
-  hilltop:     { x: -100, z: -180 },
-  forestPath:  { x: 180,  z: 120  },
-  pub:         { x: -30,  z: -70  },
-  cafe:        { x: 5,    z: -55  },
-  school:      { x: 40,   z: -70  },
-  mill:        { x: -120, z: 40   },
+  library:     { x: 120,  z: 60   },
+  workshop:    { x: -120, z: 60   },
+  dock:        { x: 0,    z: 370  },
+  farm:        { x: -270, z: 120  },
+  beach:       { x: 45,   z: -300 },
+  southBeach:  { x: 0,    z: -330 },
+  hilltop:     { x: -150, z: -270 },
+  forestPath:  { x: 270,  z: 180  },
+  pub:         { x: -45,  z: -105 },
+  cafe:        { x: 8,    z: -83  },
+  school:      { x: 60,   z: -105 },
+  mill:        { x: -180, z: 60   },
   // Homes — near each NPC's primary workplace
-  mabelHome:   { x: -72,  z: -58  },
-  gusHome:     { x: 72,   z: -58  },
-  fernHome:    { x: -195, z: 90   },
-  oliveHome:   { x: -12,  z: 12   },
-  rosaHome:    { x: 90,   z: 58   },
-  jackHome:    { x: 30,   z: 200  },
-  peteHome:    { x: -195, z: 65   },
-  barneyHome:  { x: -42,  z: -78  },
-  sukiHome:    { x: -5,   z: -63  },
-  claraHome:   { x: 52,   z: -82  },
-  rexHome:     { x: 56,   z: -60  },
-  ottoHome:    { x: -94,  z: 28   },
+  mabelHome:   { x: -108, z: -87  },
+  gusHome:     { x: 108,  z: -87  },
+  fernHome:    { x: -293, z: 135  },
+  oliveHome:   { x: -18,  z: 18   },
+  rosaHome:    { x: 135,  z: 87   },
+  jackHome:    { x: 45,   z: 300  },
+  peteHome:    { x: -293, z: 98   },
+  barneyHome:  { x: -63,  z: -117 },
+  sukiHome:    { x: -8,   z: -95  },
+  claraHome:   { x: 78,   z: -123 },
+  rexHome:     { x: 84,   z: -90  },
+  ottoHome:    { x: -141, z: 42   },
 };
 
 // ---------------------------------------------------------------------------
@@ -1397,11 +1397,11 @@ function tickWasteGeneration(deltaSec) {
 // at the coordinates listed below (small glowing orb, foliage cluster, etc.)
 
 const FORAGING_SPOT_DEFS = [
-  { id: 'berries',   label: 'Wild Berries',     x:  160, z: -140, replenishTime: 180 },
-  { id: 'mushrooms', label: 'Forest Mushrooms',  x:  185, z:  110, replenishTime: 240 },
-  { id: 'seaglass',  label: 'Sea Glass',          x:   30, z: -220, replenishTime: 120 },
-  { id: 'driftwood', label: 'Driftwood',           x:  -40, z: -210, replenishTime: 150 },
-  { id: 'herbs',     label: 'Wild Herbs',          x:  -95, z: -175, replenishTime: 200 },
+  { id: 'berries',   label: 'Wild Berries',     x:  240, z: -210, replenishTime: 180 },
+  { id: 'mushrooms', label: 'Forest Mushrooms',  x:  278, z:  165, replenishTime: 240 },
+  { id: 'seaglass',  label: 'Sea Glass',          x:   45, z: -330, replenishTime: 120 },
+  { id: 'driftwood', label: 'Driftwood',           x:  -60, z: -315, replenishTime: 150 },
+  { id: 'herbs',     label: 'Wild Herbs',          x: -143, z: -263, replenishTime: 200 },
 ];
 
 class ForagingSystem {
