@@ -198,12 +198,42 @@ function flatPlane(w, d, color) {
 // Building factory
 // ---------------------------------------------------------------------------
 
-function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = false, label = '', signText = '', signBg = 0xfde8c9, signColor = 0x4a2800 } = {}) {
+function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = false, label = '', signText = '', signBg = 0xfde8c9, signColor = 0x4a2800, hollow = false } = {}) {
   const group = new THREE.Group();
 
-  const walls = box(w, h, d, wallColor);
-  walls.position.y = h / 2;
-  group.add(walls);
+  if (hollow) {
+    const wt = 0.4; // wall thickness
+    const doorW = Math.min(w * 0.25, 2);
+    // Left wall (full depth)
+    const lWall = box(wt, h, d + wt, wallColor);
+    lWall.position.set(-w/2, h/2, 0);
+    group.add(lWall);
+    // Right wall
+    const rWall = box(wt, h, d + wt, wallColor);
+    rWall.position.set(w/2, h/2, 0);
+    group.add(rWall);
+    // Back wall
+    const bkWall = box(w - wt, h, wt, wallColor);
+    bkWall.position.set(0, h/2, -d/2);
+    group.add(bkWall);
+    // Front panels flanking the door gap
+    const panelW = (w/2 - doorW/2 - wt);
+    const panelCX = doorW/2 + wt/2 + panelW/2;
+    const lPanel = box(panelW, h, wt, wallColor);
+    lPanel.position.set(-panelCX, h/2, d/2);
+    group.add(lPanel);
+    const rPanel = box(panelW, h, wt, wallColor);
+    rPanel.position.set(panelCX, h/2, d/2);
+    group.add(rPanel);
+    // Interior floor (slightly raised to avoid z-fighting with terrain)
+    const iFloor = box(w - wt*2, 0.2, d - wt*2, 0x9b8060);
+    iFloor.position.set(0, 0.1, 0);
+    group.add(iFloor);
+  } else {
+    const walls = box(w, h, d, wallColor);
+    walls.position.y = h / 2;
+    group.add(walls);
+  }
 
   const roofH = h * 0.35;
   const roof = box(w + 1, roofH, d + 1, roofColor);
@@ -2225,7 +2255,7 @@ export function buildScene(scene) {
   // =====================================================================
   // BAKERY (-90, -60)
   // =====================================================================
-  const bakery = makeBuilding(12, 8, 9, C.bakery, C.roofDark, { solarPanels: true, label: 'Bakery', signText: '🍞 Bakery', signBg: 0xfde8c9, signColor: 0x6b2f00 });
+  const bakery = makeBuilding(12, 8, 9, C.bakery, C.roofDark, { solarPanels: true, label: 'Bakery', signText: '🍞 Bakery', signBg: 0xfde8c9, signColor: 0x6b2f00, hollow: true });
   placeOnTerrain(bakery, -90, -60);
   bakery.rotation.y = 0.3;
   scene.add(bakery);
@@ -2330,7 +2360,7 @@ export function buildScene(scene) {
   // =====================================================================
   // POST OFFICE (90, -60)
   // =====================================================================
-  const postOffice = makeBuilding(10, 7, 8, C.postOffice, C.roofDark, { solarPanels: false, label: 'Post Office', signText: '📮 Post Office', signBg: 0xffffff, signColor: 0xcc2222 });
+  const postOffice = makeBuilding(10, 7, 8, C.postOffice, C.roofDark, { solarPanels: false, label: 'Post Office', signText: '📮 Post Office', signBg: 0xffffff, signColor: 0xcc2222, hollow: true });
   placeOnTerrain(postOffice, 90, -60);
   postOffice.rotation.y = -0.2;
   scene.add(postOffice);
@@ -2989,7 +3019,7 @@ export function buildScene(scene) {
   // =====================================================================
   // SCHOOL (60, -105)
   // =====================================================================
-  const school = makeBuilding(18, 7, 12, 0xf9ca24, 0x6ab04c, { solarPanels: true, label: 'School', signText: '🏫 School', signBg: 0xffffff, signColor: 0x333333 });
+  const school = makeBuilding(18, 7, 12, 0xf9ca24, 0x6ab04c, { solarPanels: true, label: 'School', signText: '🏫 School', signBg: 0xffffff, signColor: 0x333333, hollow: true });
   placeOnTerrain(school, 60, -105);
   school.rotation.y = -0.15;
   scene.add(school);
@@ -3086,6 +3116,7 @@ export function buildScene(scene) {
     signText: '☕ The Café',
     signBg: 0x2d1a0e,
     signColor: 0xffd700,
+    hollow: true,
   });
   placeOnTerrain(cafeBuilding, 8, -83);
   cafeBuilding.rotation.y = 0.15;
@@ -3393,16 +3424,36 @@ export function buildScene(scene) {
   // =====================================================================
   // Push the standard building colliders into the array initialised at the top of buildScene
   colliders.push(
-    // Bakery (-90, -60)  12×9 building, rot 0.3
-    { cx: -90, cz: -60, hw: 6,   hd: 4.5, rot: 0.3  },
-    // Post Office (90, -60)  10×8, rot -0.2
-    { cx:  90, cz: -60, hw: 5,   hd: 4,   rot: -0.2 },
     // The Anchor pub (-45, -105)  13×10, rot 0.1
     { cx: -45, cz: -105, hw: 6.5, hd: 5,   rot: 0.1  },
-    // School (60, -105)  18×12, rot -0.15
-    { cx:  60, cz: -105, hw: 9,   hd: 6,   rot: -0.15 },
-    // Café (8, -83)  10×8, rot 0.15
-    { cx:   8, cz: -83, hw: 5,   hd: 4,   rot: 0.15 },
+
+    // Bakery (-90, -60) 12×9, rot 0.3 — per-wall colliders (hollow building)
+    { cx: -95.73, cz: -58.23, hw: 0.2, hd: 4.5, rot: 0.3 },  // left wall
+    { cx: -84.27, cz: -61.77, hw: 0.2, hd: 4.5, rot: 0.3 },  // right wall
+    { cx: -91.33, cz: -64.30, hw: 6.2, hd: 0.2, rot: 0.3 },  // back wall
+    { cx: -92.01, cz: -54.67, hw: 2.5, hd: 0.2, rot: 0.3 },  // front-left panel
+    { cx: -85.33, cz: -56.74, hw: 2.5, hd: 0.2, rot: 0.3 },  // front-right panel
+
+    // Post Office (90, -60) 10×8, rot -0.2 — per-wall colliders (hollow building)
+    { cx:  85.10, cz: -60.99, hw: 0.2, hd: 4.0, rot: -0.2 }, // left wall
+    { cx:  94.90, cz: -59.01, hw: 0.2, hd: 4.0, rot: -0.2 }, // right wall
+    { cx:  90.79, cz: -63.92, hw: 5.2, hd: 0.2, rot: -0.2 }, // back wall
+    { cx:  86.27, cz: -56.68, hw: 2.0, hd: 0.2, rot: -0.2 }, // front-left panel
+    { cx:  92.15, cz: -55.48, hw: 2.0, hd: 0.2, rot: -0.2 }, // front-right panel
+
+    // School (60, -105) 18×12, rot -0.15 — per-wall colliders (hollow building)
+    { cx:  51.10, cz: -106.34, hw: 0.2, hd: 6.0,  rot: -0.15 }, // left wall
+    { cx:  68.90, cz: -103.66, hw: 0.2, hd: 6.0,  rot: -0.15 }, // right wall
+    { cx:  60.90, cz: -110.93, hw: 9.2, hd: 0.2,  rot: -0.15 }, // back wall
+    { cx:  54.16, cz:  -99.81, hw: 4.0, hd: 0.2,  rot: -0.15 }, // front-left panel
+    { cx:  64.05, cz:  -98.32, hw: 4.0, hd: 0.2,  rot: -0.15 }, // front-right panel
+
+    // Café (8, -83) 10×8, rot 0.15 — per-wall colliders (hollow building)
+    { cx:   3.06, cz: -82.25, hw: 0.2, hd: 4.0, rot: 0.15 }, // left wall
+    { cx:  12.94, cz: -83.75, hw: 0.2, hd: 4.0, rot: 0.15 }, // right wall
+    { cx:   7.40, cz: -86.96, hw: 5.2, hd: 0.2, rot: 0.15 }, // back wall
+    { cx:   5.63, cz: -78.60, hw: 2.0, hd: 0.2, rot: 0.15 }, // front-left panel
+    { cx:  11.56, cz: -79.49, hw: 2.0, hd: 0.2, rot: 0.15 }, // front-right panel
     // Barn (-270, 105)  approx 14×10, rot 0.2
     { cx: -270, cz: 105, hw: 7,   hd: 5,   rot: 0.2  },
     // Greenhouse (-240, 135)  10×14, rot 0.2
