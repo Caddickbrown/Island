@@ -293,7 +293,7 @@ function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = fa
     ctx.fillText(signText, 256, 64);
     const tex = new THREE.CanvasTexture(canvas);
     // Use a PlaneGeometry (not Sprite) so the sign rotates with the building
-    const planeMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.FrontSide });
+    const planeMat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, side: THREE.FrontSide });
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(signW, signH), planeMat);
     plane.position.set(0, signY, signZ + 0.09);
     group.add(plane);
@@ -595,7 +595,7 @@ function buildMill() {
   sctx.fillText('The Mill', 128, 32);
   const signPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(2.5, 0.6),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signCanvas), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(signCanvas), transparent: true })
   );
   signPlane.position.set(0, 3.8, 3.18);
   group.add(signPlane);
@@ -778,7 +778,7 @@ function makeHomePlaque(name) {
   ctx.textBaseline = 'middle';
   ctx.fillText(`🏠 ${name}`, 128, 32);
   const tex = new THREE.CanvasTexture(canvas);
-  const planeMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+  const planeMat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.35), planeMat);
   plane.position.y = 1.02;
   group.add(plane);
@@ -1026,7 +1026,7 @@ function makeAquarium() {
   sctx.fillText("🐟  Elliot's Aquarium", 256, 62);
   const signMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(7.5, 1.4),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signCanvas), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(signCanvas), transparent: true })
   );
   signMesh.position.set(0, AH - HEAD/2, AD/2 + 0.35);
   signMesh.renderOrder = 1;
@@ -1204,7 +1204,7 @@ function makeOpenGarage() {
   sctx.fillText('🔧 GARAGE', 256, 40);
   const signMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(7, 1.1),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, side: THREE.DoubleSide })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, side: THREE.DoubleSide })
   );
   signMesh.position.set(0, GH - 0.55, -GD/2 - 0.05);
   signMesh.scale.x = -1; // flip so canvas text reads correctly from outside
@@ -1290,7 +1290,7 @@ function makeLibraryBuilding() {
   sctx.fillText('📚  LIBRARY', 320, 48);
   const signMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(7, 1.05),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, side: THREE.BackSide })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, side: THREE.BackSide })
   );
   signMesh.position.set(0, LH - 0.9, -LD/2 - 0.12);
   group.add(signMesh);
@@ -1463,7 +1463,7 @@ function makeCycleShop() {
   sctx.fillText('🚲 Cycle Shop', 256, 48);
   const signMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(6, 1.1),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc), transparent: true })
   );
   signMesh.position.set(0, CH * 0.8, CD / 2 + 0.18);
   group.add(signMesh);
@@ -1555,7 +1555,7 @@ function makeSportsCourts() {
   sctx2.fillText('🎾 Sports Courts', 192, 40);
   const signPlaneMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(4.5, 0.95),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc2), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc2), transparent: true })
   );
   signPlaneMesh.position.set(-12, 3.3, -8);
   group.add(signPlaneMesh);
@@ -1604,7 +1604,7 @@ function makeFitnessCenter() {
   sctx3.fillText('💪 Fitness Center', 256, 40);
   const signMesh3 = new THREE.Mesh(
     new THREE.PlaneGeometry(6.5, 1.0),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc3), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc3), transparent: true })
   );
   signMesh3.position.set(0, FH * 0.82, FD / 2 + 0.2);
   group.add(signMesh3);
@@ -1693,7 +1693,7 @@ function makeScienceCenter() {
   sctx4.fillText('🔭 Science Center', 256, 40);
   const signMesh4 = new THREE.Mesh(
     new THREE.PlaneGeometry(6.5, 1.0),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc4), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc4), transparent: true })
   );
   signMesh4.position.set(2.5, SH * 0.82, SD / 2 + 0.2);
   group.add(signMesh4);
@@ -1748,7 +1748,7 @@ function makeFishery() {
   sctx5.fillText('🐟 Fishery', 256, 40);
   const signMesh5 = new THREE.Mesh(
     new THREE.PlaneGeometry(5.5, 0.9),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc5), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc5), transparent: true })
   );
   signMesh5.position.set(0, FHH * 0.82, FHD / 2 + 0.2);
   group.add(signMesh5);
@@ -1917,7 +1917,7 @@ function makeRadioStation() {
   sctx.fillText('📻 Island Radio', 256, 40);
   const signMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(5.0, 0.85),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc), transparent: true })
   );
   signMesh.position.set(1.0, RSH * 0.82, RSD / 2 + 0.15);
   group.add(signMesh);
@@ -1997,7 +1997,7 @@ function makeMaintenanceBuilding() {
   sctx7.fillText('🔧 Maintenance', 256, 40);
   const signMesh7 = new THREE.Mesh(
     new THREE.PlaneGeometry(6.5, 1.0),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc7), transparent: true })
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc7), transparent: true })
   );
   signMesh7.position.set(1, MH * 0.78, MD / 2 + 0.2);
   group.add(signMesh7);
@@ -2703,6 +2703,29 @@ export function buildScene(scene) {
     const color = Math.random() > 0.4 ? C.foliageDark : C.foliage;
     const tree = makeTree(height, color);
     placeOnTerrain(tree, x + Math.random() * 4 - 2, z + Math.random() * 4 - 2);
+    tree.rotation.y = Math.random() * Math.PI;
+    scene.add(tree);
+  });
+
+  // --- Extra forest trees: gap-fill mid-ring, sentinel corners, entrance scatter ---
+  const extraForestTrees = [
+    // Fill gaps in mid-ring interior
+    [255,155],[263,150],[270,153],[279,150],[288,154],[296,160],
+    [310,170],[313,182],[310,195],[306,205],[298,214],[285,220],
+    [272,222],[259,219],[248,213],[239,204],[234,192],[233,178],
+    [236,164],[241,155],[248,160],[258,168],[267,162],[277,166],
+    [287,162],[296,170],[303,177],[305,190],[299,200],[288,207],
+    [275,212],[261,210],[251,204],[243,196],[239,185],[240,172],
+    // Sentinel trees at forest corners (taller, darker)
+    [243,133],[327,145],[337,215],[227,225],
+    // Scattered just outside the forest entrance path (west side)
+    [208,180],[210,168],[212,158],[206,193],[204,172],
+  ];
+  extraForestTrees.forEach(([x, z]) => {
+    const height = 8 + Math.random() * 5;
+    const color = Math.random() > 0.3 ? C.foliageDark : C.foliage;
+    const tree = makeTree(height, color);
+    placeOnTerrain(tree, x + Math.random() * 3 - 1.5, z + Math.random() * 3 - 1.5);
     tree.rotation.y = Math.random() * Math.PI;
     scene.add(tree);
   });
