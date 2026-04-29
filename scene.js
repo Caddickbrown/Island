@@ -3741,7 +3741,7 @@ export function buildScene(scene) {
   }));
   scene.add(fireflies);
 
-  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox, fireflies, sea };
+  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight };
 }
 
 

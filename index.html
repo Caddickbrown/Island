@@ -66,6 +66,26 @@
     }
     #map-btn:hover { opacity: 1; background: rgba(0,0,0,0.5); }
 
+    #clock-hud {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 56px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 1px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 5px 14px;
+      border-radius: 8px;
+      pointer-events: none;
+      backdrop-filter: blur(6px);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
     #interact-hint {
       position: fixed;
       bottom: 80px;
@@ -255,6 +275,10 @@
 <body>
 
 <div id="title">Island Town</div>
+<div id="clock-hud">
+  <span id="clock-time">8:00 AM</span>
+  <span id="clock-phase">☀️</span>
+</div>
 <button id="map-btn" onclick="toggleMap()">🗺 Atlas <span style="opacity:0.55;font-size:11px">[M]</span></button>
 <div id="hud">
   <div id="pos">Position: 0, 0</div>
@@ -568,7 +592,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   composer.addPass(bloomPass);
 
   // --- Build world ---
-  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies, sea } = buildScene(scene);
+  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
@@ -597,6 +621,91 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   const dialogueName = document.getElementById('dialogue-name');
   const dialogueLine = document.getElementById('dialogue-line');
   const greetingToast = document.getElementById('greeting-toast');
+  const clockTimeEl = document.getElementById('clock-time');
+  const clockPhaseEl = document.getElementById('clock-phase');
+
+  // --- Day/night cycle ---
+  // 1 real second = 1 game minute (simDelta = delta/60 gives 1 game hour per 60s)
+  // Full day = 24 game minutes real time. Start at 8:00 AM.
+  let gameHour = 8.0;
+
+  // Colour keyframes: [hour, skyHex, groundHex, ambientHex, sunHex, sunIntensity, fogHex, ambientIntensity]
+  const dayPhases = [
+    { h:  0, sky: 0x0a0a1a, gnd: 0x050510, amb: 0x111133, sun: 0x222244, si: 0.0,  fog: 0x05050f, ai: 0.08 },
+    { h:  5, sky: 0x1a0a2e, gnd: 0x0a0a1a, amb: 0x221133, sun: 0x331122, si: 0.0,  fog: 0x0a0510, ai: 0.10 },
+    { h:  6, sky: 0xff9966, gnd: 0x4a2a1a, amb: 0xffaa66, sun: 0xff8833, si: 0.6,  fog: 0xffa05a, ai: 0.45 },
+    { h:  8, sky: 0xffebd6, gnd: 0x99cfff, amb: 0xfff5e6, sun: 0xfff5e6, si: 1.0,  fog: 0xd4e8f5, ai: 0.70 },
+    { h: 12, sky: 0xffebd6, gnd: 0x99cfff, amb: 0xffffff, sun: 0xfffef0, si: 1.2,  fog: 0xc8dff0, ai: 0.75 },
+    { h: 17, sky: 0xffc97a, gnd: 0x8bb5c8, amb: 0xffcc88, sun: 0xffaa44, si: 0.9,  fog: 0xffb86a, ai: 0.65 },
+    { h: 19, sky: 0xff6633, gnd: 0x442211, amb: 0xff8833, sun: 0xff5511, si: 0.5,  fog: 0xdd4422, ai: 0.40 },
+    { h: 20, sky: 0x1a1a3a, gnd: 0x0a0a1a, amb: 0x222244, sun: 0x111133, si: 0.05, fog: 0x0f0f25, ai: 0.15 },
+    { h: 24, sky: 0x0a0a1a, gnd: 0x050510, amb: 0x111133, sun: 0x222244, si: 0.0,  fog: 0x05050f, ai: 0.08 },
+  ];
+
+  function lerpColour(a, b, t) {
+    const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
+    const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+    return ((Math.round(ar + (br-ar)*t) << 16) | (Math.round(ag + (bg-ag)*t) << 8) | Math.round(ab + (bb-ab)*t));
+  }
+
+  function getDayPhase(hour) {
+    const h = ((hour % 24) + 24) % 24;
+    let lo = dayPhases[0], hi = dayPhases[dayPhases.length - 1];
+    for (let i = 0; i < dayPhases.length - 1; i++) {
+      if (h >= dayPhases[i].h && h < dayPhases[i+1].h) { lo = dayPhases[i]; hi = dayPhases[i+1]; break; }
+    }
+    const t = (h - lo.h) / (hi.h - lo.h);
+    return {
+      sky: lerpColour(lo.sky, hi.sky, t),
+      gnd: lerpColour(lo.gnd, hi.gnd, t),
+      amb: lerpColour(lo.amb, hi.amb, t),
+      sun: lerpColour(lo.sun, hi.sun, t),
+      si:  lo.si + (hi.si - lo.si) * t,
+      fog: lerpColour(lo.fog, hi.fog, t),
+      ai:  lo.ai + (hi.ai - lo.ai) * t,
+    };
+  }
+
+  function updateDayNight(gameHr) {
+    const ph = getDayPhase(gameHr);
+    if (hemiLight)   { hemiLight.color.setHex(ph.sky); hemiLight.groundColor.setHex(ph.gnd); }
+    if (ambientLight){ ambientLight.color.setHex(ph.amb); ambientLight.intensity = ph.ai; }
+    if (sunLight) {
+      // Sun arcs east→west: angle 0 = sunrise (6am), PI = sunset (18pm)
+      const sunAngle = ((gameHr - 6) / 12) * Math.PI;
+      sunLight.position.set(
+        Math.cos(sunAngle) * 350,
+        Math.sin(sunAngle) * 280 + 20,
+        100
+      );
+      sunLight.color.setHex(ph.sun);
+      sunLight.intensity = ph.si;
+    }
+    if (scene.fog) scene.fog.color.setHex(ph.fog);
+    // Fireflies glow at night (visible 19:00–06:00)
+    if (fireflies) {
+      const nighttime = gameHr >= 19 || gameHr < 6;
+      const twi = gameHr >= 18 && gameHr < 20 ? (gameHr - 18) / 2 : (gameHr >= 5 && gameHr < 7 ? 1 - (gameHr - 5) / 2 : nighttime ? 1 : 0);
+      fireflies.material.opacity = twi * 0.8;
+    }
+  }
+
+  function formatGameTime(h) {
+    const totalMins = Math.floor(((h % 24) + 24) % 24 * 60);
+    const hr = Math.floor(totalMins / 60);
+    const min = totalMins % 60;
+    const ampm = hr < 12 ? 'AM' : 'PM';
+    const disp = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
+    return `${disp}:${String(min).padStart(2, '0')} ${ampm}`;
+  }
+
+  function getPhaseEmoji(h) {
+    const hr = ((h % 24) + 24) % 24;
+    if (hr >= 5  && hr < 7)  return '🌅';
+    if (hr >= 7  && hr < 17) return '☀️';
+    if (hr >= 17 && hr < 20) return '🌇';
+    return '🌙';
+  }
 
   // Build area list once for nearest-area lookup
   const areaList = Object.values(AREAS); // [{x, z, label}, ...]
@@ -640,6 +749,10 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
     // Sim time scalar: 1 real second = 1 game minute (1/60 sim hour)
     const simDelta = delta / 60;
+    gameHour = (gameHour + simDelta) % 24;
+    updateDayNight(gameHour);
+    clockTimeEl.textContent = formatGameTime(gameHour);
+    clockPhaseEl.textContent = getPhaseEmoji(gameHour);
     updateSupplyChain(delta, simDelta);
     updateRadio(delta);
     updateNotification(delta);
