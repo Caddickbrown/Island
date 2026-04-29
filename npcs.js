@@ -761,7 +761,7 @@ export class NPCManager {
     const timeGreet = hour >= 5 && hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     // Simple contextual lines based on job
     const jobLines = {
-      Baker:      ['The bread came out perfectly this morning!', 'I always start baking before sunrise.', 'Try one of the cardamom buns — Rosa's recipe.'],
+      Baker:      ['The bread came out perfectly this morning!', 'I always start baking before sunrise.', "Try one of the cardamom buns — Rosa's recipe."],
       Postman:    ['Letters from the mainland arrived today.', 'Always something new in the post bag.', 'The dock path is looking beautiful this time of year.'],
       Farmer:     ['The crops are coming along nicely.', 'Up at dawn, that\'s the farmer\'s way.', 'The hens have been very productive lately.'],
       Shopkeeper: ['We just got a fresh delivery in.', 'Can I help you find anything?', 'Business has been steady this week.'],
