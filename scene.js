@@ -94,16 +94,16 @@ export const AREAS = {
 // Walkable island bounds
 // ---------------------------------------------------------------------------
 export const ISLAND_BOUNDS = {
-  minX: -280,
-  maxX:  280,
-  minZ: -280,
-  maxZ:  280,
+  minX: -392,
+  maxX:  392,
+  minZ: -392,
+  maxZ:  392,
 };
 
 // ---------------------------------------------------------------------------
 // Terrain height function
 // ---------------------------------------------------------------------------
-const ISLAND_RADIUS = 300;
+const ISLAND_RADIUS = 420;
 
 function effectiveRadius(angle) {
   return ISLAND_RADIUS
@@ -115,8 +115,8 @@ function effectiveRadius(angle) {
 }
 
 export function getHeight(x, z) {
-  const nx = x / 300;
-  const nz = z / 300;
+  const nx = x / 420;
+  const nz = z / 420;
 
   // Base rolling hills
   let h = (
@@ -1947,6 +1947,10 @@ export function buildScene(scene) {
   const colliders = [];
 
   // === Lighting ===
+  // Hemisphere light: warm peach sky + cool blue ground = soft natural outdoor look
+  const hemiLight = new THREE.HemisphereLight(0xffebd6, 0x99cfff, 0.85);
+  scene.add(hemiLight);
+
   const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.7);
   scene.add(ambientLight);
 
@@ -1964,14 +1968,14 @@ export function buildScene(scene) {
   scene.fog = new THREE.FogExp2(0xc9e8f5, 0.0015);
 
   // === Sea ===
-  const seaGeo = new THREE.PlaneGeometry(1200, 1200);
+  const seaGeo = new THREE.PlaneGeometry(1680, 1680);
   seaGeo.rotateX(-Math.PI / 2);
   const sea = new THREE.Mesh(seaGeo, mat(C.sea));
   sea.position.y = -0.8;
   scene.add(sea);
 
   const seaDeep = new THREE.Mesh(
-    new THREE.PlaneGeometry(1600, 1600),
+    new THREE.PlaneGeometry(2240, 2240),
     mat(C.seaDeep)
   );
   seaDeep.rotation.x = -Math.PI / 2;
@@ -3174,7 +3178,56 @@ export function buildScene(scene) {
   // CAD-251 — Supply chain background simulation
   initSupplyChain(scene);
 
-  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox };
+  // === Fireflies ===
+  // Ambient glowing particles that drift near the treeline at dusk and night
+  const FIREFLY_COUNT = 200;
+  const ffPos   = new Float32Array(FIREFLY_COUNT * 3);
+  const ffPhase = new Float32Array(FIREFLY_COUNT);
+  for (let i = 0; i < FIREFLY_COUNT; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = 15 + Math.random() * 140;
+    ffPos[i*3]   = Math.cos(angle) * r;
+    ffPos[i*3+1] = 0.5 + Math.random() * 5;
+    ffPos[i*3+2] = Math.sin(angle) * r;
+    ffPhase[i] = Math.random() * Math.PI * 2;
+  }
+  const ffGeo = new THREE.BufferGeometry();
+  ffGeo.setAttribute('position', new THREE.Float32BufferAttribute(ffPos, 3));
+  ffGeo.setAttribute('aPhase',   new THREE.Float32BufferAttribute(ffPhase, 1));
+  const fireflies = new THREE.Points(ffGeo, new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: `
+      attribute float aPhase;
+      uniform float uTime;
+      varying float vPhase;
+      void main() {
+        vPhase = aPhase;
+        vec3 pos = position;
+        pos.x += sin(uTime * 0.4 + aPhase * 3.7) * 2.0;
+        pos.y += sin(uTime * 0.7 + aPhase * 2.1) * 1.0;
+        pos.z += cos(uTime * 0.5 + aPhase * 4.3) * 2.0;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        gl_PointSize = 5.0;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      varying float vPhase;
+      void main() {
+        float d = length(gl_PointCoord - vec2(0.5));
+        if (d > 0.5) discard;
+        float flicker = 0.5 + 0.5 * sin(uTime * 2.8 + vPhase * 6.1);
+        float alpha = flicker * smoothstep(0.5, 0.1, d);
+        gl_FragColor = vec4(0.55, 1.0, 0.45, alpha);
+      }
+    `,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    transparent: true,
+  }));
+  scene.add(fireflies);
+
+  return { windmill: windmillGroup, mill: millGroup, clouds: cloudList, campfire, colliders, fish, boombox, fireflies };
 }
 
 

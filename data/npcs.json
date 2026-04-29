@@ -1,0 +1,1004 @@
+[
+  {
+    "id": "rosa",
+    "name": "Rosa",
+    "job": "Baker",
+    "color": "0xe8a87c",
+    "schedule": [
+      {
+        "timeStart": 5,
+        "timeEnd": 8,
+        "area": "bakery",
+        "activity": "Baking \ud83c\udf5e"
+      },
+      {
+        "timeStart": 8,
+        "timeEnd": 12,
+        "area": "bakery",
+        "activity": "Selling bread \ud83e\udd56"
+      },
+      {
+        "timeStart": 12,
+        "timeEnd": 14,
+        "area": "clifftops",
+        "activity": "Day off \u2014 clifftops \ud83c\udf3f"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 18,
+        "area": "bakery",
+        "activity": "Baking for tomorrow \ud83c\udf5e"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 21,
+        "area": "library",
+        "activity": "Reading \ud83d\udcda"
+      },
+      {
+        "timeStart": 21,
+        "timeEnd": 5,
+        "area": "rosaHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "The sourdough's nearly ready \u2014 come back in an hour!",
+      "I've been up since five. The bread won't bake itself.",
+      "Fresh batch just out. Help yourself to a sample.",
+      "I put a little cardamom in today's loaves. Don't tell anyone."
+    ]
+  },
+  {
+    "id": "theo",
+    "name": "Theo",
+    "job": "Postman",
+    "color": "0x5b9bd5",
+    "schedule": [
+      {
+        "timeStart": 6,
+        "timeEnd": 7,
+        "area": "postOffice",
+        "activity": "Sorting mail \ud83d\udcee"
+      },
+      {
+        "timeStart": 7,
+        "timeEnd": 9,
+        "area": "townSquare",
+        "activity": "Delivering \ud83d\udcec"
+      },
+      {
+        "timeStart": 9,
+        "timeEnd": 11,
+        "area": "library",
+        "activity": "Delivering \ud83d\udcec"
+      },
+      {
+        "timeStart": 11,
+        "timeEnd": 13,
+        "area": "farm",
+        "activity": "Delivering \ud83d\udcec"
+      },
+      {
+        "timeStart": 13,
+        "timeEnd": 14,
+        "area": "dock",
+        "activity": "Lunch break \ud83c\udfa3"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 16,
+        "area": "workshop",
+        "activity": "Delivering \ud83d\udcec"
+      },
+      {
+        "timeStart": 16,
+        "timeEnd": 18,
+        "area": "postOffice",
+        "activity": "Back at base \ud83d\udcee"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 22,
+        "area": "bakery",
+        "activity": "Off-duty coffee \u2615"
+      },
+      {
+        "timeStart": 22,
+        "timeEnd": 6,
+        "area": "theoHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "Nothing for you today, I'm afraid. Maybe tomorrow.",
+      "I've walked every path on this island. Twice.",
+      "The dock gets the most post. People love sending things from the sea.",
+      "Rain or shine \u2014 that's the postal motto. Well, it's always shine here."
+    ]
+  },
+  {
+    "id": "eddy",
+    "name": "Eddy",
+    "job": "Farmer",
+    "color": "0x7bc67e",
+    "schedule": [
+      {
+        "timeStart": 4,
+        "timeEnd": 12,
+        "area": "farm",
+        "activity": "Farming \ud83c\udf3e"
+      },
+      {
+        "timeStart": 12,
+        "timeEnd": 13,
+        "area": "townSquare",
+        "activity": "Farmer's market \ud83e\udd55"
+      },
+      {
+        "timeStart": 13,
+        "timeEnd": 15,
+        "area": "workshop",
+        "activity": "Fixing the buggy \ud83d\udd27"
+      },
+      {
+        "timeStart": 15,
+        "timeEnd": 18,
+        "area": "farm",
+        "activity": "Farming \ud83c\udf3e"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 20,
+        "area": "treehouse",
+        "activity": "Visiting Petra \ud83c\udfa8"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 4,
+        "area": "eddyHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "The courgettes are out of control this year. Absolutely enormous.",
+      "The electric buggy needed charging again. Someone's been using it.",
+      "Ever tried growing something? There's nothing like it.",
+      "The goats got out again this morning. Third time this week."
+    ]
+  },
+  {
+    "id": "olive",
+    "name": "Olive",
+    "job": "Shopkeeper",
+    "color": "0xd4a0d4",
+    "schedule": [
+      {
+        "timeStart": 8,
+        "timeEnd": 18,
+        "area": "townSquare",
+        "activity": "Tending shop \ud83d\uded2\ufe0f"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 20,
+        "area": "clifftops",
+        "activity": "Evening walk \ud83c\udf04"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 23,
+        "area": "library",
+        "activity": "Reading \ud83d\udcd6"
+      },
+      {
+        "timeStart": 23,
+        "timeEnd": 8,
+        "area": "oliveHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "We've just had a delivery of candles. The good ones.",
+      "If you need anything, just ask. If I don't have it, I'll find it.",
+      "Quiet morning. The kind I like.",
+      "The general store has been here longer than anyone can remember."
+    ]
+  },
+  {
+    "id": "marta",
+    "name": "Marta",
+    "job": "Librarian",
+    "color": "0xa29bfe",
+    "schedule": [
+      {
+        "timeStart": 9,
+        "timeEnd": 19,
+        "area": "library",
+        "activity": "Keeping the library \ud83d\udcda"
+      },
+      {
+        "timeStart": 19,
+        "timeEnd": 21,
+        "area": "forestPath",
+        "activity": "Evening walk \ud83c\udf32"
+      },
+      {
+        "timeStart": 21,
+        "timeEnd": 9,
+        "area": "martaHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "We just got a collection in from the mainland. Mostly poetry.",
+      "The reading room is open all day. Quiet, please.",
+      "I catalogue by feeling, mostly. Officially I use Dewey.",
+      "There's a corner by the window that gets the best afternoon light."
+    ]
+  },
+  {
+    "id": "suki",
+    "name": "Suki",
+    "job": "Fisherman",
+    "color": "0xc47d52",
+    "schedule": [
+      {
+        "timeStart": 4,
+        "timeEnd": 10,
+        "area": "dock",
+        "activity": "Fishing \ud83c\udfa3"
+      },
+      {
+        "timeStart": 10,
+        "timeEnd": 12,
+        "area": "beach",
+        "activity": "Mending nets \ud83e\ude22"
+      },
+      {
+        "timeStart": 12,
+        "timeEnd": 14,
+        "area": "townSquare",
+        "activity": "Selling catch \ud83d\udc1f"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 17,
+        "area": "dock",
+        "activity": "Fishing \ud83c\udfa3"
+      },
+      {
+        "timeStart": 17,
+        "timeEnd": 20,
+        "area": "pub",
+        "activity": "Having a pint \ud83c\udf7a"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 4,
+        "area": "sukiHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "Nothing today, but I've got a feeling about tomorrow.",
+      "The mackerel run in autumn. Worth the wait.",
+      "Best spot's just past the second rock. Don't tell the others.",
+      "I've been fishing this bay for twenty years. Still surprises me."
+    ]
+  },
+  {
+    "id": "pete",
+    "name": "Pete",
+    "job": "Farmer",
+    "color": "0x8db87a",
+    "schedule": [
+      {
+        "timeStart": 4,
+        "timeEnd": 7,
+        "area": "farm",
+        "activity": "Tending animals \ud83d\udc04"
+      },
+      {
+        "timeStart": 7,
+        "timeEnd": 12,
+        "area": "farm",
+        "activity": "Working the fields \ud83c\udf3e"
+      },
+      {
+        "timeStart": 12,
+        "timeEnd": 13,
+        "area": "townSquare",
+        "activity": "Selling produce \ud83e\udd55"
+      },
+      {
+        "timeStart": 13,
+        "timeEnd": 16,
+        "area": "farm",
+        "activity": "Harvesting \ud83c\udf3e"
+      },
+      {
+        "timeStart": 16,
+        "timeEnd": 19,
+        "area": "workshop",
+        "activity": "Fixing tools \ud83d\udd27"
+      },
+      {
+        "timeStart": 19,
+        "timeEnd": 21,
+        "area": "pub",
+        "activity": "Unwinding \ud83c\udf7a"
+      },
+      {
+        "timeStart": 21,
+        "timeEnd": 4,
+        "area": "peteHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "Turnips are ahead of schedule. I'm cautiously optimistic.",
+      "Eddy handles the planning. I do the heavy stuff.",
+      "Early start, early finish. That's farming.",
+      "If the weather holds, we'll have a good harvest."
+    ]
+  },
+  {
+    "id": "barney",
+    "name": "Barney",
+    "job": "Barkeeper",
+    "color": "0xd4a853",
+    "schedule": [
+      {
+        "timeStart": 10,
+        "timeEnd": 14,
+        "area": "pub",
+        "activity": "Preparing \ud83c\udf7a"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 23,
+        "area": "pub",
+        "activity": "Running The Anchor \u2693"
+      },
+      {
+        "timeStart": 23,
+        "timeEnd": 1,
+        "area": "pub",
+        "activity": "Closing up \ud83c\udf7a"
+      },
+      {
+        "timeStart": 1,
+        "timeEnd": 10,
+        "area": "barneyHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "We open at five. I'm here from noon because someone has to be.",
+      "The draught's local. From the mainland, but local to the mainland.",
+      "Best table's by the window. You'll know why when the sun comes round.",
+      "Not much happens here. That's exactly why people come."
+    ]
+  },
+  {
+    "id": "nico",
+    "name": "Nico",
+    "job": "Caf\u00e9 owner",
+    "color": "0xf4c77e",
+    "schedule": [
+      {
+        "timeStart": 5,
+        "timeEnd": 8,
+        "area": "cafe",
+        "activity": "Opening up \u2615"
+      },
+      {
+        "timeStart": 8,
+        "timeEnd": 14,
+        "area": "cafe",
+        "activity": "Running the caf\u00e9 \u2615"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 15,
+        "area": "townSquare",
+        "activity": "Lunch break \ud83e\udd57"
+      },
+      {
+        "timeStart": 15,
+        "timeEnd": 19,
+        "area": "cafe",
+        "activity": "Afternoon rush \u2615"
+      },
+      {
+        "timeStart": 19,
+        "timeEnd": 21,
+        "area": "library",
+        "activity": "Re-reading \ud83d\udcd6"
+      },
+      {
+        "timeStart": 21,
+        "timeEnd": 5,
+        "area": "nicoHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "The oat milk came in on Tuesday. Back to normal.",
+      "You notice a lot from behind the counter. People think you're not listening.",
+      "This is the best spot on the island for coffee. I'm allowed to say that.",
+      "Take your time. There's no rush here."
+    ]
+  },
+  {
+    "id": "clara",
+    "name": "Clara",
+    "job": "Teacher",
+    "color": "0x74b9e8",
+    "schedule": [
+      {
+        "timeStart": 7,
+        "timeEnd": 9,
+        "area": "cafe",
+        "activity": "Morning coffee \u2615"
+      },
+      {
+        "timeStart": 9,
+        "timeEnd": 15,
+        "area": "school",
+        "activity": "Teaching \ud83d\udcd0"
+      },
+      {
+        "timeStart": 15,
+        "timeEnd": 18,
+        "area": "library",
+        "activity": "Marking work \ud83d\udcdd"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 20,
+        "area": "townSquare",
+        "activity": "Evening stroll \ud83c\udf07"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 7,
+        "area": "claraHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "The children have been asking about tides all week.",
+      "Teaching here is... different. Easier in some ways.",
+      "We did a nature walk this morning. Found three kinds of beetle.",
+      "Half my class want to be fishers. The other half want to be farmers."
+    ]
+  },
+  {
+    "id": "rex",
+    "name": "Rex",
+    "job": "Teacher",
+    "color": "0x6ec97b",
+    "schedule": [
+      {
+        "timeStart": 8,
+        "timeEnd": 9,
+        "area": "townSquare",
+        "activity": "Morning walk \ud83c\udf05"
+      },
+      {
+        "timeStart": 9,
+        "timeEnd": 15,
+        "area": "school",
+        "activity": "Teaching \ud83d\udd2c"
+      },
+      {
+        "timeStart": 15,
+        "timeEnd": 17,
+        "area": "workshop",
+        "activity": "Woodwork club \ud83d\udd28"
+      },
+      {
+        "timeStart": 17,
+        "timeEnd": 20,
+        "area": "pub",
+        "activity": "After-school pint \ud83c\udf7a"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 8,
+        "area": "rexHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "We're doing map-making this term. The children are surprisingly good at it.",
+      "Clara handles the sciences. I do history and stories.",
+      "The school has been here a long time. The building, anyway.",
+      "A good question is worth more than a right answer. That's my philosophy."
+    ]
+  },
+  {
+    "id": "otto",
+    "name": "Otto",
+    "job": "Engineer",
+    "color": "0xe17055",
+    "schedule": [
+      {
+        "timeStart": 6,
+        "timeEnd": 7,
+        "area": "workshop",
+        "activity": "Early start \ud83c\udf04"
+      },
+      {
+        "timeStart": 7,
+        "timeEnd": 12,
+        "area": "workshop",
+        "activity": "Working on the truck \ud83d\udd27"
+      },
+      {
+        "timeStart": 12,
+        "timeEnd": 13,
+        "area": "townSquare",
+        "activity": "Lunch break \ud83e\udd6a"
+      },
+      {
+        "timeStart": 13,
+        "timeEnd": 18,
+        "area": "workshop",
+        "activity": "Welding \u2699\ufe0f"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 20,
+        "area": "pub",
+        "activity": "Evening pint \ud83c\udf7a"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 6,
+        "area": "ottoHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "The windmill's running well. I adjusted the tension last week.",
+      "Solar panels on every roof. Eventually.",
+      "There's always something to fix. I don't mind.",
+      "The island runs on about 40% renewables. I want 100%. Give me time."
+    ]
+  },
+  {
+    "id": "petra",
+    "name": "Petra",
+    "job": "Artist",
+    "color": "0xc8a0d4",
+    "schedule": [
+      {
+        "timeStart": 7,
+        "timeEnd": 9,
+        "area": "treehouse",
+        "activity": "Morning light \ud83c\udfa8"
+      },
+      {
+        "timeStart": 9,
+        "timeEnd": 13,
+        "area": "forestPath",
+        "activity": "Sketching outdoors \ud83c\udf3f"
+      },
+      {
+        "timeStart": 13,
+        "timeEnd": 14,
+        "area": "cafe",
+        "activity": "Late lunch \u2615"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 18,
+        "area": "treehouse",
+        "activity": "Painting \ud83c\udfa8"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 20,
+        "area": "clifftops",
+        "activity": "Golden hour \ud83c\udf05"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 22,
+        "area": "pub",
+        "activity": "Evening drink \ud83c\udf77"
+      },
+      {
+        "timeStart": 22,
+        "timeEnd": 7,
+        "area": "petraHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "You can see the whole island from up here.",
+      "I built this deck over three weekends. Took another two to stop it creaking.",
+      "The light changes so fast up here. I can barely keep up.",
+      "Sometimes I just sit and watch the clouds. The island has good clouds.",
+      "Paint? No. I'm between pieces. Thinking is part of it."
+    ]
+  },
+  {
+    "id": "jin",
+    "name": "Jin",
+    "job": "Botanist",
+    "color": "0x7ab87a",
+    "schedule": [
+      {
+        "timeStart": 6,
+        "timeEnd": 8,
+        "area": "forestPath",
+        "activity": "Early observation \ud83c\udf31"
+      },
+      {
+        "timeStart": 8,
+        "timeEnd": 14,
+        "area": "forestPath",
+        "activity": "Plant research \ud83d\udd2c"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 15,
+        "area": "cafe",
+        "activity": "Lunch break \u2615"
+      },
+      {
+        "timeStart": 15,
+        "timeEnd": 19,
+        "area": "forestPath",
+        "activity": "Field notes \ud83d\udccb"
+      },
+      {
+        "timeStart": 19,
+        "timeEnd": 21,
+        "area": "library",
+        "activity": "Research reading \ud83d\udcda"
+      },
+      {
+        "timeStart": 21,
+        "timeEnd": 6,
+        "area": "jinHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "This island has three endemic plant species. Three. That's extraordinary.",
+      "I came for a season, seven years ago. The plants kept surprising me.",
+      "The interior garden is changing. I've got 18 months of data now.",
+      "Bea keeps bringing me specimens. Half of them I've already catalogued. I don't tell her."
+    ]
+  },
+  {
+    "id": "old-will",
+    "name": "Old Will",
+    "job": "Elder",
+    "color": "0xb8a898",
+    "schedule": [
+      {
+        "timeStart": 6,
+        "timeEnd": 11,
+        "area": "dock",
+        "activity": "Watching the sea \ud83c\udf0a"
+      },
+      {
+        "timeStart": 11,
+        "timeEnd": 13,
+        "area": "pub",
+        "activity": "Lunchtime pint \ud83c\udf7a"
+      },
+      {
+        "timeStart": 13,
+        "timeEnd": 17,
+        "area": "dock",
+        "activity": "Afternoon bench \ud83c\udf0a"
+      },
+      {
+        "timeStart": 17,
+        "timeEnd": 19,
+        "area": "townSquare",
+        "activity": "Evening sit \u2600\ufe0f"
+      },
+      {
+        "timeStart": 19,
+        "timeEnd": 6,
+        "area": "oldWillHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "Forty years I've fished these waters. Never get tired of the sunrise.",
+      "The mackerel run south in summer. Mark my words.",
+      "That new wind turbine up on the clifftops... I don't mind it, actually.",
+      "Catch anything today? The squid are running past the east headland.",
+      "Some mornings the sea's so flat you can hear the lighthouse beam."
+    ]
+  },
+  {
+    "id": "lena",
+    "name": "Lena",
+    "job": "Lighthouse keeper",
+    "color": "0x8aaec8",
+    "schedule": [
+      {
+        "timeStart": 6,
+        "timeEnd": 8,
+        "area": "dock",
+        "activity": "Morning check \ud83c\udf05"
+      },
+      {
+        "timeStart": 8,
+        "timeEnd": 14,
+        "area": "lighthouse",
+        "activity": "Keeping the light \ud83d\udd26"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 16,
+        "area": "townSquare",
+        "activity": "Afternoon break \u2615"
+      },
+      {
+        "timeStart": 16,
+        "timeEnd": 20,
+        "area": "lighthouse",
+        "activity": "Evening watch \ud83d\udd2d"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 22,
+        "area": "clifftops",
+        "activity": "Stargazing \ud83c\udf1f"
+      },
+      {
+        "timeStart": 22,
+        "timeEnd": 6,
+        "area": "lenaHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "The light's been running forty years without missing a night.",
+      "You can see the mainland from up top on a clear day. I try not to look.",
+      "My daughter keeps asking me to visit. Maybe this winter.",
+      "People think it's lonely work. It's not. The sea talks, if you listen."
+    ]
+  },
+  {
+    "id": "kai",
+    "name": "Kai",
+    "job": "Newcomer",
+    "color": "0xc8a87c",
+    "schedule": [
+      {
+        "timeStart": 8,
+        "timeEnd": 10,
+        "area": "dock",
+        "activity": "Just arrived... \ud83d\udea2"
+      },
+      {
+        "timeStart": 10,
+        "timeEnd": 12,
+        "area": "townSquare",
+        "activity": "Getting the lay of the land \ud83d\uddfa\ufe0f"
+      },
+      {
+        "timeStart": 12,
+        "timeEnd": 14,
+        "area": "cafe",
+        "activity": "First coffee \u2615"
+      },
+      {
+        "timeStart": 14,
+        "timeEnd": 16,
+        "area": "eastBeach",
+        "activity": "Exploring the coast \ud83c\udf0a"
+      },
+      {
+        "timeStart": 16,
+        "timeEnd": 18,
+        "area": "clifftops",
+        "activity": "Taking it all in \ud83c\udf05"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 20,
+        "area": "pub",
+        "activity": "Meeting the locals \ud83c\udf7a"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 8,
+        "area": "newcomerRoom",
+        "activity": "Resting \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "Is there a shop? Or... how does this work exactly?",
+      "Everyone seems to know everyone here. I'm still figuring out names.",
+      "I wasn't planning to stay long. But the bakery bread is something else.",
+      "Do you live here? What's it like in winter?"
+    ]
+  },
+  {
+    "id": "bea",
+    "name": "Bea",
+    "job": "Child",
+    "color": "0xffa07a",
+    "schedule": [
+      {
+        "timeStart": 7,
+        "timeEnd": 9,
+        "area": "townSquare",
+        "activity": "Morning wander \ud83c\udf3f"
+      },
+      {
+        "timeStart": 9,
+        "timeEnd": 12,
+        "area": "beach",
+        "activity": "Collecting things \ud83d\udc1a"
+      },
+      {
+        "timeStart": 12,
+        "timeEnd": 13,
+        "area": "bakery",
+        "activity": "Getting lunch \ud83c\udf5e"
+      },
+      {
+        "timeStart": 13,
+        "timeEnd": 16,
+        "area": "forestPath",
+        "activity": "Exploring \ud83c\udf32"
+      },
+      {
+        "timeStart": 16,
+        "timeEnd": 18,
+        "area": "dock",
+        "activity": "Watching the boats \ud83d\udea2"
+      },
+      {
+        "timeStart": 18,
+        "timeEnd": 20,
+        "area": "townSquare",
+        "activity": "Evening about \ud83c\udf07"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 7,
+        "area": "beaHome",
+        "activity": "Sleeping \ud83d\udca4"
+      }
+    ],
+    "dialogue": [
+      "I found a piece of sea glass this colour. I've got a whole jar.",
+      "Do you know what that plant is? I've been trying to find out.",
+      "Theo let me hold the post bag once. It was really heavy.",
+      "Old Will says there's a whale that comes in August. I'm going to see it."
+    ]
+  },
+  {
+    "id": "elliot",
+    "name": "Elliot",
+    "job": "Marine Biologist",
+    "color": "0x4dd0e1",
+    "startX": 150,
+    "startZ": -80,
+    "areaRadius": 20,
+    "schedule": [
+      {
+        "timeStart": 7,
+        "timeEnd": 20,
+        "area": "aquarium",
+        "x": 150,
+        "z": -80,
+        "activity": "tending fish"
+      },
+      {
+        "timeStart": 20,
+        "timeEnd": 7,
+        "area": "aquarium",
+        "x": 152,
+        "z": -78,
+        "activity": "reading charts"
+      }
+    ],
+    "dialogue": [
+      "The mullet are feeding today \u2014 good sign.",
+      "I've been cataloguing the tidal species for three years now.",
+      "Did you know octopuses can open jars? Remarkably clever.",
+      "The water temperature's been rising. I try not to think about it too much.",
+      "Come back at dusk \u2014 the bioluminescence is something else."
+    ]
+  },
+  {
+    "id": "mia",
+    "name": "Mia",
+    "job": "Beachcomber",
+    "color": "0xf9a825",
+    "startX": -5,
+    "startZ": -215,
+    "areaRadius": 18,
+    "schedule": [
+      {
+        "timeStart": 7,
+        "timeEnd": 19,
+        "area": "southBeach",
+        "x": 0,
+        "z": -218,
+        "activity": "searching the tideline"
+      },
+      {
+        "timeStart": 19,
+        "timeEnd": 7,
+        "area": "southBeach",
+        "x": -10,
+        "z": -212,
+        "activity": "watching the sunset"
+      }
+    ],
+    "dialogue": [
+      "Found a piece of sea glass today \u2014 really pale green, almost white.",
+      "The tide brings in the most extraordinary things.",
+      "I've been coming to this beach since I was small. It never looks the same twice.",
+      "There's a mussel bed just past the rocks. Don't tell everyone.",
+      "The sanderlings come back every year. I know it's them \u2014 I can tell."
+    ]
+  },
+  {
+    "id": "alex",
+    "name": "Alex",
+    "job": "Photographer",
+    "color": "0xce93d8",
+    "startX": 148,
+    "startZ": -158,
+    "areaRadius": 15,
+    "schedule": [
+      {
+        "timeStart": 5,
+        "timeEnd": 11,
+        "area": "eastBeach",
+        "x": 150,
+        "z": -158,
+        "activity": "shooting golden hour"
+      },
+      {
+        "timeStart": 11,
+        "timeEnd": 17,
+        "area": "aquarium",
+        "x": 155,
+        "z": -82,
+        "activity": "editing photos"
+      },
+      {
+        "timeStart": 17,
+        "timeEnd": 21,
+        "area": "eastBeach",
+        "x": 145,
+        "z": -162,
+        "activity": "shooting dusk"
+      },
+      {
+        "timeStart": 21,
+        "timeEnd": 5,
+        "area": "eastBeach",
+        "x": 150,
+        "z": -155,
+        "activity": "stargazing"
+      }
+    ],
+    "dialogue": [
+      "The light here at dawn is unlike anywhere else on the island.",
+      "I've been photographing this coastline for six months. Still not bored.",
+      "If you look east on a clear day, you can just make out the mainland.",
+      "The tidal pools are incredible \u2014 it's like a whole other world.",
+      "Sometimes a seal hauls out on that flat rock. I wait hours for it."
+    ]
+  }
+]

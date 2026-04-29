@@ -753,6 +753,32 @@ export class NPCManager {
     }
   }
 
+  /** Returns a dialogue line for an NPC by name. Cycles through contextual lines. */
+  getDialogue(npcName) {
+    const npc = this.npcs.find(n => n.name === npcName);
+    if (!npc) return null;
+    const hour = getSimTime();
+    const timeGreet = hour >= 5 && hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    // Simple contextual lines based on job
+    const jobLines = {
+      Baker:      ['The bread came out perfectly this morning!', 'I always start baking before sunrise.', 'Try one of the cardamom buns — Rosa's recipe.'],
+      Postman:    ['Letters from the mainland arrived today.', 'Always something new in the post bag.', 'The dock path is looking beautiful this time of year.'],
+      Farmer:     ['The crops are coming along nicely.', 'Up at dawn, that\'s the farmer\'s way.', 'The hens have been very productive lately.'],
+      Shopkeeper: ['We just got a fresh delivery in.', 'Can I help you find anything?', 'Business has been steady this week.'],
+      Librarian:  ['Have you read anything good lately?', 'The archives go back over two hundred years.', 'Silence is golden, as they say.'],
+      Fisherman:  ['Good haul this morning from the east side.', 'The tide was perfect at dawn.', 'Nothing like the smell of the sea.'],
+      Barkeeper:  ['The Anchor\'s always open for a friendly face.', 'A warm fire and a cold pint — what more do you need?', 'The regulars were in good form last night.'],
+      Barista:    ['Fresh coffee just came off the press.', 'The terrace is lovely at this hour.', 'Shall I put something on for you?'],
+      Teacher:    ['Learning never stops on this island.', 'The children asked such good questions today.', 'Education is the greatest gift we can give.'],
+      Engineer:   ['Always something to fix or improve.', 'The solar system is running perfectly.', 'Good tools make good work.'],
+    };
+    const lines = jobLines[npc.job] || [`${timeGreet}! Lovely day on the island.`, 'It\'s good to see you around.', 'Take your time and enjoy the island.'];
+    if (!npc._dialogueIndex) npc._dialogueIndex = 0;
+    const line = lines[npc._dialogueIndex % lines.length];
+    npc._dialogueIndex++;
+    return { name: npc.name, job: npc.job, line };
+  }
+
   update(delta, playerPosition) {
     advanceSimTime(delta);
     for (const npc of this.npcs) {
