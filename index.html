@@ -585,9 +585,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   composer.addPass(new RenderPass(scene, camera));
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.35,   // strength — subtle
-    0.5,    // radius
-    0.82    // threshold — only genuinely bright things glow
+    0.18,   // strength — very subtle, only emissive surfaces
+    0.6,    // radius
+    0.94    // threshold — only campfire/lighthouse/lamp level brightness
   );
   composer.addPass(bloomPass);
 
@@ -630,15 +630,15 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
   // Colour keyframes: [hour, skyHex, groundHex, ambientHex, sunHex, sunIntensity, fogHex, ambientIntensity]
   const dayPhases = [
-    { h:  0, sky: 0x0a0a1a, gnd: 0x050510, amb: 0x111133, sun: 0x222244, si: 0.0,  fog: 0x05050f, ai: 0.08 },
-    { h:  5, sky: 0x1a0a2e, gnd: 0x0a0a1a, amb: 0x221133, sun: 0x331122, si: 0.0,  fog: 0x0a0510, ai: 0.10 },
-    { h:  6, sky: 0xff9966, gnd: 0x4a2a1a, amb: 0xffaa66, sun: 0xff8833, si: 0.6,  fog: 0xffa05a, ai: 0.45 },
-    { h:  8, sky: 0xffebd6, gnd: 0x99cfff, amb: 0xfff5e6, sun: 0xfff5e6, si: 1.0,  fog: 0xd4e8f5, ai: 0.70 },
-    { h: 12, sky: 0xffebd6, gnd: 0x99cfff, amb: 0xffffff, sun: 0xfffef0, si: 1.2,  fog: 0xc8dff0, ai: 0.75 },
-    { h: 17, sky: 0xffc97a, gnd: 0x8bb5c8, amb: 0xffcc88, sun: 0xffaa44, si: 0.9,  fog: 0xffb86a, ai: 0.65 },
-    { h: 19, sky: 0xff6633, gnd: 0x442211, amb: 0xff8833, sun: 0xff5511, si: 0.5,  fog: 0xdd4422, ai: 0.40 },
-    { h: 20, sky: 0x1a1a3a, gnd: 0x0a0a1a, amb: 0x222244, sun: 0x111133, si: 0.05, fog: 0x0f0f25, ai: 0.15 },
-    { h: 24, sky: 0x0a0a1a, gnd: 0x050510, amb: 0x111133, sun: 0x222244, si: 0.0,  fog: 0x05050f, ai: 0.08 },
+    { h:  0, sky: 0x06071a, gnd: 0x030410, amb: 0x0d0e2a, sun: 0x111133, si: 0.0,  fog: 0x06070f, ai: 0.06 },
+    { h:  5, sky: 0x150d2e, gnd: 0x080814, amb: 0x1a1030, sun: 0x221133, si: 0.0,  fog: 0x090710, ai: 0.08 },
+    { h:  6, sky: 0xe87040, gnd: 0x3a1a10, amb: 0xd4885a, sun: 0xff8833, si: 0.55, fog: 0xd06040, ai: 0.40 },
+    { h:  8, sky: 0x6aa8d8, gnd: 0x7ab8d4, amb: 0xd4e8f0, sun: 0xfff0d8, si: 0.95, fog: 0x9ec8e8, ai: 0.60 },
+    { h: 12, sky: 0x4a8fc8, gnd: 0x6aaec8, amb: 0xe8f4ff, sun: 0xfff8e8, si: 1.1,  fog: 0x88bce0, ai: 0.65 },
+    { h: 17, sky: 0xe8a855, gnd: 0x7a9eb8, amb: 0xf0c880, sun: 0xffaa44, si: 0.85, fog: 0xe8b06a, ai: 0.60 },
+    { h: 19, sky: 0xc04820, gnd: 0x341810, amb: 0xd06030, sun: 0xff4400, si: 0.40, fog: 0xb03818, ai: 0.30 },
+    { h: 20, sky: 0x14142e, gnd: 0x08080e, amb: 0x1a1a38, sun: 0x0a0a22, si: 0.04, fog: 0x0c0c20, ai: 0.12 },
+    { h: 24, sky: 0x06071a, gnd: 0x030410, amb: 0x0d0e2a, sun: 0x111133, si: 0.0,  fog: 0x06070f, ai: 0.06 },
   ];
 
   function lerpColour(a, b, t) {
@@ -682,6 +682,15 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     }
     if (scene.fog) scene.fog.color.setHex(ph.fog);
     scene.background = new THREE.Color(ph.sky);
+    // Sea night blend — dark from 20:00→06:00, day from 08:00→18:00
+    if (sea) {
+      const hr = ((gameHr % 24) + 24) % 24;
+      let nightBlend = 0;
+      if (hr >= 20 || hr < 5)       nightBlend = 1.0;
+      else if (hr >= 5 && hr < 8)   nightBlend = 1.0 - (hr - 5) / 3;
+      else if (hr >= 18 && hr < 20) nightBlend = (hr - 18) / 2;
+      sea.material.uniforms.uNightBlend.value = nightBlend;
+    }
     // Fireflies glow at night (visible 19:00–06:00)
     if (fireflies) {
       const nighttime = gameHr >= 19 || gameHr < 6;

@@ -2182,7 +2182,7 @@ export function buildScene(scene) {
   const seaMat = new THREE.ShaderMaterial({
     transparent: true,
     side: THREE.FrontSide,
-    uniforms: { uTime: { value: 0 } },
+    uniforms: { uTime: { value: 0 }, uNightBlend: { value: 0.0 } },
     vertexShader: `
       uniform float uTime;
       varying vec2 vUv;
@@ -2199,22 +2199,31 @@ export function buildScene(scene) {
     `,
     fragmentShader: `
       uniform float uTime;
+      uniform float uNightBlend;
       varying vec2 vUv;
       varying float vDepth;
       void main() {
+        // Day colours
         vec3 deep    = vec3(0.04, 0.18, 0.35);
-        vec3 shallow = vec3(0.15, 0.55, 0.65);
-        vec3 col = mix(deep, shallow, clamp(vDepth * 2.0 + 0.5, 0.0, 1.0));
+        vec3 shallow = vec3(0.12, 0.45, 0.58);
+        // Night colours — dark navy
+        vec3 deepN   = vec3(0.01, 0.04, 0.12);
+        vec3 shallowN = vec3(0.02, 0.08, 0.20);
 
+        vec3 dCol = mix(deep, shallow, clamp(vDepth * 2.0 + 0.5, 0.0, 1.0));
+        vec3 nCol = mix(deepN, shallowN, clamp(vDepth * 2.0 + 0.5, 0.0, 1.0));
+        vec3 col = mix(dCol, nCol, uNightBlend);
+
+        // Sparkle only during day
         float sparkle1 = fract(sin(dot(vUv * 80.0 + uTime * 0.3, vec2(127.1, 311.7))) * 43758.5);
-        sparkle1 = step(0.97, sparkle1);
+        sparkle1 = step(0.97, sparkle1) * (1.0 - uNightBlend * 0.9);
 
         vec2 glintUv = vUv * 12.0 + vec2(uTime * 0.08, uTime * 0.05);
         float glint = sin(glintUv.x * 3.0) * sin(glintUv.y * 2.5);
-        glint = pow(max(0.0, glint), 6.0) * 0.4;
+        glint = pow(max(0.0, glint), 6.0) * 0.35 * (1.0 - uNightBlend * 0.8);
 
-        col += sparkle1 * 0.35 + glint;
-        gl_FragColor = vec4(col, 0.88);
+        col += sparkle1 * 0.3 + glint;
+        gl_FragColor = vec4(col, 0.90);
       }
     `,
   });
