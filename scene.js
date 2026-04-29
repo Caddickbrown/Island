@@ -2670,15 +2670,14 @@ export function buildScene(scene) {
   });
 
   // --- Fallen log ---
-  const logMat = mat(0x5a3a1a);
-  const log1 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 4.5, 8), logMat);
-  log1.rotation.z = Math.PI / 2;
-  log1.rotation.y = 0.7;
-  placeOnTerrain(log1, 268, 190, 0.3);
-  scene.add(log1);
+  const forestLogMat = mat(0x5a3a1a);
+  const forestFallenLog = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 4.5, 8), forestLogMat);
+  forestFallenLog.rotation.z = Math.PI / 2;
+  forestFallenLog.rotation.y = 0.7;
+  placeOnTerrain(forestFallenLog, 268, 190, 0.3);
+  scene.add(forestFallenLog);
 
-  // --- Winding path into the forest ---
-  // Entry from the west — three segments that curve inward
+  // --- Log seats around campfire ---
   makePath(scene, 195, 168, 222, 172, 3.5);   // approach from outside
   makePath(scene, 222, 172, 238, 178, 3);       // enter the canopy
   makePath(scene, 238, 178, 253, 181, 2.5);     // bend right
@@ -2697,7 +2696,7 @@ export function buildScene(scene) {
 
   // A log-seat ring around the fire
   [[268,180],[276,180],[280,185],[268,187]].forEach(([bx,bz],i) => {
-    const logSeat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 2.2, 6), logMat);
+    const logSeat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 2.2, 6), forestLogMat);
     logSeat.rotation.z = Math.PI / 2;
     logSeat.rotation.y = i * (Math.PI / 2) + 0.3;
     placeOnTerrain(logSeat, bx, bz, 0.25);
