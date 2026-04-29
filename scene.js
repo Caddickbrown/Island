@@ -2529,6 +2529,148 @@ export function buildScene(scene) {
   library.rotation.y = 1.1;
   scene.add(library);
 
+  // ─── Library Interior ──────────────────────────────────────────────
+  {
+    const lx = 120, lz = 60;
+    const libBase = getHeight(lx, lz);
+
+    // Wooden plank floor — long strips
+    for (let fi = 0; fi < 6; fi++) {
+      const plank = box(14, 0.06, 1.6, 0xc8a878);
+      plank.position.set(lx, libBase + 0.03, lz - 4 + fi * 1.7);
+      scene.add(plank);
+    }
+
+    // 4 tall bookshelves along walls
+    // Back wall (z+5)
+    for (let bi = 0; bi < 2; bi++) {
+      const shelfBody = box(3.2, 3.8, 0.5, 0x8b6040);
+      shelfBody.position.set(lx - 3.5 + bi * 7, libBase + 1.9, lz + 5);
+      scene.add(shelfBody);
+      // Books on back-wall shelves — 3 rows
+      const bookColours = [0xc0392b, 0x2980b9, 0x27ae60, 0xf39c12, 0x8e44ad, 0xc0392b, 0x2980b9];
+      for (let row = 0; row < 3; row++) {
+        for (let bk = 0; bk < 5; bk++) {
+          const book = box(0.42, 0.75, 0.38, bookColours[(bi * 15 + row * 5 + bk) % bookColours.length]);
+          book.position.set(lx - 3.5 + bi * 7 - 1.2 + bk * 0.6, libBase + 0.55 + row * 1.0, lz + 4.76);
+          scene.add(book);
+        }
+      }
+    }
+    // Left wall (x-7)
+    for (let bi = 0; bi < 2; bi++) {
+      const shelfBody = box(0.5, 3.8, 3.2, 0x8b6040);
+      shelfBody.position.set(lx - 7, libBase + 1.9, lz - 1.5 + bi * 3.5);
+      scene.add(shelfBody);
+      const bookColours2 = [0x27ae60, 0xf39c12, 0x8e44ad, 0xc0392b, 0x2980b9];
+      for (let row = 0; row < 3; row++) {
+        for (let bk = 0; bk < 4; bk++) {
+          const book = box(0.38, 0.75, 0.44, bookColours2[(bi * 12 + row * 4 + bk) % bookColours2.length]);
+          book.position.set(lx - 6.76, libBase + 0.55 + row * 1.0, lz - 1.5 + bi * 3.5 - 1.1 + bk * 0.72);
+          scene.add(book);
+        }
+      }
+    }
+
+    // 2 reading tables in centre with 4 chairs each
+    for (let ti = 0; ti < 2; ti++) {
+      const tblX = lx - 2.5 + ti * 5;
+      const tblZ = lz;
+      // Table top
+      const tTop = box(3.0, 0.1, 1.5, 0xd4b483);
+      tTop.position.set(tblX, libBase + 1.1, tblZ);
+      scene.add(tTop);
+      // Legs
+      for (const [dx, dz] of [[-1.3, -0.6], [1.3, -0.6], [-1.3, 0.6], [1.3, 0.6]]) {
+        const tLeg = box(0.1, 1.1, 0.1, 0xb8925a);
+        tLeg.position.set(tblX + dx, libBase + 0.55, tblZ + dz);
+        scene.add(tLeg);
+      }
+      // 4 chairs — one on each side
+      for (const [cx2, cz2, rotY] of [
+        [tblX, tblZ - 1.1, 0],
+        [tblX, tblZ + 1.1, Math.PI],
+        [tblX - 1.8, tblZ, Math.PI / 2],
+        [tblX + 1.8, tblZ, -Math.PI / 2],
+      ]) {
+        const seat = box(0.7, 0.08, 0.7, 0x9b6a3d);
+        seat.position.set(cx2, libBase + 0.78, cz2);
+        scene.add(seat);
+        const back = box(0.7, 0.55, 0.08, 0x9b6a3d);
+        back.rotation.y = rotY;
+        back.position.set(cx2 + Math.sin(rotY) * 0.35, libBase + 1.06, cz2 + Math.cos(rotY) * 0.35);
+        scene.add(back);
+      }
+    }
+
+    // Librarian's desk near door (front, z-4)
+    const libDesk = box(2.8, 1.0, 1.2, 0xb8925a);
+    libDesk.position.set(lx + 2, libBase + 0.5, lz - 3.8);
+    scene.add(libDesk);
+    const libDeskTop = box(3.0, 0.08, 1.3, 0xd4b483);
+    libDeskTop.position.set(lx + 2, libBase + 1.05, lz - 3.8);
+    scene.add(libDeskTop);
+    // Small lamp on desk
+    const lampBase2 = cylinder(0.12, 0.15, 0.08, 0x888888, 6);
+    lampBase2.position.set(lx + 2.8, libBase + 1.13, lz - 3.8);
+    scene.add(lampBase2);
+    const lampPole2 = cylinder(0.04, 0.04, 0.6, 0xaaaaaa, 5);
+    lampPole2.position.set(lx + 2.8, libBase + 1.43, lz - 3.8);
+    scene.add(lampPole2);
+    const lampShade2 = cone(0.22, 0.3, 0xf5c842, 8);
+    lampShade2.position.set(lx + 2.8, libBase + 1.88, lz - 3.8);
+    scene.add(lampShade2);
+    // Librarian chair
+    const libChairSeat = box(0.7, 0.08, 0.7, 0x5c4033);
+    libChairSeat.position.set(lx + 2, libBase + 0.75, lz - 3.0);
+    scene.add(libChairSeat);
+    const libChairBack = box(0.7, 0.6, 0.08, 0x5c4033);
+    libChairBack.position.set(lx + 2, libBase + 1.1, lz - 2.65);
+    scene.add(libChairBack);
+
+    // Comfy corner armchair (0x8b4513, left front corner)
+    const armSeat = box(1.1, 0.25, 1.0, 0x8b4513);
+    armSeat.position.set(lx - 5.5, libBase + 0.62, lz - 3.5);
+    scene.add(armSeat);
+    const armBack = box(1.1, 0.9, 0.2, 0x8b4513);
+    armBack.position.set(lx - 5.5, libBase + 1.12, lz - 3.98);
+    scene.add(armBack);
+    const armL = box(0.2, 0.35, 1.0, 0x7a3d10);
+    armL.position.set(lx - 6.05, libBase + 0.82, lz - 3.5);
+    scene.add(armL);
+    const armR = box(0.2, 0.35, 1.0, 0x7a3d10);
+    armR.position.set(lx - 4.95, libBase + 0.82, lz - 3.5);
+    scene.add(armR);
+
+    // Potted plant near window (right wall)
+    const potBody = cylinder(0.22, 0.28, 0.45, 0xa0522d, 8);
+    potBody.position.set(lx + 6.5, libBase + 0.23, lz - 3.5);
+    scene.add(potBody);
+    const plantStem = cylinder(0.08, 0.08, 0.6, 0x3a7d2c, 5);
+    plantStem.position.set(lx + 6.5, libBase + 0.75, lz - 3.5);
+    scene.add(plantStem);
+    const plantLeaves = new THREE.Mesh(new THREE.SphereGeometry(0.45, 7, 5), mat(0x27ae60));
+    plantLeaves.position.set(lx + 6.5, libBase + 1.2, lz - 3.5);
+    scene.add(plantLeaves);
+
+    // Notice board on back wall — flat box with pinned papers
+    const noticeBoard = box(3.0, 1.8, 0.12, 0xf5deb3);
+    noticeBoard.position.set(lx - 2.5, libBase + 2.8, lz + 5.1);
+    scene.add(noticeBoard);
+    const noticeFr = box(3.2, 2.0, 0.1, 0x8b6040);
+    noticeFr.position.set(lx - 2.5, libBase + 2.8, lz + 5.08);
+    scene.add(noticeFr);
+    // Pinned paper rectangles
+    for (const [nx, ny, nc] of [
+      [-0.9, 0.4, 0xee4444], [0.1, 0.5, 0x4499ee], [0.9, 0.2, 0x44cc88],
+      [-0.4, -0.4, 0xffcc22], [0.7, -0.5, 0xcc66cc], [-0.8, -0.1, 0xff8844],
+    ]) {
+      const paper = box(0.5, 0.38, 0.08, nc);
+      paper.position.set(lx - 2.5 + nx, libBase + 2.8 + ny, lz + 5.18);
+      scene.add(paper);
+    }
+  }
+
   // Reading garden
   const readingGarden = makeGarden(4);
   placeOnTerrain(readingGarden, 138, 75);
@@ -2555,6 +2697,132 @@ export function buildScene(scene) {
   placeOnTerrain(workshop, -120, 60);
   workshop.rotation.y = 0.3;
   scene.add(workshop);
+
+  // ─── Workshop Interior ─────────────────────────────────────────────
+  {
+    const wx = -120, wz = 60;
+    const wBase = getHeight(wx, wz);
+
+    // Concrete floor — large grey slab
+    const concreteFloor = box(13, 0.06, 9, 0x999999);
+    concreteFloor.position.set(wx, wBase + 0.03, wz);
+    scene.add(concreteFloor);
+
+    // Large workbench along back wall (z+3.5)
+    const workbench = box(10, 0.15, 1.5, 0x8b7355);
+    workbench.position.set(wx, wBase + 1.05, wz + 3.5);
+    scene.add(workbench);
+    // Workbench legs
+    for (const dx of [-4.5, -1.5, 1.5, 4.5]) {
+      const wbLeg = box(0.12, 1.05, 0.12, 0x6b5840);
+      wbLeg.position.set(wx + dx, wBase + 0.53, wz + 3.5);
+      scene.add(wbLeg);
+    }
+    // Tools on workbench — small box shapes
+    const toolData = [
+      [-4, 0x888888, 0.35, 0.25, 0.12],  // hammer head
+      [-2.8, 0x666666, 0.12, 0.3, 0.6],  // screwdriver
+      [-1.5, 0xaa4400, 0.5, 0.18, 0.18], // pliers body
+      [0.2, 0x444444, 0.9, 0.18, 0.25],  // wrench
+      [1.5, 0x999999, 0.18, 0.35, 0.18], // bolt/nut
+      [2.8, 0x555555, 0.6, 0.25, 0.18],  // drill body
+      [4.0, 0xff0000, 0.22, 0.22, 0.22], // small tool box
+    ];
+    for (const [dx, col, tw, th, td] of toolData) {
+      const tool = box(tw, th, td, col);
+      tool.position.set(wx + dx, wBase + 1.2, wz + 3.4);
+      scene.add(tool);
+    }
+
+    // Stool in front of workbench
+    const wStoolSeat = cylinder(0.32, 0.32, 0.08, 0x6b5840, 10);
+    wStoolSeat.position.set(wx - 1, wBase + 0.88, wz + 2.3);
+    scene.add(wStoolSeat);
+    const wStoolLeg = cylinder(0.07, 0.09, 0.88, 0x8b7355, 5);
+    wStoolLeg.position.set(wx - 1, wBase + 0.44, wz + 2.3);
+    scene.add(wStoolLeg);
+
+    // 3D printer / CNC machine — boxy with a moving arm
+    const printerBase = box(1.8, 0.2, 1.5, 0x555555);
+    printerBase.position.set(wx + 4, wBase + 0.1, wz - 1.5);
+    scene.add(printerBase);
+    const printerBody = box(1.6, 1.5, 1.3, 0x444444);
+    printerBody.position.set(wx + 4, wBase + 0.95, wz - 1.5);
+    scene.add(printerBody);
+    const printerArm = box(1.4, 0.14, 0.14, 0x888888);
+    printerArm.position.set(wx + 4, wBase + 1.7, wz - 1.5);
+    scene.add(printerArm);
+    const printerHead = box(0.25, 0.25, 0.25, 0x2980b9);
+    printerHead.position.set(wx + 4, wBase + 1.55, wz - 1.5);
+    scene.add(printerHead);
+    // Light on printer
+    const printerLight = box(0.18, 0.1, 0.1, 0x00ee44);
+    printerLight.material = new THREE.MeshLambertMaterial({ color: 0x00ee44, emissive: 0x00aa22, emissiveIntensity: 0.7 });
+    printerLight.position.set(wx + 4.55, wBase + 0.75, wz - 0.88);
+    scene.add(printerLight);
+
+    // Pegboard on left wall (x-6) with hanging tools
+    const pegboard = box(0.1, 2.5, 5.0, 0xd4a96a);
+    pegboard.position.set(wx - 6.1, wBase + 2.0, wz + 0.5);
+    scene.add(pegboard);
+    // Hanging tools on pegboard — small cylinders and boxes
+    const pegTools = [
+      [0, 0.8, 0.18, 0.04, 0.55, 0x888888, 'cyl'],  // screwdriver
+      [0, -0.3, 0.18, 0.04, 0.6, 0x666666, 'cyl'],  // drill bit
+      [0, 1.5, 0.3, 0.04, 0.45, 0xaa5500, 'cyl'],   // chisel handle
+      [0, -0.9, 0.14, 0.3, 0.12, 0x444444, 'box'],  // box spanner
+      [0, 0.2, 0.45, 0.1, 0.1, 0x777777, 'box'],    // small wrench
+      [0, -1.5, 0.15, 0.05, 0.7, 0x999999, 'cyl'],  // file/rasp
+    ];
+    for (const [, dz, a, b, c, col, type] of pegTools) {
+      if (type === 'cyl') {
+        const t = cylinder(a, b, c, col, 6);
+        t.rotation.z = Math.PI / 2;
+        t.position.set(wx - 6.02, wBase + 2.1, wz + 0.5 + dz);
+        scene.add(t);
+      } else {
+        const t = box(0.12, a, b, col);
+        t.position.set(wx - 6.02, wBase + 2.1 + a / 2, wz + 0.5 + dz);
+        scene.add(t);
+      }
+    }
+
+    // Safety cabinet — tall narrow red box
+    const safetyCAB = box(0.7, 2.0, 0.6, 0xff0000);
+    safetyCAB.position.set(wx - 5.5, wBase + 1.0, wz + 3.5);
+    scene.add(safetyCAB);
+    const cabDoor = box(0.06, 1.7, 0.55, 0xcc0000);
+    cabDoor.position.set(wx - 5.15, wBase + 1.0, wz + 3.5);
+    scene.add(cabDoor);
+    const cabHandle = box(0.1, 0.08, 0.08, 0xdddddd);
+    cabHandle.position.set(wx - 5.1, wBase + 1.0, wz + 3.5);
+    scene.add(cabHandle);
+
+    // Bike repair stand with a wheel (torus)
+    const bikeStand = box(0.12, 1.2, 0.12, 0x666666);
+    bikeStand.position.set(wx + 1, wBase + 0.6, wz - 3.5);
+    scene.add(bikeStand);
+    const bikeStandArm = box(0.8, 0.1, 0.1, 0x888888);
+    bikeStandArm.position.set(wx + 1, wBase + 1.25, wz - 3.5);
+    scene.add(bikeStandArm);
+    // Wheel — torus
+    const wheel = new THREE.Mesh(
+      new THREE.TorusGeometry(0.6, 0.07, 8, 20),
+      mat(0x333333)
+    );
+    wheel.rotation.y = Math.PI / 2;
+    wheel.position.set(wx + 1, wBase + 1.2, wz - 3.5);
+    scene.add(wheel);
+    // Wheel spokes — thin cylinders across diameter
+    for (let s = 0; s < 6; s++) {
+      const spokeAngle = (s / 6) * Math.PI;
+      const spoke = cylinder(0.02, 0.02, 1.2, 0x888888, 4);
+      spoke.rotation.z = spokeAngle;
+      spoke.rotation.y = Math.PI / 2;
+      spoke.position.set(wx + 1, wBase + 1.2, wz - 3.5);
+      scene.add(spoke);
+    }
+  }
 
   // Solar panel array near workshop
   for (let i = 0; i < 4; i++) {
@@ -3085,6 +3353,133 @@ export function buildScene(scene) {
   placeOnTerrain(pub, -45, -105);
   pub.rotation.y = 0.1;
   scene.add(pub);
+
+  // ─── The Anchor Interior ───────────────────────────────────────────
+  {
+    const ax = -45, az = -105;
+    const anchorBase = getHeight(ax, az);
+
+    // Stone floor tiles — grey boxes in a grid
+    for (let fi = 0; fi < 5; fi++) {
+      for (let fj = 0; fj < 4; fj++) {
+        const tile = box(2.2, 0.05, 2.2, fi % 2 === fj % 2 ? 0x888888 : 0x777777);
+        tile.position.set(ax - 4.4 + fi * 2.2, anchorBase + 0.025, az - 3.3 + fj * 2.2);
+        scene.add(tile);
+      }
+    }
+
+    // Long bar counter along back wall (z+4)
+    const barCounter = box(9, 1.15, 0.85, 0x5c3d1e);
+    barCounter.position.set(ax, anchorBase + 0.58, az + 4);
+    scene.add(barCounter);
+    const barTop = box(9.2, 0.1, 1.0, 0x8b6040);
+    barTop.position.set(ax, anchorBase + 1.2, az + 4);
+    scene.add(barTop);
+
+    // Bottle shelves behind bar — on back wall
+    for (let row = 0; row < 3; row++) {
+      const shelf = box(8.5, 0.08, 0.3, 0x6b4226);
+      shelf.position.set(ax, anchorBase + 1.8 + row * 0.7, az + 4.7);
+      scene.add(shelf);
+      // Bottles — thin cylinders in amber/green
+      for (let b = 0; b < 10; b++) {
+        const bottleCol = b % 3 === 0 ? 0x2e7d32 : b % 3 === 1 ? 0xc47c2b : 0x5d4037;
+        const bottle = cylinder(0.07, 0.09, 0.45, bottleCol, 6);
+        bottle.position.set(ax - 4 + b * 0.88, anchorBase + 2.05 + row * 0.7, az + 4.72);
+        scene.add(bottle);
+      }
+    }
+
+    // 5 bar stools in front of bar
+    for (let s = 0; s < 5; s++) {
+      const stoolSeat = cylinder(0.28, 0.28, 0.08, 0x8b4513, 10);
+      stoolSeat.position.set(ax - 4 + s * 2, anchorBase + 0.9, az + 2.9);
+      scene.add(stoolSeat);
+      const stoolLeg = cylinder(0.06, 0.08, 0.9, 0x5c3d1e, 5);
+      stoolLeg.position.set(ax - 4 + s * 2, anchorBase + 0.45, az + 2.9);
+      scene.add(stoolLeg);
+    }
+
+    // 4 round pub tables with stools
+    for (const [tx, tz, ns] of [
+      [ax - 3, az - 2.5, 3],
+      [ax + 3, az - 2.5, 4],
+      [ax - 3, az + 0.5, 3],
+      [ax + 3, az + 0.5, 4],
+    ]) {
+      const ptTop = cylinder(0.7, 0.7, 0.1, 0x9b6a3d, 12);
+      ptTop.position.set(tx, anchorBase + 0.95, tz);
+      scene.add(ptTop);
+      const ptLeg = cylinder(0.08, 0.12, 0.95, 0x6b4226, 6);
+      ptLeg.position.set(tx, anchorBase + 0.48, tz);
+      scene.add(ptLeg);
+      // Stools around each table
+      for (let s = 0; s < ns; s++) {
+        const angle = (s / ns) * Math.PI * 2;
+        const sx = tx + Math.cos(angle) * 1.1;
+        const sz2 = tz + Math.sin(angle) * 1.1;
+        const pSeat = cylinder(0.25, 0.25, 0.07, 0x8b4513, 8);
+        pSeat.position.set(sx, anchorBase + 0.82, sz2);
+        scene.add(pSeat);
+        const pLeg = cylinder(0.05, 0.07, 0.82, 0x5c3d1e, 5);
+        pLeg.position.set(sx, anchorBase + 0.41, sz2);
+        scene.add(pLeg);
+      }
+    }
+
+    // Dartboard on right wall (x+6)
+    const dartOuter = cylinder(0.55, 0.55, 0.08, 0x2c3e50, 20);
+    dartOuter.rotation.z = Math.PI / 2;
+    dartOuter.position.set(ax + 6.1, anchorBase + 2.4, az + 1.5);
+    scene.add(dartOuter);
+    const dartRing1 = cylinder(0.42, 0.42, 0.09, 0xe74c3c, 20);
+    dartRing1.rotation.z = Math.PI / 2;
+    dartRing1.position.set(ax + 6.12, anchorBase + 2.4, az + 1.5);
+    scene.add(dartRing1);
+    const dartRing2 = cylinder(0.28, 0.28, 0.1, 0xecf0f1, 20);
+    dartRing2.rotation.z = Math.PI / 2;
+    dartRing2.position.set(ax + 6.14, anchorBase + 2.4, az + 1.5);
+    scene.add(dartRing2);
+    const dartBull = cylinder(0.1, 0.1, 0.11, 0x2c3e50, 12);
+    dartBull.rotation.z = Math.PI / 2;
+    dartBull.position.set(ax + 6.16, anchorBase + 2.4, az + 1.5);
+    scene.add(dartBull);
+
+    // Fireplace (left wall, x-6) — stone surround with fire glow
+    const fireBase = box(1.6, 0.2, 1.2, 0x555555);
+    fireBase.position.set(ax - 6, anchorBase + 0.1, az - 0.5);
+    scene.add(fireBase);
+    const fireSurround = box(2.0, 2.5, 0.3, 0x666666);
+    fireSurround.position.set(ax - 6.1, anchorBase + 1.25, az - 1.0);
+    scene.add(fireSurround);
+    const fireBack = box(1.5, 1.8, 0.2, 0x333333);
+    fireBack.position.set(ax - 6.1, anchorBase + 0.9, az - 0.82);
+    scene.add(fireBack);
+    // Fire — emissive cone
+    const fireMesh = cone(0.35, 0.75, 0xff6600, 6);
+    fireMesh.material = new THREE.MeshLambertMaterial({ color: 0xff6600, emissive: 0xff4400, emissiveIntensity: 0.8 });
+    fireMesh.position.set(ax - 6.1, anchorBase + 0.58, az - 0.9);
+    scene.add(fireMesh);
+    const fireInner = cone(0.18, 0.5, 0xffdd00, 5);
+    fireInner.material = new THREE.MeshLambertMaterial({ color: 0xffdd00, emissive: 0xffaa00, emissiveIntensity: 1.0 });
+    fireInner.position.set(ax - 6.1, anchorBase + 0.62, az - 0.9);
+    scene.add(fireInner);
+
+    // Small stage area in back-right corner with microphone stand
+    const stageRiser = box(3.0, 0.22, 2.5, 0x6b4226);
+    stageRiser.position.set(ax + 4.5, anchorBase + 0.11, az - 2.8);
+    scene.add(stageRiser);
+    // Microphone stand
+    const micBase2 = cylinder(0.28, 0.32, 0.06, 0x444444, 8);
+    micBase2.position.set(ax + 4.5, anchorBase + 0.35, az - 2.8);
+    scene.add(micBase2);
+    const micPole2 = cylinder(0.04, 0.04, 1.2, 0x888888, 5);
+    micPole2.position.set(ax + 4.5, anchorBase + 0.95, az - 2.8);
+    scene.add(micPole2);
+    const micHead = cylinder(0.1, 0.1, 0.2, 0x333333, 8);
+    micHead.position.set(ax + 4.5, anchorBase + 1.65, az - 2.8);
+    scene.add(micHead);
+  }
 
   // =====================================================================
   // SCHOOL (60, -105)
