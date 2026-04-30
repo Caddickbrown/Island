@@ -544,6 +544,10 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   import { NPCManager, findOpenShift, startSubInShift, updateSubIn } from './npcs.js';
   import { WildlifeManager } from './wildlife.js';
   import { AnimalManager } from './animals.js';
+  import { BakeryMinigame }  from './minigame_bakery.js';
+  import { FishingMinigame } from './minigame_fishing.js';
+  import { PubMinigame }     from './minigame_pub.js';
+  import { SchoolMinigame }  from './minigame_school.js';
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -592,7 +596,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   composer.addPass(bloomPass);
 
   // --- Build world ---
-  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight } = buildScene(scene);
+  const { windmill, clouds, campfire, colliders, fish, boombox, fireflies, sea, sunLight, hemiLight, ambientLight, buildings } = buildScene(scene);
 
   // --- Player ---
   const playerCtrl = new PlayerController(scene, camera, renderer);
@@ -603,6 +607,20 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
   // --- Café Help Mini-Game (CAD-269) ---
   playerCtrl.miniGame = createCafeHelpMiniGame();
+
+  // --- Building Minigames ---
+  // Each keyed to the buildingKey in INTERIOR_ZONES
+  const _bakeryGame  = new BakeryMinigame(scene, camera);
+  const _fishingGame = new FishingMinigame(scene, camera);
+  const _pubGame     = new PubMinigame();
+  const _schoolGame  = new SchoolMinigame();
+  const BUILDING_MINIGAMES = {
+    bakery: _bakeryGame,
+    pub:    _pubGame,
+    school: _schoolGame,
+  };
+  // Fishing is triggered at the dock (location-based)
+  const FISHING_TRIGGER = { x: 0, z: 370, radius: 18 };
 
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
@@ -742,13 +760,21 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   const DIALOGUE_DURATION = 5;
 
   // --- Interior zone detection ---
+  // buildingKey matches the key in the buildings object returned by buildScene()
   const INTERIOR_ZONES = [
-    { cx:   8, cz:  -83, hw: 8,  hd: 7,  label: 'café'        },
-    { cx: -90, cz:  -60, hw: 10, hd: 8,  label: 'bakery'      },
-    { cx:  90, cz:  -60, hw: 8,  hd: 7,  label: 'post office' },
-    { cx:  60, cz: -105, hw: 9,  hd: 7,  label: 'school'      },
-    { cx: 120, cz:   60, hw: 9,  hd: 7,  label: 'library'     },
+    { cx:   8, cz:  -83, hw: 8,  hd: 7,  label: 'café',        buildingKey: 'cafe'       },
+    { cx: -90, cz:  -60, hw: 10, hd: 8,  label: 'bakery',      buildingKey: 'bakery'     },
+    { cx:  90, cz:  -60, hw: 8,  hd: 7,  label: 'post office', buildingKey: 'postOffice' },
+    { cx:  60, cz: -105, hw: 9,  hd: 7,  label: 'school',      buildingKey: 'school'     },
+    { cx: 120, cz:   60, hw: 9,  hd: 7,  label: 'library',     buildingKey: 'library'    },
+    { cx: -45, cz: -105, hw: 8,  hd: 6,  label: 'pub',         buildingKey: 'pub'        },
+    { cx: -120,cz:   60, hw: 11, hd: 10, label: 'workshop',    buildingKey: 'workshop'   },
   ];
+
+  // Wire building groups to zones after buildScene() runs
+  for (const zone of INTERIOR_ZONES) {
+    zone._group = buildings && buildings[zone.buildingKey] || null;
+  }
 
   let insideBuilding = null;
 
@@ -770,25 +796,38 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
     playerCtrl.update(delta);
 
-    // Interior overhead camera
+    // Interior zone — hide building roof when inside, normal camera throughout
     const zone = checkInteriorZone(playerCtrl.player.position);
     if (zone !== insideBuilding) {
+      // Restore previous building's roof
+      if (insideBuilding && insideBuilding._group) {
+        const rm = insideBuilding._group.userData.roofMesh;
+        if (rm) rm.visible = true;
+      }
       insideBuilding = zone;
+      // Hide new building's roof
+      if (insideBuilding && insideBuilding._group) {
+        const rm = insideBuilding._group.userData.roofMesh;
+        if (rm) rm.visible = false;
+      }
     }
+    // Overhead camera + roof hide together for best interior visibility
     playerCtrl.indoorCamera = !!insideBuilding;
     if (insideBuilding) {
-      // Overhead camera: straight down from 28 units above floor level
-      // Roof is removed for hollow buildings so we see straight in
-      camera.position.set(insideBuilding.cx, 28, insideBuilding.cz);
+      camera.position.set(insideBuilding.cx, 22, insideBuilding.cz);
       camera.lookAt(insideBuilding.cx, 0, insideBuilding.cz);
-      camera.up.set(0, 0, -1); // north is "up" on screen
+      camera.up.set(0, 0, -1);
     } else {
-      camera.up.set(0, 1, 0); // restore normal up
-      // Normal camera is handled by PlayerController
+      camera.up.set(0, 1, 0);
     }
     if (playerCtrl.miniGame && playerCtrl.miniGame.update) {
       playerCtrl.miniGame.update(delta, playerCtrl.player.position);
     }
+    // Update building minigames
+    for (const game of Object.values(BUILDING_MINIGAMES)) {
+      if (game.active && game.update) game.update(delta);
+    }
+    if (_fishingGame.active && _fishingGame.update) _fishingGame.update(delta);
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
@@ -887,8 +926,22 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       if (greetingTimer <= 0) greetingToast.style.opacity = '0';
     }
 
-    interactHint.style.opacity = nearbyNPC ? '1' : '0';
-    if (nearbyNPC) interactHint.textContent = `Press E to talk to ${nearbyNPC.name}`;
+    // Interact hint priority: building minigame > fishing > NPC
+    const _bGame = insideBuilding && BUILDING_MINIGAMES[insideBuilding.buildingKey];
+    const _fdx = playerPos.x - FISHING_TRIGGER.x;
+    const _fdz = playerPos.z - FISHING_TRIGGER.z;
+    const _nearFishing = Math.sqrt(_fdx*_fdx + _fdz*_fdz) < FISHING_TRIGGER.radius;
+    if (_bGame && !_bGame.active) {
+      const _labels = { bakery: '🍞 Press E to bake bread', pub: '🍺 Press E to serve at The Anchor', school: '📚 Press E to teach the class' };
+      interactHint.textContent = _labels[insideBuilding.buildingKey] || `Press E to play`;
+      interactHint.style.opacity = '1';
+    } else if (_nearFishing && !_fishingGame.active) {
+      interactHint.textContent = '🎣 Press E to go fishing';
+      interactHint.style.opacity = '1';
+    } else {
+      interactHint.style.opacity = nearbyNPC ? '1' : '0';
+      if (nearbyNPC) interactHint.textContent = `Press E to talk to ${nearbyNPC.name}`;
+    }
 
     // Dialogue timeout
     if (dialogueTimer > 0) {
@@ -957,7 +1010,20 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       return;
     }
 
-    // 3. Mini-game (PlayerController owns this if it exists)
+    // 3. Building minigames — trigger when inside zone and pressing E
+    if (insideBuilding) {
+      const bGame = BUILDING_MINIGAMES[insideBuilding.buildingKey];
+      if (bGame && !bGame.active) { bGame.start(); return; }
+    }
+    // Fishing — triggered near the dock
+    {
+      const fdx = playerPos.x - FISHING_TRIGGER.x;
+      const fdz = playerPos.z - FISHING_TRIGGER.z;
+      if (Math.sqrt(fdx*fdx + fdz*fdz) < FISHING_TRIGGER.radius && !_fishingGame.active) {
+        _fishingGame.start(); return;
+      }
+    }
+    // Legacy mini-game (PlayerController owns this if it exists)
     if (playerCtrl.miniGame && playerCtrl.miniGame.tryOpen) {
       if (playerCtrl.miniGame.tryOpen(playerPos)) return;
     }
