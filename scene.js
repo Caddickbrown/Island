@@ -235,8 +235,8 @@ function makeBuilding(w, h, d, wallColor, roofColor = C.roof, { solarPanels = fa
     group.add(walls);
   }
 
+  const roofH = h * 0.35;
   if (!hollow) {
-    const roofH = h * 0.35;
     const roof = box(w + 1, roofH, d + 1, roofColor);
     roof.position.y = h + roofH / 2 - 0.3;
     group.add(roof);
