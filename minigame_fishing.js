@@ -1,3 +1,5 @@
+import { BAG, ITEMS } from './bag.js';
+
 export class FishingMinigame {
   constructor(scene, camera) {
     this._scene = scene;
@@ -335,6 +337,7 @@ export class FishingMinigame {
     this._flashTimer = 2.5;
     this._setStatus(`${fish.name}! +${fish.points} pts`);
     this._statusMsg.style.color = fish.color;
+    BAG.add(ITEMS.fish, 1);
   }
 
   _reelFail() {

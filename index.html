@@ -282,7 +282,7 @@
 <button id="map-btn" onclick="toggleMap()">🗺 Atlas <span style="opacity:0.55;font-size:11px">[M]</span></button>
 <div id="hud">
   <div id="pos">Position: 0, 0</div>
-  <div class="hint">WASD to move &middot; Shift to sprint &middot; Space to jump &middot; E to talk &middot; M for map &middot; click to lock mouse</div>
+  <div class="hint">WASD to move &middot; Shift to sprint &middot; Space to jump &middot; E to talk &middot; M for map &middot; B for bag &middot; click to lock mouse</div>
 </div>
 <div id="greeting-toast"></div>
 <div id="interact-hint">Press E to talk</div>
@@ -548,6 +548,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   import { FishingMinigame } from './minigame_fishing.js';
   import { PubMinigame }     from './minigame_pub.js';
   import { SchoolMinigame }  from './minigame_school.js';
+  import { BAG, ITEMS, initBagUI } from './bag.js';
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -621,6 +622,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   };
   // Fishing is triggered at the dock (location-based)
   const FISHING_TRIGGER = { x: 0, z: 370, radius: 18 };
+
+  // --- The Bag (Inventory) ---
+  initBagUI();
 
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
@@ -989,6 +993,11 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
     if (e.code === 'KeyM') {
       window.toggleMap();
+      return;
+    }
+
+    if (e.code === 'KeyB') {
+      BAG.toggle();
       return;
     }
 

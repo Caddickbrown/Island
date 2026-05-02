@@ -1,3 +1,5 @@
+import { BAG, ITEMS } from './bag.js';
+
 export class BakeryMinigame {
   constructor(scene, camera) {
     this._scene = scene;
@@ -372,6 +374,7 @@ export class BakeryMinigame {
     this._score += points;
     if (this._score > this._highScore) this._highScore = this._score;
     this._loavesBaked += 1;
+    if (points > 0) BAG.add(ITEMS.bread, 1);
     this._phase = 'result';
     this._resultTimer = 2.0;
     this._showResult(msg + (points > 0 ? `  +${points}` : ''), color);
