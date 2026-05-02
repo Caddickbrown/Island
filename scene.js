@@ -2898,6 +2898,113 @@ export function buildScene(scene) {
   scene.add(crate2);
 
   // =====================================================================
+  // CAD-430: HARBOUR AMBIENT DETAIL PASS — crates, barrels, nets, ropes, mooring posts
+  // =====================================================================
+
+  // Extra crates — weathered wood brown stacked near dock
+  const crate3 = box(1.8, 1.8, 1.8, 0x8b6914);
+  crate3.position.set(-6, 0.9, 340);
+  crate3.rotation.y = 0.4;
+  scene.add(crate3);
+  const crate4 = box(1.2, 1.2, 1.2, 0x7a5c12);
+  crate4.position.set(-5.2, 0.6, 341.5);
+  crate4.rotation.y = -0.3;
+  scene.add(crate4);
+  const crate5 = box(1.4, 1.4, 1.4, 0x8b6914);
+  crate5.position.set(-5.8, 1.9, 340.3);
+  crate5.rotation.y = 0.7;
+  scene.add(crate5);
+
+  // Barrels — dark wood near the fishery
+  const barrelMat = new THREE.MeshLambertMaterial({ color: 0x5a3a1a });
+  for (const [bx, bz, bRot] of [[8, 342, 0], [9.5, 343, 0.2], [10.2, 341, -0.15]]) {
+    const barrel = cylinder(0.6, 0.65, 1.6, 0x5a3a1a, 8);
+    barrel.position.set(bx, 0.8, bz);
+    barrel.rotation.z = bRot;
+    scene.add(barrel);
+    // Barrel rim bands
+    const band1 = cylinder(0.66, 0.66, 0.08, 0x4a4a4a, 8);
+    band1.position.set(bx, 0.3, bz);
+    band1.rotation.z = bRot;
+    scene.add(band1);
+    const band2 = cylinder(0.66, 0.66, 0.08, 0x4a4a4a, 8);
+    band2.position.set(bx, 1.3, bz);
+    band2.rotation.z = bRot;
+    scene.add(band2);
+  }
+
+  // Mooring posts — thick stumpy bollards along the dock edge
+  for (const [mx, mz] of [[-5, 365], [-5, 375], [5, 365], [5, 375]]) {
+    const moorPost = cylinder(0.35, 0.45, 1.8, 0x6b4e1a, 6);
+    moorPost.position.set(mx, 1.1, mz);
+    scene.add(moorPost);
+    // Top cap
+    const moorCap = cylinder(0.48, 0.48, 0.15, 0x5a3a1a, 6);
+    moorCap.position.set(mx, 2.05, mz);
+    scene.add(moorCap);
+  }
+
+  // Rope coils on the ground near mooring posts
+  for (const [rx, rz] of [[-3, 366], [3, 376]]) {
+    const ropeCoil = new THREE.Mesh(
+      new THREE.TorusGeometry(0.5, 0.08, 5, 12),
+      new THREE.MeshLambertMaterial({ color: 0xb89e5c })
+    );
+    ropeCoil.rotation.x = Math.PI / 2;
+    ropeCoil.position.set(rx, 0.15, rz);
+    scene.add(ropeCoil);
+  }
+
+  // Fishing nets — flat plane meshes draped near the fishery drying area
+  const netMat = new THREE.MeshLambertMaterial({ color: 0x8aaa7a, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+  const net1 = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), netMat);
+  net1.position.set(35, 1.5, 348);
+  net1.rotation.x = -0.3;
+  net1.rotation.y = 0.5;
+  scene.add(net1);
+  const net2 = new THREE.Mesh(new THREE.PlaneGeometry(3, 2.5), netMat);
+  net2.position.set(37, 1.2, 350);
+  net2.rotation.x = -0.2;
+  net2.rotation.y = -0.3;
+  scene.add(net2);
+
+  // Rope lines between mooring posts (simple thin cylinders)
+  const ropeMat = new THREE.MeshLambertMaterial({ color: 0xb89e5c });
+  const ropeLine1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 10, 4), ropeMat);
+  ropeLine1.position.set(-5, 1.8, 370);
+  ropeLine1.rotation.x = Math.PI / 2;
+  scene.add(ropeLine1);
+  const ropeLine2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 10, 4), ropeMat);
+  ropeLine2.position.set(5, 1.8, 370);
+  ropeLine2.rotation.x = Math.PI / 2;
+  scene.add(ropeLine2);
+
+  // Fish market stall area — simple wooden tables near the fishery
+  const stallTable1 = box(4, 0.15, 2, 0x8b6914);
+  stallTable1.position.set(30, 1.0, 355);
+  scene.add(stallTable1);
+  const stallLeg1a = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg1a.position.set(28.5, 0.5, 354); scene.add(stallLeg1a);
+  const stallLeg1b = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg1b.position.set(31.5, 0.5, 354); scene.add(stallLeg1b);
+  const stallLeg1c = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg1c.position.set(28.5, 0.5, 356); scene.add(stallLeg1c);
+  const stallLeg1d = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg1d.position.set(31.5, 0.5, 356); scene.add(stallLeg1d);
+
+  const stallTable2 = box(3.5, 0.15, 2, 0x7a5c12);
+  stallTable2.position.set(25, 1.0, 355);
+  scene.add(stallTable2);
+  const stallLeg2a = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg2a.position.set(23.5, 0.5, 354); scene.add(stallLeg2a);
+  const stallLeg2b = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg2b.position.set(26.5, 0.5, 354); scene.add(stallLeg2b);
+  const stallLeg2c = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg2c.position.set(23.5, 0.5, 356); scene.add(stallLeg2c);
+  const stallLeg2d = cylinder(0.08, 0.08, 1.0, 0x6b4e1a, 4);
+  stallLeg2d.position.set(26.5, 0.5, 356); scene.add(stallLeg2d);
+
+  // =====================================================================
   // THE MILL (-180, 60) — between workshop and farm  (CAD-365)
   // =====================================================================
   const millGroup = buildMill();

@@ -1000,5 +1000,67 @@
       "The tidal pools are incredible \u2014 it's like a whole other world.",
       "Sometimes a seal hauls out on that flat rock. I wait hours for it."
     ]
+  },
+  {
+    "id": "captain-reed",
+    "name": "Captain Reed",
+    "job": "Harbour Master",
+    "color": "0x2c5f7c",
+    "schedule": [
+      { "timeStart": 5, "timeEnd": 7, "area": "harbour", "activity": "Dawn inspection \u2693" },
+      { "timeStart": 7, "timeEnd": 12, "area": "dock", "activity": "Managing the dock \ud83d\udea2" },
+      { "timeStart": 12, "timeEnd": 13, "area": "cafe", "activity": "Lunch break \u2615" },
+      { "timeStart": 13, "timeEnd": 17, "area": "harbour", "activity": "Afternoon watch \u2693" },
+      { "timeStart": 17, "timeEnd": 19, "area": "pub", "activity": "Evening pint \ud83c\udf7a" },
+      { "timeStart": 19, "timeEnd": 5, "area": "reedHome", "activity": "Sleeping \ud83d\udca4" }
+    ],
+    "dialogue": [
+      "All vessels accounted for this morning.",
+      "The tide turns in an hour \u2014 best time to come in.",
+      "I've been running this dock for fifteen years.",
+      "That storm last week shifted the sandbar. I'll need to update the charts.",
+      "The harbour bell rings twice for incoming, once for outgoing. Old tradition."
+    ]
+  },
+  {
+    "id": "morwen",
+    "name": "Morwen",
+    "job": "Fishmonger",
+    "color": "0x4a90a4",
+    "schedule": [
+      { "timeStart": 4, "timeEnd": 6, "area": "dock", "activity": "Collecting catch \ud83d\udc1f" },
+      { "timeStart": 6, "timeEnd": 14, "area": "fishMarket", "activity": "Selling fish \ud83d\udc1f" },
+      { "timeStart": 14, "timeEnd": 16, "area": "harbour", "activity": "Cleaning up \ud83e\uddf9" },
+      { "timeStart": 16, "timeEnd": 18, "area": "townSquare", "activity": "Afternoon stroll \ud83c\udf07" },
+      { "timeStart": 18, "timeEnd": 20, "area": "pub", "activity": "Relaxing \ud83c\udf7a" },
+      { "timeStart": 20, "timeEnd": 4, "area": "morwenHome", "activity": "Sleeping \ud83d\udca4" }
+    ],
+    "dialogue": [
+      "Fresh catch this morning \u2014 mackerel and sea bass.",
+      "The lobster pots came in full today.",
+      "Best fish on the island, right here.",
+      "My grandmother taught me how to fillet. Fastest hands in the harbour.",
+      "Come early if you want the good stuff. It goes quickly."
+    ]
+  },
+  {
+    "id": "corwin",
+    "name": "Corwin",
+    "job": "Fishmonger",
+    "color": "0x5a8a6e",
+    "schedule": [
+      { "timeStart": 5, "timeEnd": 7, "area": "harbour", "activity": "Preparing stall \ud83d\udce6" },
+      { "timeStart": 7, "timeEnd": 15, "area": "fishMarket", "activity": "Selling shellfish \ud83e\udd90" },
+      { "timeStart": 15, "timeEnd": 17, "area": "dock", "activity": "Mending nets \ud83e\ude22" },
+      { "timeStart": 17, "timeEnd": 19, "area": "cafe", "activity": "Evening coffee \u2615" },
+      { "timeStart": 19, "timeEnd": 5, "area": "corwinHome", "activity": "Sleeping \ud83d\udca4" }
+    ],
+    "dialogue": [
+      "Oysters, mussels, crab \u2014 whatever the sea gives us.",
+      "The shellfish beds are healthy this year. A good sign.",
+      "Morwen handles the fish, I handle the shells. We don't overlap.",
+      "I've been diving these waters since I was twelve.",
+      "Try the whelks. Nobody ever wants them, but they're the best thing here."
+    ]
   }
 ]

@@ -56,6 +56,9 @@ const AREAS = {
   claraHome:   { x: 78,   z: -123 },
   rexHome:     { x: 84,   z: -90  },
   ottoHome:    { x: -141, z: 42   },
+  // Harbour zone — CAD-424/425
+  harbour:     { x: 0,    z: 360  },
+  fishMarket:  { x: 28,   z: 355  },
   // New NPC homes (1.5x scaled from master)
   lighthouse:  { x: 63,   z: 372  },  // Lena's workplace and home
   treehouse:   { x: 282,  z: 192  },  // Petra's Treehouse
@@ -69,6 +72,10 @@ const AREAS = {
   lenaHome:    { x: 63,   z: 375  },  // Lena lives at lighthouse
   kaiHome:     { x: 225,  z: -225 },  // Kai's beach camp
   beaHome:     { x: -15,  z: -82  },  // Bea's family home near village
+  // CAD-424/425 homes
+  reedHome:    { x: -12,  z: 358  },  // Captain Reed's harbour cottage
+  morwenHome:  { x: 22,   z: 360  },  // Morwen's home near fish market
+  corwinHome:  { x: 35,   z: 362  },  // Corwin's home near fish market
 };
 
 // ---------------------------------------------------------------------------
@@ -217,6 +224,31 @@ const SCHEDULES = {
     [15, 18, 'forestPath',  'Adventure play 🌲'],
     [18, 20, 'village',     'Running around 🏃'],
     [20, 8,  'beaHome',     'Sleeping 💤'],
+  ],
+  // CAD-424: Harbour Master
+  'Captain Reed': [
+    [5,  7,  'harbour',     'Dawn inspection ⚓'],
+    [7,  12, 'dock',        'Managing the dock 🚢'],
+    [12, 13, 'cafe',        'Lunch break ☕'],
+    [13, 17, 'harbour',     'Afternoon watch ⚓'],
+    [17, 19, 'pub',         'Evening pint 🍺'],
+    [19, 5,  'reedHome',    'Sleeping 💤'],
+  ],
+  // CAD-425: Fish Market Vendors
+  Morwen: [
+    [4,  6,  'dock',        'Collecting catch 🐟'],
+    [6,  14, 'fishMarket',  'Selling fish 🐟'],
+    [14, 16, 'harbour',     'Cleaning up 🧹'],
+    [16, 18, 'townSquare',  'Afternoon stroll 🌇'],
+    [18, 20, 'pub',         'Relaxing 🍺'],
+    [20, 4,  'morwenHome',  'Sleeping 💤'],
+  ],
+  Corwin: [
+    [5,  7,  'harbour',     'Preparing stall 📦'],
+    [7,  15, 'fishMarket',  'Selling shellfish 🦐'],
+    [15, 17, 'dock',        'Mending nets 🪢'],
+    [17, 19, 'cafe',        'Evening coffee ☕'],
+    [19, 5,  'corwinHome',  'Sleeping 💤'],
   ],
 };
 
@@ -564,6 +596,24 @@ class NPC {
         beanie.position.set(0, 2.05, 0); this.group.add(beanie);
         const bobble = new THREE.Mesh(new THREE.SphereGeometry(0.10, 6, 5), m(0xfff176));
         bobble.position.set(0, 2.35, 0); this.group.add(bobble);
+        break;
+      }
+      case 'Harbour Master': {
+        // Navy captain's cap with gold badge
+        const hmCap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.36, 0.16, 10), m(0x1a2a4a));
+        hmCap.position.set(0, 2.13, 0); this.group.add(hmCap);
+        const hmPeak = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.05, 0.24), m(0x0d1b36));
+        hmPeak.position.set(0, 2.04, 0.30); this.group.add(hmPeak);
+        const hmBadge = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), m(0xffd700));
+        hmBadge.position.set(0, 2.20, 0.30); this.group.add(hmBadge);
+        break;
+      }
+      case 'Fishmonger': {
+        // White apron over clothes and a flat cap
+        const fmCap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.35, 0.11, 10), m(0xeeeeee));
+        fmCap.position.set(0, 2.11, 0); this.group.add(fmCap);
+        const apron = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.55, 0.06), m(0xf0f0f0));
+        apron.position.set(0, 0.82, 0.24); this.group.add(apron);
         break;
       }
       default: break;
@@ -991,6 +1041,10 @@ const NPC_DEFS = [
   { name: 'Lena',     job: 'Keeper',     color: 0x80cbc4, skinTone: 0xe0a878, hairColor: 0xA0522D, schedule: SCHEDULES.Lena        },
   { name: 'Kai',      job: 'Newcomer',   color: 0xffcc80, skinTone: 0xc07848, hairColor: 0x4A2C0A, schedule: SCHEDULES.Kai         },
   { name: 'Bea',      job: 'Child',      color: 0xf06292, skinTone: 0xf8d4b0, hairColor: 0xFFD700, schedule: SCHEDULES.Bea         },
+  // CAD-424/425: Harbour NPCs
+  { name: 'Captain Reed', job: 'Harbour Master', color: 0x2c5f7c, skinTone: 0xc88060, hairColor: 0x8B8B8B, schedule: SCHEDULES['Captain Reed'] },
+  { name: 'Morwen',       job: 'Fishmonger',     color: 0x4a90a4, skinTone: 0xf0c8a0, hairColor: 0x5C2E0A, schedule: SCHEDULES.Morwen   },
+  { name: 'Corwin',       job: 'Fishmonger',     color: 0x5a8a6e, skinTone: 0xb87850, hairColor: 0x1a1a1a, schedule: SCHEDULES.Corwin   },
 ];
 
 export class NPCManager {
@@ -1034,6 +1088,8 @@ export class NPCManager {
       Keeper:     ['The light was on all night — all safe.', 'You can see for miles from the lantern room.', 'The ships know this coast because of that light.'],
       Newcomer:   ['Still finding my way around!', 'Everyone\'s been so welcoming here.', 'I never expected to stay, but now I can\'t imagine leaving.'],
       Child:      ['I found a really cool stick today!', 'Can we go to the forest? It\'s the best.', 'Race you to the beach!'],
+      'Harbour Master': ['All vessels accounted for this morning.', 'The tide turns in an hour — best time to come in.', 'I\'ve been running this dock for fifteen years.'],
+      Fishmonger: ['Fresh catch this morning — mackerel and sea bass.', 'The lobster pots came in full today.', 'Best fish on the island, right here.'],
     };
     const lines = jobLines[npc.job] || [`${timeGreet}! Lovely day on the island.`, 'It\'s good to see you around.', 'Take your time and enjoy the island.'];
     if (!npc._dialogueIndex) npc._dialogueIndex = 0;

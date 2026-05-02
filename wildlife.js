@@ -356,6 +356,9 @@ export class WildlifeManager {
       { cx: 20,  cz: -200, r: 30, h: 16, phase: 1.0 },
       { cx: -15, cz: -200, r: 20, h: 22, phase: 3.5 },
       { cx: 0,   cz: 0,    r: 50, h: 30, phase: 1.7 }, // high one over town
+      // CAD-430: extra harbour seagulls
+      { cx: 10,  cz: 360,  r: 20, h: 12, phase: 0.8 },
+      { cx: -5,  cz: 355,  r: 28, h: 16, phase: 3.2 },
     ];
     for (const d of seagullDefs) {
       this.animals.push(new Seagull(scene, d.cx, d.cz, d.r, d.h, d.phase));
