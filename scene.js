@@ -1229,6 +1229,7 @@ function makeOpenGarage() {
   signMesh.scale.x = -1; // flip so canvas text reads correctly from outside
   group.add(signMesh);
 
+  group.userData.roofMesh = roof;
   group.userData.label = 'Garage';
   return group;
 }
