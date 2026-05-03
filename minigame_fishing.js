@@ -1,4 +1,5 @@
 import { BAG, ITEMS } from './bag.js';
+import { getDifficulty, recordCompletion } from './job_progression.js';
 
 export class FishingMinigame {
   constructor(scene, camera) {
@@ -7,6 +8,7 @@ export class FishingMinigame {
     this._active = false;
     this._score = 0;
     this._fishCaught = 0;
+    this._difficulty = getDifficulty('fishing');
     this._phase = 'idle'; // idle | casting | waiting | catching | result
     this._castPower = 0;
     this._castHeld = false;
@@ -251,6 +253,7 @@ export class FishingMinigame {
     this._floatBobDir = 1;
     this._flashText = '';
     this._flashTimer = 0;
+    this._difficulty = getDifficulty('fishing'); // CAD-397: refresh difficulty
     this._overlay.style.display = 'flex';
     this._updateStats();
     this._setStatus('Hold [ SPACE ] to charge cast, release to cast!');
@@ -281,9 +284,10 @@ export class FishingMinigame {
       this._castHeld = true;
     } else if (this._phase === 'catching') {
       this._catchPresses += 1;
-      this._catchFill.style.width = `${(this._catchPresses / 5) * 100}%`;
-      this._catchLabel.textContent = `REEL IT IN! ${5 - this._catchPresses} MORE PULLS!`;
-      if (this._catchPresses >= 5) {
+      const target = this._catchTarget || 5;
+      this._catchFill.style.width = `${(this._catchPresses / target) * 100}%`;
+      this._catchLabel.textContent = `REEL IT IN! ${target - this._catchPresses} MORE PULLS!`;
+      if (this._catchPresses >= target) {
         this._reelSuccess();
       }
     }
@@ -314,10 +318,13 @@ export class FishingMinigame {
   _bite() {
     this._phase = 'catching';
     this._catchPresses = 0;
-    this._catchTimer = 2.0;
+    // CAD-397: less time at higher difficulty
+    this._catchTimer = 2.0 * this._difficulty.timeMult;
+    // CAD-397: more presses needed at higher difficulty
+    this._catchTarget = Math.ceil(5 * this._difficulty.targetMult);
     this._catchFill.style.width = '0%';
     this._catchWrap.style.display = 'flex';
-    this._catchLabel.textContent = 'REEL IT IN! 5 MORE PULLS!';
+    this._catchLabel.textContent = `REEL IT IN! ${this._catchTarget} MORE PULLS!`;
     this._biteFlash = 0.5;
     this._flashText = 'BITE!';
     this._flashTimer = 0.8;
@@ -338,6 +345,8 @@ export class FishingMinigame {
     this._setStatus(`${fish.name}! +${fish.points} pts`);
     this._statusMsg.style.color = fish.color;
     BAG.add(ITEMS.fish, 1);
+    // CAD-398: record completion for progression rewards
+    recordCompletion('fishing', this._score);
   }
 
   _reelFail() {
@@ -407,7 +416,8 @@ export class FishingMinigame {
     } else if (this._phase === 'catching') {
       this._catchTimer -= delta;
       const timeLeft = Math.max(0, this._catchTimer);
-      this._catchLabel.textContent = `REEL IT IN! ${Math.max(0, 5 - this._catchPresses)} MORE PULLS! (${timeLeft.toFixed(1)}s)`;
+      const target = this._catchTarget || 5;
+      this._catchLabel.textContent = `REEL IT IN! ${Math.max(0, target - this._catchPresses)} MORE PULLS! (${timeLeft.toFixed(1)}s)`;
       // Dramatic float dip
       this._floatBob = -0.5;
       if (this._catchTimer <= 0) {

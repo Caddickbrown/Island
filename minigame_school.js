@@ -1,6 +1,8 @@
 // Island School Quiz — Teach the Class
 // Self-contained DOM-based minigame. No Three.js required.
 
+import { getDifficulty, recordCompletion } from './job_progression.js';
+
 export class SchoolMinigame {
   constructor() {
     this._active = false;
@@ -393,7 +395,9 @@ export class SchoolMinigame {
     this._active = true;
     this._score = 0;
     this._questionIndex = 0;
-    this._timeLeft = 30;
+    // CAD-397: difficulty reduces time
+    const diff = getDifficulty('school');
+    this._timeLeft = Math.max(15, Math.floor(30 * diff.timeMult));
     this._answered = false;
     this._gameOver = false;
     this._correctCount = 0;
@@ -616,6 +620,8 @@ export class SchoolMinigame {
     if (this._gameOver) return;
     this._gameOver = true;
     cancelAnimationFrame(this._frameId);
+    // CAD-398: record completion for rewards
+    if (this._score > 0) recordCompletion('school', this._score);
 
     const results = document.getElementById('school-results');
     results.style.display = 'flex';

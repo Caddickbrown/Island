@@ -1,6 +1,8 @@
 // Pub Serving Minigame — Run The Anchor
 // Self-contained DOM-based minigame. No Three.js required.
 
+import { getDifficulty, recordCompletion } from './job_progression.js';
+
 export class PubMinigame {
   constructor() {
     this._active = false;
@@ -238,11 +240,14 @@ export class PubMinigame {
     this._active = true;
     this._score = 0;
     this._streak = 0;
-    this._timeLeft = 60;
+    // CAD-397: difficulty reduces time and speeds up spawns
+    const diff = getDifficulty('pub');
+    this._timeLeft = Math.max(30, Math.floor(60 * diff.timeMult));
     this._customers = [];
     this._nextCustomerId = 0;
     this._spawnTimer = 0;
-    this._spawnInterval = 4 + Math.random() * 2;
+    this._baseSpawnInterval = (4 + Math.random() * 2) / diff.speedMult;
+    this._spawnInterval = this._baseSpawnInterval;
     this._gameOver = false;
     this._lastTime = null;
 
@@ -484,6 +489,8 @@ export class PubMinigame {
   _endGame() {
     this._gameOver = true;
     cancelAnimationFrame(this._frameId);
+    // CAD-398: record completion for rewards
+    if (this._score > 0) recordCompletion('pub', this._score);
 
     const results = document.getElementById('pub-results');
     results.style.display = 'flex';

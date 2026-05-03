@@ -541,7 +541,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
            updateNotification, showNotification,
            createCafeHelpMiniGame } from './scene.js';
   import { PlayerController } from './player.js';
-  import { NPCManager, findOpenShift, startSubInShift, updateSubIn } from './npcs.js';
+  import { NPCManager, findOpenShift, startSubInShift, updateSubIn, subInGratitude } from './npcs.js';
   import { WildlifeManager } from './wildlife.js';
   import { AnimalManager } from './animals.js';
   import { BakeryMinigame }  from './minigame_bakery.js';
@@ -549,6 +549,14 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   import { PubMinigame }     from './minigame_pub.js';
   import { SchoolMinigame }  from './minigame_school.js';
   import { BAG, ITEMS, initBagUI } from './bag.js';
+  import { initRelationships, recordTalk, recordGift, recordSubIn, getRelationship, getLevel } from './relationships.js';
+  import { initNPCMemory, addMemory, getMemoryDialogue } from './npc_memory.js';
+  import { initJournal, addEntry, hasEntry } from './journal.js';
+  import { checkMilestoneScene, initMilestones } from './milestones.js';
+  import { initJobProgression, getDifficulty, recordCompletion } from './job_progression.js';
+  import { BeachcombingManager } from './beachcombing.js';
+  import { initBeaCollection, beaWantsItem, giveItemToBea, getBeaCollectionDialogue } from './bea_collection.js';
+  import { initEvents, updateEvents, isStormActive, isAreaClosedByStorm, getStormDialogue, isMarketDay, getMarketDialogue, isProjectActive, getProjectDialogue, startProject, contributeToProject } from './events.js';
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -626,6 +634,15 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   // --- The Bag (Inventory) ---
   initBagUI();
 
+  // --- New Systems (CAD-393 to CAD-405) ---
+  initRelationships();
+  initNPCMemory();
+  initJournal();
+  initMilestones();
+  initJobProgression();
+  initBeaCollection();
+  initEvents();
+
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
 
@@ -634,6 +651,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
   // --- Farm animals & apiary ---
   const animalManager = new AnimalManager(scene);
+
+  // --- Beachcombing (CAD-400) ---
+  const beachcombingManager = new BeachcombingManager(scene);
 
   // --- HUD ---
   const posEl = document.getElementById('pos');
@@ -835,6 +855,8 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
+    beachcombingManager.update(delta);
+    updateEvents(delta, gameHour);
 
     // Sim time scalar: 1 real second = 3 game minutes (full day ~8 real minutes)
     const simDelta = delta / 20;
@@ -846,10 +868,15 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     updateRadio(delta);
     updateNotification(delta);
 
-    // Sub-in shift completion check
+    // Sub-in shift completion check (CAD-399: relationship bump on completion)
     const subInResult = updateSubIn(delta);
     if (subInResult) {
       showNotification(subInResult);
+      // Relationship bump for the NPC whose shift was covered
+      for (const name of Object.keys(subInGratitude)) {
+        recordSubIn(name);
+        addMemory(name, 'subin', {});
+      }
     }
 
     // Windmill blade rotation
@@ -1001,6 +1028,22 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       return;
     }
 
+    if (e.code === 'KeyP') {
+      // Community project (CAD-405) — start or contribute
+      if (!isProjectActive()) {
+        const proj = startProject();
+        if (proj) showNotification(`🏗️ Community Project started: ${proj.name}\n${proj.description}`);
+      } else {
+        const result = contributeToProject();
+        if (result) {
+          showNotification(result.complete ? `🎉 Project complete! ${result.line}` : `🏗️ ${result.line}`);
+        } else {
+          showNotification('🏗️ You work on the community project...');
+        }
+      }
+      return;
+    }
+
     if (e.code !== 'KeyE') return;
 
     const playerPos = playerCtrl.player.position;
@@ -1037,19 +1080,50 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       if (playerCtrl.miniGame.tryOpen(playerPos)) return;
     }
 
-    // 4. NPC dialogue
+    // 4. NPC dialogue (enhanced with relationships + memory)
     if (nearbyNPC) {
+      // Record the talk for relationship system
+      const talkResult = recordTalk(nearbyNPC.name);
+
+      // Check for level-up milestone scene
+      if (talkResult.levelUp) {
+        const scene = checkMilestoneScene(nearbyNPC.name, talkResult.newLevel);
+        if (scene) {
+          dialogueName.textContent = `⭐ ${nearbyNPC.name} — ${scene.title}`;
+          dialogueLine.textContent = scene.lines.join('\n');
+          dialogueBox.style.opacity = '1';
+          dialogueTimer = DIALOGUE_DURATION * 2;
+          return;
+        }
+      }
+
+      // Check for memory-based dialogue
+      const memLine = getMemoryDialogue(nearbyNPC.name);
+
+      // Check for storm/market/project dialogue
+      let eventLine = null;
+      if (isStormActive()) eventLine = getStormDialogue();
+      else if (isMarketDay()) eventLine = getMarketDialogue();
+      else if (isProjectActive()) eventLine = getProjectDialogue();
+
+      // Bea's collection dialogue
+      if (nearbyNPC.name === 'Bea' && Math.random() < 0.3) {
+        eventLine = getBeaCollectionDialogue();
+      }
+
       const result = npcManager.getDialogue ? npcManager.getDialogue(nearbyNPC.name) : null;
       if (result) {
-        dialogueName.textContent = `${result.name} · ${result.job || ''}`;
-        dialogueLine.textContent = result.line;
+        const rel = getRelationship(nearbyNPC.name);
+        const levelInfo = getLevel(nearbyNPC.name);
+        dialogueName.textContent = `${levelInfo.emoji} ${result.name} · ${result.job || ''}`;
+        dialogueLine.textContent = memLine || eventLine || result.line;
         dialogueBox.style.opacity = '1';
         dialogueTimer = DIALOGUE_DURATION;
         return;
       }
     }
 
-    // 5. Near NPC — try to give an item
+    // 5. Near NPC — try to give an item (CAD-395: gift giving with relationship effects)
     let nearestNPC = null;
     let nearestDist = Infinity;
     for (const npc of npcManager.npcs) {
@@ -1057,10 +1131,56 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       if (d < nearestDist) { nearestDist = d; nearestNPC = npc; }
     }
     if (nearestNPC && nearestDist < 8) {
+      // Check if near Bea and have something she wants
+      if (nearestNPC.name === 'Bea') {
+        const bagItems = BAG.items.filter(i => beaWantsItem(i.id));
+        if (bagItems.length > 0) {
+          const result = giveItemToBea(bagItems[0].id);
+          if (result) {
+            dialogueName.textContent = '🐚 Bea · Child';
+            let msg = result.response;
+            if (result.tradeItem) msg += `\n(Bea gives you a ${result.tradeItem.replace('_', ' ')} in return!)`;
+            dialogueLine.textContent = msg;
+            dialogueBox.style.opacity = '1';
+            dialogueTimer = DIALOGUE_DURATION;
+            if (result.tradeItem && ITEMS[result.tradeItem]) BAG.add(ITEMS[result.tradeItem], 1);
+            return;
+          }
+        }
+      }
+      // General gift giving — first item in bag
+      if (BAG.items.length > 0) {
+        const giftItem = BAG.items[0];
+        const giftResult = recordGift(nearestNPC.name, giftItem.id);
+        BAG.remove(giftItem.id, 1);
+        addMemory(nearestNPC.name, giftResult.liked ? 'gift_liked' : 'gift_any', { itemName: giftItem.name });
+        const reaction = giftResult.liked
+          ? `Oh, ${giftItem.name}! I love these! Thank you so much!`
+          : `A ${giftItem.name}? That's thoughtful, thank you.`;
+        dialogueName.textContent = `🎁 ${nearestNPC.name}`;
+        dialogueLine.textContent = reaction;
+        dialogueBox.style.opacity = '1';
+        dialogueTimer = DIALOGUE_DURATION;
+        if (giftResult.levelUp) {
+          const milestone = checkMilestoneScene(nearestNPC.name, giftResult.newLevel);
+          if (milestone) {
+            setTimeout(() => {
+              dialogueName.textContent = `⭐ ${nearestNPC.name} — ${milestone.title}`;
+              dialogueLine.textContent = milestone.lines.join('\n');
+              dialogueBox.style.opacity = '1';
+              dialogueTimer = DIALOGUE_DURATION * 2;
+            }, 2000);
+          }
+        }
+        return;
+      }
       if (tryGiveItem(nearestNPC.name, nearestNPC.group.position, playerPos)) return;
     }
 
-    // 6. Pick up item from world
+    // 6. Beachcombing pickup
+    if (beachcombingManager.tryPickup(playerPos)) return;
+
+    // 7. Pick up item from world
     tryPickupItem(playerPos);
   });
   window.addEventListener('keyup', e => { keyState[e.code] = false; });
