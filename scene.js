@@ -93,6 +93,23 @@ export const AREAS = {
   RADIO_STATION:  { x: 165,  z: 75,   label: 'Radio Station' },
   CLIFFTOPS:      { x: -150, z: -270, label: 'The Clifftops' },
   EAST_BEACH:     { x: 225,  z: -233, label: 'East Beach' },
+  HARBOUR:        { x: 0,    z: 355,  label: 'The Harbour' },
+  MARKET_TOWN:    { x: -60,  z: -150, label: 'Market Town' },
+  SANDY_BAY:      { x: 150,  z: -330, label: 'Sandy Bay' },
+  TIDEPOOLS:      { x: -200, z: -350, label: 'Tidepools' },
+  FISHING_VILLAGE:{ x: 80,   z: 300,  label: 'Fishing Village' },
+  KELP_COVE:      { x: -180, z: 340,  label: 'Kelp Cove' },
+  SALT_MARSH:     { x: -300, z: -50,  label: 'Salt Marsh' },
+  RIVER_MOUTH:    { x: -200, z: 280,  label: 'River Mouth' },
+  HIGHLAND_FOREST:{ x: -300, z: -200, label: 'Highland Forest' },
+  WIND_RIDGE:     { x: 0,    z: -200, label: 'Wind Ridge' },
+  THE_SUMMIT:     { x: -150, z: -320, label: 'The Summit' },
+  COMMUNITY_FARM: { x: -330, z: 60,   label: 'Community Farm' },
+  ORCHARD:        { x: -250, z: 200,  label: 'Orchard' },
+  RIVER_VALLEY:   { x: 200,  z: 100,  label: 'River Valley' },
+  THE_COMMONS:    { x: 50,   z: 50,   label: 'The Commons' },
+  CLIFFTOP_PATH:  { x: -250, z: -300, label: 'Clifftop Path' },
+  HIDDEN_BEACH:   { x: 300,  z: -350, label: 'Hidden Beach' },
 };
 
 // ---------------------------------------------------------------------------
@@ -2099,6 +2116,670 @@ function makePath(scene, x1, z1, x2, z2, width = 4) {
 }
 
 // ---------------------------------------------------------------------------
+// Zone builders (CAD-406 to CAD-422)
+// ---------------------------------------------------------------------------
+
+function makeHarbourZone(scene) {
+  // CAD-406: The Harbour (0, 355) — formalises the dock/harbour area
+  const hx = 0, hz = 355;
+
+  // Harbour master's office — small building
+  const office = makeBuilding(8, 6, 6, 0x4a7a8a, 0x2d5a6a, { label: 'Harbour Master' });
+  placeOnTerrain(office, hx - 20, hz);
+  scene.add(office);
+
+  // Crane — tall cylinder with arm
+  const craneBase = cylinder(1.2, 1.5, 12, 0xcc8800, 6);
+  placeOnTerrain(craneBase, hx + 15, hz - 5, 6);
+  scene.add(craneBase);
+  const craneArm = box(12, 0.6, 0.6, 0xcc8800);
+  placeOnTerrain(craneArm, hx + 20, hz - 5, 12.5);
+  scene.add(craneArm);
+
+  // Signal flags — thin poles with coloured blocks
+  for (let i = 0; i < 3; i++) {
+    const pole = cylinder(0.1, 0.1, 5, 0x666666, 4);
+    placeOnTerrain(pole, hx - 12 + i * 4, hz + 10, 2.5);
+    scene.add(pole);
+    const flag = box(1.2, 0.8, 0.05, [0xcc2222, 0x2266cc, 0xccaa00][i]);
+    placeOnTerrain(flag, hx - 12 + i * 4, hz + 10, 4.8);
+    scene.add(flag);
+  }
+
+  // Anchor decoration
+  const anchorRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.0, 0.15, 6, 12),
+    mat(0x4a4a4a)
+  );
+  placeOnTerrain(anchorRing, hx - 18, hz + 5, 1.2);
+  scene.add(anchorRing);
+}
+
+function makeMarketTown(scene) {
+  // CAD-407: Market Town (-60, -150) — bustling market area
+  const mx = -60, mz = -150;
+
+  // Market stalls — open-sided structures with canopies
+  const stallColours = [0xcc4444, 0x44aa44, 0x4488cc, 0xccaa22];
+  for (let i = 0; i < 4; i++) {
+    const sx = mx + (i % 2) * 16 - 8;
+    const sz = mz + Math.floor(i / 2) * 14 - 7;
+    // Counter
+    const counter = box(5, 1.2, 2.5, 0x8b6914);
+    placeOnTerrain(counter, sx, sz, 0.6);
+    scene.add(counter);
+    // Canopy pole
+    const pole1 = cylinder(0.15, 0.15, 4, 0x666666, 4);
+    placeOnTerrain(pole1, sx - 2.2, sz - 1, 2);
+    scene.add(pole1);
+    const pole2 = cylinder(0.15, 0.15, 4, 0x666666, 4);
+    placeOnTerrain(pole2, sx + 2.2, sz - 1, 2);
+    scene.add(pole2);
+    // Canopy top
+    const canopy = box(6, 0.15, 3.5, stallColours[i]);
+    placeOnTerrain(canopy, sx, sz, 4.2);
+    canopy.rotation.x = 0.1;
+    scene.add(canopy);
+  }
+
+  // Central market well
+  const well = cylinder(1.5, 1.5, 1.0, 0x888888, 10);
+  placeOnTerrain(well, mx, mz, 0.5);
+  scene.add(well);
+
+  // Bunting between stalls — thin horizontal lines
+  const bunting = box(20, 0.05, 0.05, 0xcc4444);
+  placeOnTerrain(bunting, mx, mz, 4.5);
+  scene.add(bunting);
+}
+
+function makeSandyBay(scene) {
+  // CAD-408: Sandy Bay (150, -330) — sandy beach area
+  const sx = 150, sz = -330;
+
+  // Sand-coloured ground patch
+  const sandPatch = flatPlane(40, 35, 0xe8d5a3);
+  sandPatch.position.set(sx, 0.2, sz);
+  scene.add(sandPatch);
+
+  // Beach huts — small colourful cabins
+  const hutColours = [0xcc4444, 0x44aacc, 0xffcc44, 0x88cc44];
+  for (let i = 0; i < 4; i++) {
+    const hut = box(3, 3, 3, hutColours[i]);
+    placeOnTerrain(hut, sx - 12 + i * 8, sz + 12, 1.5);
+    scene.add(hut);
+    const hutRoof = box(3.5, 0.3, 3.5, 0x6b4e1a);
+    placeOnTerrain(hutRoof, sx - 12 + i * 8, sz + 12, 3.2);
+    scene.add(hutRoof);
+  }
+
+  // Driftwood logs
+  for (const [dx, dz] of [[8, -5], [-6, -8], [12, -10]]) {
+    const log = cylinder(0.3, 0.25, 4, 0x9e8a6e, 5);
+    log.rotation.z = Math.PI / 2;
+    placeOnTerrain(log, sx + dx, sz + dz, 0.3);
+    scene.add(log);
+  }
+
+  // Parasol
+  const parasol = cylinder(0.15, 0.15, 4, 0x8b6914, 4);
+  placeOnTerrain(parasol, sx + 3, sz - 2, 2);
+  scene.add(parasol);
+  const parasolTop = cone(2.5, 1, 0xcc4444, 8);
+  placeOnTerrain(parasolTop, sx + 3, sz - 2, 4.3);
+  scene.add(parasolTop);
+}
+
+function makeTidepools(scene) {
+  // CAD-409: Tidepools (-200, -350) — rocky tidal area
+  const tx = -200, tz = -350;
+
+  // Dark rocky ground
+  const rockGround = flatPlane(30, 25, 0x5a5a5a);
+  rockGround.position.set(tx, 0.15, tz);
+  scene.add(rockGround);
+
+  // Pool shapes — flat blue discs
+  const poolPositions = [[0, 0], [5, -4], [-6, 3], [8, 5], [-4, -6]];
+  for (const [px, pz] of poolPositions) {
+    const poolSize = 1.5 + Math.random() * 2;
+    const pool = cylinder(poolSize, poolSize, 0.3, 0x3a8fbf, 8);
+    pool.position.set(tx + px, 0.1, tz + pz);
+    scene.add(pool);
+  }
+
+  // Scattered rocks
+  for (let i = 0; i < 8; i++) {
+    const rx = tx + (Math.random() - 0.5) * 24;
+    const rz = tz + (Math.random() - 0.5) * 20;
+    const rock = box(
+      0.8 + Math.random() * 1.5,
+      0.5 + Math.random() * 1,
+      0.8 + Math.random() * 1.5,
+      0x4a4a4a + Math.floor(Math.random() * 20) * 0x010101
+    );
+    placeOnTerrain(rock, rx, rz, 0.3);
+    rock.rotation.y = Math.random() * Math.PI;
+    scene.add(rock);
+  }
+
+  // Warning sign
+  const signPost = cylinder(0.1, 0.1, 2.5, 0x6b4e1a, 4);
+  placeOnTerrain(signPost, tx + 10, tz + 8, 1.25);
+  scene.add(signPost);
+  const signBoard = box(2, 1.2, 0.1, 0xffcc00);
+  placeOnTerrain(signBoard, tx + 10, tz + 8, 2.8);
+  scene.add(signBoard);
+}
+
+function makeFishingVillage(scene) {
+  // CAD-410: Fishing Village (80, 300) — small coastal settlement
+  const fvx = 80, fvz = 300;
+
+  // Small cottages
+  const cottagePositions = [[0, 0], [12, -5], [-10, 6], [8, 10]];
+  for (let i = 0; i < cottagePositions.length; i++) {
+    const [cx, cz] = cottagePositions[i];
+    const cottage = makeBuilding(6, 5, 5, 0xf8e8d0, 0x4a7a5a);
+    placeOnTerrain(cottage, fvx + cx, fvz + cz);
+    cottage.rotation.y = i * 0.8;
+    scene.add(cottage);
+  }
+
+  // Boat on shore — beached rowing boat
+  const boatHull = box(5, 1.2, 2.2, 0x6b4e1a);
+  placeOnTerrain(boatHull, fvx - 8, fvz - 8, 0.6);
+  boatHull.rotation.y = 0.3;
+  scene.add(boatHull);
+
+  // Fish drying rack
+  const rackPole1 = cylinder(0.12, 0.12, 3, 0x6b4e1a, 4);
+  placeOnTerrain(rackPole1, fvx + 15, fvz, 1.5);
+  scene.add(rackPole1);
+  const rackPole2 = cylinder(0.12, 0.12, 3, 0x6b4e1a, 4);
+  placeOnTerrain(rackPole2, fvx + 19, fvz, 1.5);
+  scene.add(rackPole2);
+  const rackBar = box(4.5, 0.1, 0.1, 0x6b4e1a);
+  placeOnTerrain(rackBar, fvx + 17, fvz, 2.8);
+  scene.add(rackBar);
+}
+
+function makeKelpCove(scene) {
+  // CAD-411: Kelp Cove (-180, 340) — sheltered cove with kelp
+  const kx = -180, kz = 340;
+
+  // Sandy cove floor
+  const coveFloor = flatPlane(30, 25, 0xd4c094);
+  coveFloor.position.set(kx, 0.1, kz);
+  scene.add(coveFloor);
+
+  // Kelp fronds — tall thin green cylinders
+  for (let i = 0; i < 12; i++) {
+    const fx = kx + (Math.random() - 0.5) * 25;
+    const fz = kz + (Math.random() - 0.5) * 20;
+    const frond = cylinder(0.15, 0.1, 2 + Math.random() * 2, 0x2d6b2d, 4);
+    frond.position.set(fx, 0.5 + Math.random(), fz);
+    frond.rotation.x = (Math.random() - 0.5) * 0.4;
+    frond.rotation.z = (Math.random() - 0.5) * 0.3;
+    scene.add(frond);
+  }
+
+  // Rocky outcrop sheltering the cove
+  const outcrop1 = box(5, 4, 6, 0x5a5a5a);
+  placeOnTerrain(outcrop1, kx - 12, kz + 8, 2);
+  outcrop1.rotation.y = 0.5;
+  scene.add(outcrop1);
+  const outcrop2 = box(4, 3, 5, 0x4a4a4a);
+  placeOnTerrain(outcrop2, kx - 14, kz + 5, 1.5);
+  scene.add(outcrop2);
+
+  // Small wooden jetty
+  const jetty = box(12, 0.3, 2.5, 0x8b6914);
+  placeOnTerrain(jetty, kx + 5, kz + 10, 0.8);
+  jetty.rotation.y = 0.3;
+  scene.add(jetty);
+}
+
+function makeSaltMarsh(scene) {
+  // CAD-412: Salt Marsh (-300, -50) — wetland area
+  const smx = -300, smz = -50;
+
+  // Marshy ground — green-brown
+  const marshGround = flatPlane(35, 30, 0x6a8a4a);
+  marshGround.position.set(smx, 0.2, smz);
+  scene.add(marshGround);
+
+  // Shallow pools
+  for (const [px, pz] of [[4, 3], [-8, -5], [6, -8], [-3, 7], [10, 6]]) {
+    const pool = cylinder(1.2 + Math.random(), 1.2 + Math.random(), 0.15, 0x5a9aaa, 6);
+    pool.position.set(smx + px, 0.18, smz + pz);
+    scene.add(pool);
+  }
+
+  // Reeds — thin tall cylinders
+  for (let i = 0; i < 20; i++) {
+    const rx = smx + (Math.random() - 0.5) * 30;
+    const rz = smz + (Math.random() - 0.5) * 25;
+    const reed = cylinder(0.05, 0.05, 1.5 + Math.random() * 1.5, 0x5a7a3a, 3);
+    placeOnTerrain(reed, rx, rz, 1);
+    scene.add(reed);
+  }
+
+  // Bird hide — small wooden structure
+  const hide = box(5, 3, 3, 0x6b4e1a);
+  placeOnTerrain(hide, smx + 12, smz - 10, 1.5);
+  scene.add(hide);
+  const hideRoof = box(6, 0.3, 4, 0x4a3a1a);
+  placeOnTerrain(hideRoof, smx + 12, smz - 10, 3.2);
+  scene.add(hideRoof);
+}
+
+function makeRiverMouth(scene) {
+  // CAD-413: River Mouth (-200, 280) — where river meets sea
+  const rmx = -200, rmz = 280;
+
+  // River channel — blue flat strip
+  const river = flatPlane(8, 30, 0x4a9abf);
+  river.position.set(rmx, 0.15, rmz);
+  river.rotation.z = 0.2;
+  scene.add(river);
+
+  // Muddy banks
+  const bank1 = flatPlane(6, 25, 0x8a7a5a);
+  bank1.position.set(rmx - 6, 0.12, rmz);
+  scene.add(bank1);
+  const bank2 = flatPlane(6, 25, 0x8a7a5a);
+  bank2.position.set(rmx + 6, 0.12, rmz);
+  scene.add(bank2);
+
+  // Wooden footbridge
+  const bridge = box(10, 0.4, 2.5, 0x8b6914);
+  placeOnTerrain(bridge, rmx, rmz - 5, 1.5);
+  bridge.rotation.y = Math.PI / 2 + 0.2;
+  scene.add(bridge);
+  // Bridge railings
+  const rail1 = box(10, 0.8, 0.1, 0x6b4e1a);
+  placeOnTerrain(rail1, rmx, rmz - 6.2, 2.2);
+  rail1.rotation.y = Math.PI / 2 + 0.2;
+  scene.add(rail1);
+  const rail2 = box(10, 0.8, 0.1, 0x6b4e1a);
+  placeOnTerrain(rail2, rmx, rmz - 3.8, 2.2);
+  rail2.rotation.y = Math.PI / 2 + 0.2;
+  scene.add(rail2);
+
+  // Reeds along banks
+  for (let i = 0; i < 10; i++) {
+    const rx = rmx + (Math.random() - 0.5) * 6 + (Math.random() > 0.5 ? 7 : -7);
+    const rz = rmz + (Math.random() - 0.5) * 25;
+    const reed = cylinder(0.05, 0.05, 1.5 + Math.random(), 0x5a7a3a, 3);
+    placeOnTerrain(reed, rx, rz, 0.8);
+    scene.add(reed);
+  }
+}
+
+function makeHighlandForest(scene) {
+  // CAD-414: Highland Forest (-300, -200) — dense elevated forest
+  const hfx = -300, hfz = -200;
+
+  // Dense tree cluster
+  for (let i = 0; i < 15; i++) {
+    const tx = hfx + (Math.random() - 0.5) * 40;
+    const tz = hfz + (Math.random() - 0.5) * 35;
+    const tree = makeTree(7 + Math.random() * 5, Math.random() > 0.5 ? C.foliage : C.foliageDark);
+    placeOnTerrain(tree, tx, tz);
+    scene.add(tree);
+  }
+
+  // Fallen log
+  const fallenLog = cylinder(0.6, 0.5, 8, 0x6b4e1a, 6);
+  fallenLog.rotation.z = Math.PI / 2;
+  placeOnTerrain(fallenLog, hfx + 5, hfz + 3, 0.4);
+  scene.add(fallenLog);
+
+  // Mushrooms — small coloured cones
+  for (let i = 0; i < 6; i++) {
+    const mx = hfx + (Math.random() - 0.5) * 30;
+    const mz = hfz + (Math.random() - 0.5) * 25;
+    const mushroom = cone(0.3, 0.4, 0xcc4444, 6);
+    placeOnTerrain(mushroom, mx, mz, 0.3);
+    scene.add(mushroom);
+    const stem = cylinder(0.1, 0.1, 0.3, 0xf0f0e0, 4);
+    placeOnTerrain(stem, mx, mz, 0.15);
+    scene.add(stem);
+  }
+
+  // Mossy boulder
+  const boulder = box(3, 2.5, 3, 0x4a6a4a);
+  placeOnTerrain(boulder, hfx - 8, hfz - 6, 1.2);
+  boulder.rotation.y = 0.7;
+  scene.add(boulder);
+}
+
+function makeWindRidge(scene) {
+  // CAD-415: Wind Ridge (0, -200) — exposed windy hilltop
+  const wrx = 0, wrz = -200;
+
+  // Wind turbines — smaller versions of the main windmill
+  for (let i = 0; i < 3; i++) {
+    const wx = wrx - 12 + i * 12;
+    const wz = wrz + (i % 2) * 6;
+    const turbinePole = cylinder(0.4, 0.5, 10, 0xe0e0e0, 6);
+    placeOnTerrain(turbinePole, wx, wz, 5);
+    scene.add(turbinePole);
+    // Nacelle
+    const nacelle = box(1.5, 1, 1, 0xd0d0d0);
+    placeOnTerrain(nacelle, wx, wz, 10.5);
+    scene.add(nacelle);
+    // Blades (simplified as thin boxes)
+    for (let b = 0; b < 3; b++) {
+      const blade = box(0.4, 4, 0.1, C.blade);
+      placeOnTerrain(blade, wx, wz, 10.5);
+      blade.rotation.z = (b * Math.PI * 2) / 3 + i * 0.5;
+      scene.add(blade);
+    }
+  }
+
+  // Wind-blown grass tufts
+  for (let i = 0; i < 8; i++) {
+    const gx = wrx + (Math.random() - 0.5) * 30;
+    const gz = wrz + (Math.random() - 0.5) * 20;
+    const tuft = cone(0.4, 0.8, 0x8aaa5a, 4);
+    placeOnTerrain(tuft, gx, gz, 0.3);
+    tuft.rotation.x = 0.2; // leaning in wind
+    scene.add(tuft);
+  }
+
+  // Weather station — small equipment box on pole
+  const wsPost = cylinder(0.12, 0.12, 3, 0x888888, 4);
+  placeOnTerrain(wsPost, wrx + 15, wrz - 5, 1.5);
+  scene.add(wsPost);
+  const wsBox = box(1, 0.8, 0.8, 0xf0f0f0);
+  placeOnTerrain(wsBox, wrx + 15, wrz - 5, 3.4);
+  scene.add(wsBox);
+}
+
+function makeTheSummit(scene) {
+  // CAD-416: The Summit (-150, -320) — highest point on the island
+  const sx = -150, sz = -320;
+
+  // Cairn — stacked rocks
+  const cairnStones = [
+    [0, 0, 2.5, 2.5], [0, 0.8, 2, 2], [0, 1.5, 1.5, 1.5], [0, 2.1, 1, 1], [0, 2.5, 0.6, 0.6]
+  ];
+  for (const [dx, dy, rTop, rBot] of cairnStones) {
+    const stone = cylinder(rTop * 0.4, rBot * 0.45, 0.5, 0x7a7a7a, 6);
+    placeOnTerrain(stone, sx + dx, sz, dy + 0.25);
+    scene.add(stone);
+  }
+
+  // Viewpoint bench
+  const bench = makeBench();
+  placeOnTerrain(bench, sx + 8, sz - 3);
+  bench.rotation.y = -0.5;
+  scene.add(bench);
+
+  // Triangulation pillar — concrete cylinder
+  const trigPillar = cylinder(0.5, 0.6, 1.5, 0xd0d0d0, 6);
+  placeOnTerrain(trigPillar, sx - 5, sz + 3, 0.75);
+  scene.add(trigPillar);
+  const trigTop = cylinder(0.7, 0.7, 0.15, 0xc0c0c0, 6);
+  placeOnTerrain(trigTop, sx - 5, sz + 3, 1.58);
+  scene.add(trigTop);
+
+  // Wind-shaped tree
+  const stuntedTree = makeTree(4, 0x4a8a30);
+  placeOnTerrain(stuntedTree, sx + 12, sz + 5);
+  stuntedTree.rotation.z = 0.15; // wind-shaped lean
+  scene.add(stuntedTree);
+}
+
+function makeCommunityFarm(scene) {
+  // CAD-417: Community Farm (-330, 60) — allotments and polytunnels
+  const cfx = -330, cfz = 60;
+
+  // Allotment plots — small raised beds
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const plotX = cfx + col * 8 - 8;
+      const plotZ = cfz + row * 7 - 7;
+      const bed = box(6, 0.5, 5, 0x5a3a1a);
+      placeOnTerrain(bed, plotX, plotZ, 0.25);
+      scene.add(bed);
+      // Crops growing
+      const crops = box(5, 0.6, 4, 0x4a9a3a);
+      placeOnTerrain(crops, plotX, plotZ, 0.6);
+      scene.add(crops);
+    }
+  }
+
+  // Polytunnel — half-cylinder shape using a box (simplified)
+  const tunnel = cylinder(3, 3, 10, 0xffffff, 8);
+  tunnel.rotation.z = Math.PI / 2;
+  placeOnTerrain(tunnel, cfx + 18, cfz, 2);
+  tunnel.material = mat(0xffffff, { transparent: true, opacity: 0.4 });
+  scene.add(tunnel);
+
+  // Compost bins
+  const compost1 = box(2.5, 2, 2.5, 0x4a3a1a);
+  placeOnTerrain(compost1, cfx - 15, cfz + 8, 1);
+  scene.add(compost1);
+  const compost2 = box(2.5, 2, 2.5, 0x5a4a2a);
+  placeOnTerrain(compost2, cfx - 12, cfz + 8, 1);
+  scene.add(compost2);
+
+  // Tool shed
+  const shed = box(4, 3, 3, 0x6b4e1a);
+  placeOnTerrain(shed, cfx - 15, cfz - 8, 1.5);
+  scene.add(shed);
+  const shedRoof = box(5, 0.3, 4, 0x4a3a1a);
+  placeOnTerrain(shedRoof, cfx - 15, cfz - 8, 3.2);
+  scene.add(shedRoof);
+}
+
+function makeOrchard(scene) {
+  // CAD-418: Orchard (-250, 200) — fruit trees in neat rows
+  const ox = -250, oz = 200;
+
+  // Fruit trees in grid pattern
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      const tx = ox + col * 8 - 12;
+      const tz = oz + row * 8 - 12;
+      const tree = makeTree(5 + Math.random() * 2, 0x3a9a3a);
+      placeOnTerrain(tree, tx, tz);
+      scene.add(tree);
+      // Fruit (small spheres in the canopy)
+      if (Math.random() > 0.4) {
+        const fruit = new THREE.Mesh(
+          new THREE.SphereGeometry(0.2, 6, 6),
+          mat(Math.random() > 0.5 ? 0xcc3333 : 0xffaa00)
+        );
+        placeOnTerrain(fruit, tx + (Math.random() - 0.5) * 2, tz + (Math.random() - 0.5) * 2, 4 + Math.random());
+        scene.add(fruit);
+      }
+    }
+  }
+
+  // Wooden gate at entrance
+  const gatePost1 = cylinder(0.2, 0.2, 2.5, 0x6b4e1a, 4);
+  placeOnTerrain(gatePost1, ox - 15, oz, 1.25);
+  scene.add(gatePost1);
+  const gatePost2 = cylinder(0.2, 0.2, 2.5, 0x6b4e1a, 4);
+  placeOnTerrain(gatePost2, ox - 15, oz + 3, 1.25);
+  scene.add(gatePost2);
+  const gateBar = box(0.1, 0.1, 3, 0x6b4e1a);
+  placeOnTerrain(gateBar, ox - 15, oz + 1.5, 2.4);
+  scene.add(gateBar);
+}
+
+function makeRiverValley(scene) {
+  // CAD-419: River Valley (200, 100) — gentle valley with stream
+  const rvx = 200, rvz = 100;
+
+  // Stream — blue strip
+  const stream = flatPlane(5, 35, 0x5aaacf);
+  stream.position.set(rvx, 0.2, rvz);
+  stream.rotation.z = 0.3;
+  scene.add(stream);
+
+  // Stepping stones across stream
+  for (let i = 0; i < 5; i++) {
+    const stone = cylinder(0.5, 0.6, 0.3, 0x8a8a8a, 6);
+    stone.position.set(rvx - 2 + i * 1.2, 0.35, rvz + 2);
+    scene.add(stone);
+  }
+
+  // Wildflower patches
+  const flowerColours = [0xff88aa, 0xffdd44, 0xaa88ff, 0xff6644];
+  for (let i = 0; i < 10; i++) {
+    const fx = rvx + (Math.random() - 0.5) * 30;
+    const fz = rvz + (Math.random() - 0.5) * 30;
+    const flower = cone(0.3, 0.5, flowerColours[i % 4], 5);
+    placeOnTerrain(flower, fx, fz, 0.4);
+    scene.add(flower);
+  }
+
+  // Willow tree — tall with drooping foliage
+  const willowTrunk = cylinder(0.4, 0.5, 6, C.trunk, 6);
+  placeOnTerrain(willowTrunk, rvx - 5, rvz - 8, 3);
+  scene.add(willowTrunk);
+  const willowCanopy = new THREE.Mesh(
+    new THREE.SphereGeometry(4, 8, 6),
+    mat(0x3a8a3a)
+  );
+  placeOnTerrain(willowCanopy, rvx - 5, rvz - 8, 7);
+  willowCanopy.scale.y = 1.3;
+  scene.add(willowCanopy);
+}
+
+function makeTheCommons(scene) {
+  // CAD-420: The Commons (50, 50) — open public green space
+  const cx = 50, cz = 50;
+
+  // Green lawn patch
+  const lawn = flatPlane(30, 25, 0x5aaa3a);
+  lawn.position.set(cx, 0.18, cz);
+  scene.add(lawn);
+
+  // Bandstand — octagonal platform with pillars and roof
+  const platform = cylinder(5, 5, 0.5, 0xd0d0d0, 8);
+  placeOnTerrain(platform, cx, cz, 0.25);
+  scene.add(platform);
+  // Pillars
+  for (let i = 0; i < 8; i++) {
+    const angle = (i * Math.PI * 2) / 8;
+    const px = cx + Math.cos(angle) * 4.2;
+    const pz = cz + Math.sin(angle) * 4.2;
+    const pillar = cylinder(0.2, 0.2, 4, 0xe0e0e0, 6);
+    placeOnTerrain(pillar, px, pz, 2.5);
+    scene.add(pillar);
+  }
+  // Bandstand roof
+  const bsRoof = cone(6, 2, 0x6b8a5a, 8);
+  placeOnTerrain(bsRoof, cx, cz, 5.5);
+  scene.add(bsRoof);
+
+  // Park benches around commons
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI * 2) / 4 + 0.4;
+    const bx = cx + Math.cos(angle) * 12;
+    const bz = cz + Math.sin(angle) * 12;
+    const bench = makeBench();
+    placeOnTerrain(bench, bx, bz);
+    bench.rotation.y = angle + Math.PI;
+    scene.add(bench);
+  }
+}
+
+function makeClifftopPath(scene) {
+  // CAD-421: Clifftop Path (-250, -300) — dramatic cliff edge walkway
+  const cpx = -250, cpz = -300;
+
+  // Path surface
+  makePath(scene, cpx + 15, cpz + 15, cpx - 15, cpz - 15, 3);
+
+  // Cliff edge fence — safety railing
+  for (let i = 0; i < 8; i++) {
+    const t = i / 7;
+    const fx = cpx + 15 - t * 30;
+    const fz = cpz + 15 - t * 30;
+    const fencePost = cylinder(0.1, 0.1, 1.5, 0x6b4e1a, 4);
+    placeOnTerrain(fencePost, fx - 2, fz - 2, 0.75);
+    scene.add(fencePost);
+  }
+  // Fence rail
+  const rail = box(0.08, 0.08, 32, 0x6b4e1a);
+  placeOnTerrain(rail, cpx - 2, cpz - 2, 1.3);
+  rail.rotation.y = Math.PI / 4;
+  scene.add(rail);
+
+  // Dramatic cliff rocks
+  for (let i = 0; i < 5; i++) {
+    const rx = cpx - 4 + (Math.random() - 0.5) * 8;
+    const rz = cpz - 4 + (Math.random() - 0.5) * 8;
+    const cliffRock = box(
+      2 + Math.random() * 3,
+      1 + Math.random() * 2,
+      2 + Math.random() * 3,
+      0x5a5a5a
+    );
+    placeOnTerrain(cliffRock, rx, rz, 0.8);
+    cliffRock.rotation.y = Math.random() * Math.PI;
+    scene.add(cliffRock);
+  }
+
+  // Viewpoint marker
+  const viewMarker = cylinder(0.6, 0.6, 0.3, 0xd0d0d0, 8);
+  placeOnTerrain(viewMarker, cpx, cpz, 0.15);
+  scene.add(viewMarker);
+}
+
+function makeHiddenBeach(scene) {
+  // CAD-422: Hidden Beach (300, -350) — secluded eastern beach
+  const hbx = 300, hbz = -350;
+
+  // Sand area
+  const sand = flatPlane(25, 20, 0xe8d5a3);
+  sand.position.set(hbx, 0.15, hbz);
+  scene.add(sand);
+
+  // Rocky entrance — boulders forming a narrow gap
+  const entranceRock1 = box(4, 4, 5, 0x6a6a6a);
+  placeOnTerrain(entranceRock1, hbx - 8, hbz + 8, 2);
+  scene.add(entranceRock1);
+  const entranceRock2 = box(3.5, 3.5, 4, 0x5a5a5a);
+  placeOnTerrain(entranceRock2, hbx + 6, hbz + 8, 1.75);
+  scene.add(entranceRock2);
+
+  // Washed-up treasures — coloured boxes
+  const treasureColours = [0xffcc00, 0x44aacc, 0xcc66aa];
+  for (let i = 0; i < 3; i++) {
+    const treasure = box(0.8, 0.6, 0.8, treasureColours[i]);
+    placeOnTerrain(treasure, hbx - 4 + i * 5, hbz - 5 + (Math.random() - 0.5) * 6, 0.3);
+    treasure.rotation.y = Math.random() * Math.PI;
+    scene.add(treasure);
+  }
+
+  // Sea-smoothed rocks scattered on sand
+  for (let i = 0; i < 6; i++) {
+    const rx = hbx + (Math.random() - 0.5) * 20;
+    const rz = hbz + (Math.random() - 0.5) * 15;
+    const smoothRock = new THREE.Mesh(
+      new THREE.SphereGeometry(0.5 + Math.random() * 0.8, 6, 5),
+      mat(0x8a8a8a)
+    );
+    smoothRock.position.set(rx, 0.3, rz);
+    smoothRock.scale.y = 0.5;
+    scene.add(smoothRock);
+  }
+
+  // Old rope tied to rock
+  const ropeRock = box(1.5, 1, 1.5, 0x6a6a6a);
+  placeOnTerrain(ropeRock, hbx + 8, hbz - 3, 0.5);
+  scene.add(ropeRock);
+}
+
+// ---------------------------------------------------------------------------
 // Terrain mesh builder
 // ---------------------------------------------------------------------------
 
@@ -4017,6 +4698,27 @@ export function buildScene(scene) {
   maintenanceBuilding.rotation.y = 0.5;
   scene.add(maintenanceBuilding);
   makePath(scene, -120, 60, -158, 105, 3);
+
+  // =====================================================================
+  // ZONES (CAD-406 to CAD-422)
+  // =====================================================================
+  makeHarbourZone(scene);
+  makeMarketTown(scene);
+  makeSandyBay(scene);
+  makeTidepools(scene);
+  makeFishingVillage(scene);
+  makeKelpCove(scene);
+  makeSaltMarsh(scene);
+  makeRiverMouth(scene);
+  makeHighlandForest(scene);
+  makeWindRidge(scene);
+  makeTheSummit(scene);
+  makeCommunityFarm(scene);
+  makeOrchard(scene);
+  makeRiverValley(scene);
+  makeTheCommons(scene);
+  makeClifftopPath(scene);
+  makeHiddenBeach(scene);
 
   // =====================================================================
   // BUILDING COLLIDERS — OBB rectangles { cx, cz, hw, hd, rot }
