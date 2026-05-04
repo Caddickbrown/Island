@@ -78,6 +78,9 @@ const AREAS = {
   reedHome:    { x: -12,  z: 358  },  // Captain Reed's harbour cottage
   morwenHome:  { x: 22,   z: 360  },  // Morwen's home near fish market
   corwinHome:  { x: 35,   z: 362  },  // Corwin's home near fish market
+  // CAD-441: Elliot's Aquarium
+  aquarium:    { x: 225,  z: -120 },  // Elliot's Aquarium
+  elliotHome:  { x: 230,  z: -135 },  // Elliot lives near the aquarium
 };
 
 // ---------------------------------------------------------------------------
@@ -228,6 +231,15 @@ const SCHEDULES = {
     [15, 18, 'forestPath',  'Adventure play 🌲'],
     [18, 20, 'village',     'Running around 🏃'],
     [20, 8,  'beaHome',     'Sleeping 💤'],
+  ],
+  // CAD-441: Elliot — child who runs the aquarium
+  Elliot: [
+    [8,  9,  'elliotHome',  'Breakfast 🥣'],
+    [9,  12, 'school',      'At school 📚'],
+    [12, 13, 'cafe',        'Lunch break ☕'],
+    [13, 18, 'aquarium',    'Feeding the fish 🐟'],
+    [18, 20, 'aquarium',    'Watching the tanks 🐠'],
+    [20, 8,  'elliotHome',  'Sleeping 💤'],
   ],
   // CAD-424: Harbour Master
   'Captain Reed': [
@@ -1045,6 +1057,8 @@ const NPC_DEFS = [
   { name: 'Lena',     job: 'Keeper',     color: 0x80cbc4, skinTone: 0xe0a878, hairColor: 0xA0522D, schedule: SCHEDULES.Lena        },
   { name: 'Kai',      job: 'Newcomer',   color: 0xffcc80, skinTone: 0xc07848, hairColor: 0x4A2C0A, schedule: SCHEDULES.Kai         },
   { name: 'Bea',      job: 'Child',      color: 0xf06292, skinTone: 0xf8d4b0, hairColor: 0xFFD700, schedule: SCHEDULES.Bea         },
+  // CAD-441: Elliot — aquarium child
+  { name: 'Elliot',       job: 'Child',          color: 0x4dd0e1, skinTone: 0xf0c8a0, hairColor: 0x5C2E0A, schedule: SCHEDULES.Elliot   },
   // CAD-424/425: Harbour NPCs
   { name: 'Captain Reed', job: 'Harbour Master', color: 0x2c5f7c, skinTone: 0xc88060, hairColor: 0x8B8B8B, schedule: SCHEDULES['Captain Reed'] },
   { name: 'Morwen',       job: 'Fishmonger',     color: 0x4a90a4, skinTone: 0xf0c8a0, hairColor: 0x5C2E0A, schedule: SCHEDULES.Morwen   },
@@ -1074,6 +1088,17 @@ export class NPCManager {
     if (!npc) return null;
     const hour = getSimTime();
     const timeGreet = hour >= 5 && hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    // CAD-441: NPC-specific dialogue overrides
+    const npcOverrides = {
+      Elliot: ['Come see the jellyfish — they glow at night!', 'I named every fish in the aquarium. My favourite is Bubbles.', 'Did you know octopuses have three hearts?'],
+    };
+    if (npcOverrides[npc.name]) {
+      if (!npc._dialogueIndex) npc._dialogueIndex = 0;
+      const lines = npcOverrides[npc.name];
+      const line = lines[npc._dialogueIndex % lines.length];
+      npc._dialogueIndex++;
+      return { name: npc.name, job: npc.job, line };
+    }
     // Simple contextual lines based on job
     const jobLines = {
       Baker:      ['The bread came out perfectly this morning!', 'I always start baking before sunrise.', "Try one of the cardamom buns — Rosa's recipe."],
