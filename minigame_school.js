@@ -17,58 +17,33 @@ export class SchoolMinigame {
     this._keyHandler = null;
     this._correctCount = 0;
 
-    this._questions = [
-      {
-        q: 'What does Mabel bake every morning?',
-        opts: ['Pies', 'Bread', 'Cakes'],
-        answer: 1,
-      },
-      {
-        q: 'What animal lives near the farm?',
-        opts: ['Lions', 'Sheep', 'Dolphins'],
-        answer: 1,
-      },
-      {
-        q: 'What does Lena tend at the lighthouse?',
-        opts: ['The light', 'The fish', 'The garden'],
-        answer: 0,
-      },
-      {
-        q: 'Where does Rosa work?',
-        opts: ['The bakery', 'The dock', 'The library'],
-        answer: 2,
-      },
-      {
-        q: 'What time does Jack go fishing?',
-        opts: ['5am', '10am', '2pm'],
-        answer: 0,
-      },
-      {
-        q: 'What colour is the café roof?',
-        opts: ['Red', 'Dark brown', 'Blue'],
-        answer: 1,
-      },
-      {
-        q: 'What does Jin study in the forest?',
-        opts: ['Birds', 'Plants', 'Rocks'],
-        answer: 1,
-      },
-      {
-        q: 'Who runs The Anchor pub?',
-        opts: ['Barney', 'Jack', 'Otto'],
-        answer: 0,
-      },
-      {
-        q: 'How does Gus the postman get around?',
-        opts: ['On foot', 'By boat', 'By van'],
-        answer: 0,
-      },
-      {
-        q: 'What does Petra do in her treehouse?',
-        opts: ['Sleep', 'Paint', 'Cook'],
-        answer: 1,
-      },
+    // CAD-435: Full question bank — shuffled at start so repeats are rare
+    this._questionBank = [
+      { q: 'What does Mabel bake every morning?', opts: ['Pies', 'Bread', 'Cakes'], answer: 1 },
+      { q: 'What animal lives near the farm?', opts: ['Lions', 'Sheep', 'Dolphins'], answer: 1 },
+      { q: 'What does Lena tend at the lighthouse?', opts: ['The light', 'The fish', 'The garden'], answer: 0 },
+      { q: 'Where does Rosa work?', opts: ['The bakery', 'The dock', 'The library'], answer: 2 },
+      { q: 'What time does Jack go fishing?', opts: ['5am', '10am', '2pm'], answer: 0 },
+      { q: 'What colour is the café roof?', opts: ['Red', 'Dark brown', 'Blue'], answer: 1 },
+      { q: 'What does Jin study in the forest?', opts: ['Birds', 'Plants', 'Rocks'], answer: 1 },
+      { q: 'Who runs The Anchor pub?', opts: ['Barney', 'Jack', 'Otto'], answer: 0 },
+      { q: 'How does Gus the postman get around?', opts: ['On foot', 'By boat', 'By van'], answer: 0 },
+      { q: 'What does Petra do in her treehouse?', opts: ['Sleep', 'Paint', 'Cook'], answer: 1 },
+      // New nature / island-themed questions
+      { q: 'What powers most buildings on the island?', opts: ['Coal', 'Solar panels', 'Diesel generators'], answer: 1 },
+      { q: 'Which bird is commonly seen near the cliffs?', opts: ['Penguin', 'Seagull', 'Parrot'], answer: 1 },
+      { q: 'What grows in the community garden?', opts: ['Flowers only', 'Vegetables', 'Bamboo'], answer: 1 },
+      { q: 'Where is the wind turbine located?', opts: ['The beach', 'Wind Ridge', 'Town Square'], answer: 1 },
+      { q: 'What do bees produce at the apiary?', opts: ['Wax only', 'Honey', 'Silk'], answer: 1 },
+      { q: 'What type of energy does the island primarily use?', opts: ['Fossil fuels', 'Nuclear', 'Renewable'], answer: 2 },
+      { q: 'Which sea creature can be found in the rock pools?', opts: ['Starfish', 'Whale', 'Shark'], answer: 0 },
+      { q: 'What is the tallest structure on the island?', opts: ['The school', 'The lighthouse', 'The café'], answer: 1 },
+      { q: 'What does Otto do at the workshop?', opts: ['Bakes bread', 'Repairs and builds things', 'Teaches children'], answer: 1 },
+      { q: 'Where can you find pressed flowers on the island?', opts: ['The pub', 'Jin\'s collection', 'The dock'], answer: 1 },
+      { q: 'What natural event sometimes disrupts island life?', opts: ['Earthquakes', 'Storms', 'Volcanic eruptions'], answer: 1 },
+      { q: 'What time of day do fireflies appear?', opts: ['Morning', 'Afternoon', 'Evening'], answer: 2 },
     ];
+    this._questions = [];
 
     this._buildUI();
   }
@@ -391,10 +366,22 @@ export class SchoolMinigame {
     this._container = container;
   }
 
+  /** Fisher-Yates shuffle (CAD-435) */
+  _shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
   start() {
     this._active = true;
     this._score = 0;
     this._questionIndex = 0;
+    // CAD-435: shuffle and pick 10 questions each round
+    this._questions = this._shuffle(this._questionBank).slice(0, 10);
     // CAD-397: difficulty reduces time
     const diff = getDifficulty('school');
     this._timeLeft = Math.max(15, Math.floor(30 * diff.timeMult));
