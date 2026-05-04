@@ -59,6 +59,8 @@ const AREAS = {
   // Harbour zone — CAD-424/425
   harbour:     { x: 0,    z: 360  },
   fishMarket:  { x: 28,   z: 355  },
+  // CAD-433: General Store
+  generalStore:{ x: -30,  z: -72  },
   // New NPC homes (1.5x scaled from master)
   lighthouse:  { x: 63,   z: 372  },  // Lena's workplace and home
   treehouse:   { x: 282,  z: 192  },  // Petra's Treehouse
@@ -113,10 +115,12 @@ const SCHEDULES = {
     [20, 4,  'fernHome',    'Sleeping 💤'],
   ],
   Olive: [
-    [8,  18, 'townSquare', 'Tending shop 🛍️'],
-    [18, 20, 'hilltop',    'Evening walk 🌄'],
-    [20, 23, 'library',    'Reading 📖'],
-    [23, 8,  'oliveHome',  'Sleeping 💤'],
+    [8,  13, 'generalStore', 'Minding the store 🛍️'],
+    [13, 14, 'cafe',         'Lunch break ☕'],
+    [14, 18, 'townSquare',   'Tending shop 🛍️'],
+    [18, 20, 'hilltop',      'Evening walk 🌄'],
+    [20, 23, 'library',      'Reading 📖'],
+    [23, 8,  'oliveHome',    'Sleeping 💤'],
   ],
   Rosa: [
     [9,  19, 'library',     'Keeping the library 📚'],
