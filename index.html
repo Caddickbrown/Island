@@ -548,6 +548,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   import { FishingMinigame } from './minigame_fishing.js';
   import { PubMinigame }     from './minigame_pub.js';
   import { SchoolMinigame }  from './minigame_school.js';
+  import { KartMinigame }    from './minigame_kart.js';
   import { BAG, ITEMS, initBagUI } from './bag.js';
   import { initRelationships, recordTalk, recordGift, recordSubIn, getRelationship, getLevel } from './relationships.js';
   import { initNPCMemory, addMemory, getMemoryDialogue } from './npc_memory.js';
@@ -630,6 +631,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   };
   // Fishing is triggered at the dock (location-based)
   const FISHING_TRIGGER = { x: 0, z: 370, radius: 18 };
+  // Kart race is triggered near the kart track (location-based)
+  const _kartGame = new KartMinigame();
+  const KART_TRIGGER = { x: 297, z: -222, radius: 25 };
 
   // --- The Bag (Inventory) ---
   initBagUI();
@@ -852,6 +856,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       if (game.active && game.update) game.update(delta);
     }
     if (_fishingGame.active && _fishingGame.update) _fishingGame.update(delta);
+    if (_kartGame.active && _kartGame.update) _kartGame.update(delta);
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
@@ -962,12 +967,18 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     const _fdx = playerPos.x - FISHING_TRIGGER.x;
     const _fdz = playerPos.z - FISHING_TRIGGER.z;
     const _nearFishing = Math.sqrt(_fdx*_fdx + _fdz*_fdz) < FISHING_TRIGGER.radius;
+    const _kdx = playerPos.x - KART_TRIGGER.x;
+    const _kdz = playerPos.z - KART_TRIGGER.z;
+    const _nearKart = Math.sqrt(_kdx*_kdx + _kdz*_kdz) < KART_TRIGGER.radius;
     if (_bGame && !_bGame.active) {
       const _labels = { bakery: '🍞 Press E to bake bread', pub: '🍺 Press E to serve at The Anchor', school: '📚 Press E to teach the class' };
       interactHint.textContent = _labels[insideBuilding.buildingKey] || `Press E to play`;
       interactHint.style.opacity = '1';
     } else if (_nearFishing && !_fishingGame.active) {
       interactHint.textContent = '🎣 Press E to go fishing';
+      interactHint.style.opacity = '1';
+    } else if (_nearKart && !_kartGame.active) {
+      interactHint.textContent = '🏎️ Press E to race';
       interactHint.style.opacity = '1';
     } else {
       interactHint.style.opacity = nearbyNPC ? '1' : '0';
@@ -1073,6 +1084,14 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       const fdz = playerPos.z - FISHING_TRIGGER.z;
       if (Math.sqrt(fdx*fdx + fdz*fdz) < FISHING_TRIGGER.radius && !_fishingGame.active) {
         _fishingGame.start(); return;
+      }
+    }
+    // Kart race — triggered near the kart track
+    {
+      const kdx = playerPos.x - KART_TRIGGER.x;
+      const kdz = playerPos.z - KART_TRIGGER.z;
+      if (Math.sqrt(kdx*kdx + kdz*kdz) < KART_TRIGGER.radius && !_kartGame.active) {
+        _kartGame.start(); return;
       }
     }
     // Legacy mini-game (PlayerController owns this if it exists)
