@@ -2153,6 +2153,45 @@ function makeHarbourZone(scene) {
   );
   placeOnTerrain(anchorRing, hx - 18, hz + 5, 1.2);
   scene.add(anchorRing);
+
+  // CAD-437: Solar Charging Station — canopy with solar panel and charging post
+  {
+    const scx = hx + 25, scz = hz - 8;
+    // Support poles
+    for (const [px, pz] of [[-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5], [1.5, 1.5]]) {
+      const pole = cylinder(0.1, 0.1, 3.2, C.solarFrame, 6);
+      placeOnTerrain(pole, scx + px, scz + pz, 1.6);
+      scene.add(pole);
+    }
+    // Solar canopy panel
+    const canopy = box(4, 0.15, 4, C.solar);
+    placeOnTerrain(canopy, scx, scz, 3.3);
+    canopy.rotation.x = 0.15; // slight tilt for solar efficiency
+    scene.add(canopy);
+    // Canopy frame
+    const frame = box(4.2, 0.08, 4.2, C.solarFrame);
+    placeOnTerrain(frame, scx, scz, 3.22);
+    frame.rotation.x = 0.15;
+    scene.add(frame);
+    // Charging post (bollard)
+    const post = cylinder(0.2, 0.2, 1.2, 0x2ecc71, 8);
+    placeOnTerrain(post, scx, scz - 1.2, 0.6);
+    scene.add(post);
+    // Green indicator light on top of post
+    const light = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 8, 6),
+      new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x00ff44, emissiveIntensity: 0.5 })
+    );
+    placeOnTerrain(light, scx, scz - 1.2, 1.3);
+    scene.add(light);
+    // Label sign
+    const signPost = cylinder(0.08, 0.08, 2.2, C.solarFrame, 4);
+    placeOnTerrain(signPost, scx + 2.8, scz, 1.1);
+    scene.add(signPost);
+    const signBoard = box(2.5, 0.8, 0.08, 0xffffff);
+    placeOnTerrain(signBoard, scx + 2.8, scz, 2.5);
+    scene.add(signBoard);
+  }
 }
 
 function makeMarketTown(scene) {
