@@ -541,7 +541,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
            updateNotification, showNotification,
            createCafeHelpMiniGame } from './scene.js';
   import { PlayerController } from './player.js';
-  import { NPCManager, findOpenShift, startSubInShift, updateSubIn, subInGratitude } from './npcs.js';
+  import { NPCManager, findOpenShift, startSubInShift, updateSubIn, subInGratitude, updateIslandSystems, getEnergyStatus, getLowEnergyDialogue } from './npcs.js';
   import { WildlifeManager } from './wildlife.js';
   import { AnimalManager } from './animals.js';
   import { BakeryMinigame }  from './minigame_bakery.js';
@@ -872,6 +872,10 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     updateSupplyChain(delta, simDelta);
     updateRadio(delta);
     updateNotification(delta);
+    // CAD-436: Update island energy system each tick
+    const dayFraction = gameHour / 24;
+    const weather = isStormActive() ? 'stormy' : 'clear';
+    updateIslandSystems(delta, dayFraction, weather);
 
     // Sub-in shift completion check (CAD-399: relationship bump on completion)
     const subInResult = updateSubIn(delta);
@@ -1119,11 +1123,13 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       // Check for memory-based dialogue
       const memLine = getMemoryDialogue(nearbyNPC.name);
 
-      // Check for storm/market/project dialogue
+      // Check for storm/market/project/energy dialogue
       let eventLine = null;
       if (isStormActive()) eventLine = getStormDialogue();
       else if (isMarketDay()) eventLine = getMarketDialogue();
       else if (isProjectActive()) eventLine = getProjectDialogue();
+      // CAD-436: low-energy dialogue when island energy is low
+      if (!eventLine) { const eLine = getLowEnergyDialogue(); if (eLine) eventLine = eLine; }
 
       // Bea's collection dialogue
       if (nearbyNPC.name === 'Bea' && Math.random() < 0.3) {
