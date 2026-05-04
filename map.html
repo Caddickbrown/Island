@@ -272,6 +272,80 @@ const NPCS = [
 const KIND_LABELS = { civic: 'Civic', craft: 'Craft', rural: 'Rural', wild: 'Wild', shore: 'Shore' };
 const ACCENT = '#c26e4c';
 
+// ── NPC Schedules (CAD-438) ─────────────────────────────────────────────────
+// Each entry: [startHour, endHour, areaId, activity]
+// areaIds map to the AREAS array above by id field
+const NPC_SCHEDULES = {
+  rosa:    [[5,8,'bakery','Baking'],[8,12,'bakery','Selling bread'],[12,14,'beach','On break'],[14,18,'bakery','Baking'],[18,21,'library','Reading'],[21,5,'bakery','Sleeping']],
+  theo:    [[6,7,'postOffice','Sorting mail'],[7,9,'townSquare','Delivering'],[9,11,'library','Delivering'],[11,13,'farm','Delivering'],[13,14,'dock','Lunch break'],[14,16,'workshop','Delivering'],[16,18,'postOffice','Back at base'],[18,22,'bakery','Off-duty'],[22,6,'postOffice','Sleeping']],
+  eddy:    [[4,12,'farm','Farming'],[12,13,'townSquare','Farmers market'],[13,15,'workshop','Building'],[15,18,'farm','Farming'],[18,20,'southBeach','Evening walk'],[20,4,'farm','Sleeping']],
+  olive:   [[8,13,'townSquare','Minding the store'],[13,14,'cafe','Lunch break'],[14,18,'townSquare','Tending shop'],[18,20,'clifftops','Evening walk'],[20,23,'library','Reading'],[23,8,'townSquare','Sleeping']],
+  marta:   [[9,19,'library','Keeping the library'],[19,21,'forestPath','Evening walk'],[21,9,'library','Sleeping']],
+  suki:    [[5,8,'cafe','Opening up'],[8,14,'cafe','Making coffee'],[14,15,'townSquare','Lunch break'],[15,19,'cafe','Afternoon rush'],[19,21,'library','Reading'],[21,5,'cafe','Sleeping']],
+  pete:    [[4,7,'farm','Tending animals'],[7,12,'farm','Working the fields'],[12,13,'townSquare','Selling produce'],[13,16,'farm','Harvesting'],[16,19,'workshop','Fixing tools'],[19,21,'pub','Unwinding'],[21,4,'farm','Sleeping']],
+  barney:  [[10,14,'pub','Preparing'],[14,23,'pub','Running The Anchor'],[23,1,'pub','Closing up'],[1,10,'pub','Sleeping']],
+  nico:    [[5,8,'cafe','Opening up'],[8,14,'cafe','Making coffee'],[14,15,'townSquare','Lunch break'],[15,19,'cafe','Afternoon rush'],[19,21,'library','Reading'],[21,5,'cafe','Sleeping']],
+  clara:   [[7,9,'cafe','Morning coffee'],[9,15,'school','Teaching'],[15,18,'library','Marking work'],[18,20,'townSquare','Evening stroll'],[20,7,'school','Sleeping']],
+  rex:     [[8,9,'townSquare','Morning walk'],[9,15,'school','Teaching'],[15,17,'workshop','Woodwork club'],[17,20,'pub','After-school pint'],[20,8,'school','Sleeping']],
+  otto:    [[6,7,'workshop','Early start'],[7,12,'workshop','Working on the truck'],[12,13,'townSquare','Lunch break'],[13,18,'workshop','Welding'],[18,20,'pub','Evening pint'],[20,6,'workshop','Sleeping']],
+  oldwill: [[7,9,'clifftops','Morning watch'],[9,11,'townSquare','Morning stroll'],[11,13,'pub','Long lunch'],[13,17,'clifftops','Whittling'],[17,19,'beach','Watching the tide'],[19,7,'clifftops','Sleeping']],
+  lena:    [[5,8,'lighthouse','Tending the light'],[8,12,'dock','Watching ships'],[12,13,'cafe','Quick lunch'],[13,17,'lighthouse','Maintenance work'],[17,19,'southBeach','Evening walk'],[19,5,'lighthouse','Sleeping']],
+  bea:     [[8,9,'townSquare','Breakfast'],[9,12,'school','At school'],[12,13,'townSquare','Playing'],[13,15,'school','Afternoon class'],[15,18,'forestPath','Adventure play'],[18,20,'townSquare','Running around'],[20,8,'townSquare','Sleeping']],
+};
+
+function getScheduleEntry(npcId, hour) {
+  const schedule = NPC_SCHEDULES[npcId];
+  if (!schedule) return null;
+  for (const [start, end, areaId, activity] of schedule) {
+    if (start < end) {
+      if (hour >= start && hour < end) return { areaId, activity };
+    } else {
+      if (hour >= start || hour < end) return { areaId, activity };
+    }
+  }
+  return { areaId: schedule[0][2], activity: schedule[0][3] };
+}
+
+// Simulated game time: 1 real second = 10 sim minutes, starting at 8am
+let simTimeAccum = 0;
+const SIM_SPEED = 10;
+const SIM_START_HOUR = 8;
+let lastTimestamp = null;
+
+function getSimHour() {
+  return (SIM_START_HOUR + simTimeAccum) % 24;
+}
+
+function advanceSimTime(now) {
+  if (lastTimestamp !== null) {
+    const deltaSec = (now - lastTimestamp) / 1000;
+    simTimeAccum += (deltaSec * SIM_SPEED) / 60;
+  }
+  lastTimestamp = now;
+}
+
+function getNpcPosition(npc, i) {
+  const hour = getSimHour();
+  const entry = getScheduleEntry(npc.id, hour);
+  const areaId = entry ? entry.areaId : npc.noonArea;
+  const area = AREAS.find(a => a.id === areaId) || AREAS.find(a => a.id === npc.noonArea) || AREAS[0];
+  const ang = (i * 2.399) % (Math.PI * 2);
+  const r = 10 + (i % 4) * 3;
+  return { x: area.x + Math.cos(ang) * r, z: area.z + Math.sin(ang) * r };
+}
+
+function getNpcActivity(npc) {
+  const hour = getSimHour();
+  const entry = getScheduleEntry(npc.id, hour);
+  return entry ? entry.activity : npc.noonAct;
+}
+
+function getNpcAreaId(npc) {
+  const hour = getSimHour();
+  const entry = getScheduleEntry(npc.id, hour);
+  return entry ? entry.areaId : npc.noonArea;
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 let selectedId = 'townSquare';
 let hoveredId  = null;
@@ -312,13 +386,7 @@ function smoothPath(pts) {
 
 const COAST_D = smoothPath(buildOutline());
 
-// ── NPC dot positions (noon, stable angular offset) ──────────────────────────
-const NPC_POS = NPCS.map((n, i) => {
-  const area = AREAS.find(a => a.id === n.noonArea) || AREAS[0];
-  const ang  = (i * 2.399) % (Math.PI * 2);
-  const r    = 10 + (i % 4) * 3;
-  return { x: area.x + Math.cos(ang) * r, z: area.z + Math.sin(ang) * r };
-});
+// ── NPC dot positions — computed dynamically from schedule (CAD-438) ��────────
 
 // ── Path network ─────────────────────────────────────────────────────────────
 const PATHS = [
@@ -382,9 +450,9 @@ function buildSVG() {
     `<line x1="${p[0][0]}" y1="${p[0][1]}" x2="${p[1][0]}" y2="${p[1][1]}" stroke="#6b4a22" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.55" filter="url(#ink-wobble)"/>`
   ).join('');
 
-  // NPC dots (noon positions)
+  // NPC dots (live schedule positions — CAD-438)
   const npcDots = NPCS.map((n, i) => {
-    const p = NPC_POS[i];
+    const p = getNpcPosition(n, i);
     return `<g transform="translate(${p.x.toFixed(1)},${p.z.toFixed(1)})">
       <circle r="3.2" fill="rgba(44,26,10,0.35)" transform="translate(0.5,0.8)"/>
       <circle r="2.8" fill="${n.accent}" stroke="#3a2610" stroke-width="0.5"/>
@@ -519,7 +587,7 @@ function buildSVG() {
 function buildPanel() {
   const focusId = selectedId || hoveredId || 'townSquare';
   const area    = AREAS.find(a => a.id === focusId) || AREAS[0];
-  const here    = NPCS.filter(n => n.noonArea === area.id);
+  const here    = NPCS.filter(n => getNpcAreaId(n) === area.id);
   const kLabel  = KIND_LABELS[area.kind] || area.kind;
   const coordX  = area.x >= 0 ? `+${area.x}` : String(area.x);
   const coordZ  = area.z >= 0 ? `+${area.z}` : String(area.z);
@@ -531,15 +599,15 @@ function buildPanel() {
           <span class="atlas-here__dot" style="background:${n.accent}"></span>
           <div class="atlas-here__body">
             <div class="atlas-here__name">${n.name} <em>the ${n.role}</em></div>
-            <div class="atlas-here__act">${n.noonAct}</div>
+            <div class="atlas-here__act">${getNpcActivity(n)}</div>
           </div>
         </li>`).join('')}</ul>`;
 
   const rosterHTML = NPCS.map(n =>
-    `<button class="atlas-roster__chip" data-area="${n.noonArea}">
+    `<button class="atlas-roster__chip" data-area="${getNpcAreaId(n)}">
       <span class="atlas-roster__dot" style="background:${n.accent}"></span>
       <span class="atlas-roster__name">${n.name}</span>
-      <span class="atlas-roster__act">${n.noonAct}</span>
+      <span class="atlas-roster__act">${getNpcActivity(n)}</span>
     </button>`
   ).join('');
 
@@ -552,6 +620,10 @@ function buildPanel() {
       <div class="atlas-meta__row">
         <span class="atlas-meta__label">Region</span>
         <span class="atlas-meta__val">${kLabel}</span>
+      </div>
+      <div class="atlas-meta__row">
+        <span class="atlas-meta__label">Time</span>
+        <span class="atlas-meta__val">${String(Math.floor(getSimHour())).padStart(2,'0')}:${String(Math.floor((getSimHour()%1)*60)).padStart(2,'0')}</span>
       </div>
     </div>
 
@@ -587,7 +659,13 @@ function render() {
   buildPanel();
 }
 
-render();
+// CAD-438: Animation loop — advance sim time and re-render every 2 seconds
+function tick(now) {
+  advanceSimTime(now);
+  render();
+  setTimeout(() => requestAnimationFrame(tick), 2000);
+}
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>

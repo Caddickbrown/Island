@@ -53,7 +53,7 @@ export class BakeryMinigame {
 
     // Title
     const title = document.createElement('div');
-    title.textContent = "BEA'S BAKERY";
+    title.textContent = "MABEL'S BAKERY";
     Object.assign(title.style, {
       color: '#ffaa33',
       fontSize: '26px',
