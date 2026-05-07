@@ -558,6 +558,11 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   import { BeachcombingManager } from './beachcombing.js';
   import { initBeaCollection, beaWantsItem, giveItemToBea, getBeaCollectionDialogue } from './bea_collection.js';
   import { initEvents, updateEvents, isStormActive, isAreaClosedByStorm, getStormDialogue, isMarketDay, getMarketDialogue, isProjectActive, getProjectDialogue, startProject, contributeToProject } from './events.js';
+  import { initSaveSystem, saveGame, loadGame, tickAutoSave, updateSaveHUD } from './save.js';
+  import { initSleep, isNearBed, sleep, isSleeping, updateSleep } from './sleep.js';
+  import { CafeMinigame } from './minigame_cafe.js';
+  import { PostOfficeMinigame } from './minigame_postoffice.js';
+  import { initRadioStation, toggleRadioStation, updateRadioStation } from './radio.js';
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -624,10 +629,14 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   const _fishingGame = new FishingMinigame(scene, camera);
   const _pubGame     = new PubMinigame();
   const _schoolGame  = new SchoolMinigame();
+  const _cafeGame = new CafeMinigame();
+  const _postOfficeGame = new PostOfficeMinigame();
   const BUILDING_MINIGAMES = {
-    bakery: _bakeryGame,
-    pub:    _pubGame,
-    school: _schoolGame,
+    bakery:     _bakeryGame,
+    pub:        _pubGame,
+    school:     _schoolGame,
+    cafe:       _cafeGame,
+    postOffice: _postOfficeGame,
   };
   // Fishing is triggered at the dock (location-based)
   const FISHING_TRIGGER = { x: 0, z: 370, radius: 18 };
@@ -646,6 +655,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   initJobProgression();
   initBeaCollection();
   initEvents();
+  initSaveSystem();
+  initSleep();
+  initRadioStation();
 
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
@@ -673,6 +685,17 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   // --- Day/night cycle ---
   // 1 real second = 3 game minutes (full day ~8 real minutes). Start at 8:00 AM.
   let gameHour = 8.0;
+
+  // CAD-442: Restore from save if available
+  {
+    const _sv = loadGame();
+    if (_sv) {
+      gameHour = _sv.gameHour;
+      if (_sv.playerPos) {
+        playerCtrl.player.position.set(_sv.playerPos.x, _sv.playerPos.y, _sv.playerPos.z);
+      }
+    }
+  }
 
   // Colour keyframes: [hour, skyHex, groundHex, ambientHex, sunHex, sunIntensity, fogHex, ambientIntensity]
   const dayPhases = [
@@ -865,13 +888,24 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
     // Sim time scalar: 1 real second = 3 game minutes (full day ~8 real minutes)
     const simDelta = delta / 20;
-    gameHour = (gameHour + simDelta) % 24;
+    if (!isSleeping()) {
+      gameHour = (gameHour + simDelta) % 24;
+    }
     updateDayNight(gameHour);
     clockTimeEl.textContent = formatGameTime(gameHour);
     clockPhaseEl.textContent = getPhaseEmoji(gameHour);
     updateSupplyChain(delta, simDelta);
     updateRadio(delta);
     updateNotification(delta);
+    // CAD-442: auto-save and HUD
+    tickAutoSave(simDelta, gameHour, playerCtrl.player.position);
+    updateSaveHUD(delta);
+    // CAD-443: sleep
+    updateSleep(delta);
+    // CAD-447: radio
+    updateRadioStation(delta, gameHour, isStormActive(), isMarketDay());
+    // CAD-451: timed wildlife
+    wildlifeManager.setGameHour(gameHour);
     // CAD-436: Update island energy system each tick
     const dayFraction = gameHour / 24;
     const weather = isStormActive() ? 'stormy' : 'clear';
@@ -974,8 +1008,12 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     const _kdx = playerPos.x - KART_TRIGGER.x;
     const _kdz = playerPos.z - KART_TRIGGER.z;
     const _nearKart = Math.sqrt(_kdx*_kdx + _kdz*_kdz) < KART_TRIGGER.radius;
-    if (_bGame && !_bGame.active) {
-      const _labels = { bakery: '🍞 Press E to bake bread', pub: '🍺 Press E to serve at The Anchor', school: '📚 Press E to teach the class' };
+    // CAD-443: Bed/sleep hint
+    if (!isSleeping() && isNearBed(playerPos)) {
+      interactHint.textContent = '🛏️ Press E to sleep (advances to 6am)';
+      interactHint.style.opacity = '1';
+    } else if (_bGame && !_bGame.active) {
+      const _labels = { bakery: '🍞 Press E to bake bread', pub: '🍺 Press E to serve at The Anchor', school: '📚 Press E to teach the class', cafe: '☕ Press E to work the café', postOffice: '📮 Press E to sort the mail' };
       interactHint.textContent = _labels[insideBuilding.buildingKey] || `Press E to play`;
       interactHint.style.opacity = '1';
     } else if (_nearFishing && !_fishingGame.active) {
@@ -1056,6 +1094,18 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
           showNotification('🏗️ You work on the community project...');
         }
       }
+      return;
+    }
+
+    // CAD-447: Radio toggle
+    if (e.code === 'KeyF') {
+      toggleRadioStation();
+      return;
+    }
+
+    // CAD-443: Sleep — press E near bed
+    if (e.code === 'KeyE' && isNearBed(playerCtrl.player.position) && !isSleeping()) {
+      sleep((targetHour) => { gameHour = targetHour; });
       return;
     }
 
