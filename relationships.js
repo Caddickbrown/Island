@@ -290,11 +290,119 @@ export function toggleRelationshipUI() {
 }
 
 // ---------------------------------------------------------------------------
+// CAD-446: Gift Giving Prompt UI
+// ---------------------------------------------------------------------------
+let _giftPromptEl = null;
+let _giftPromptTimer = 0;
+
+function _buildGiftPromptUI() {
+  const el = document.createElement('div');
+  el.id = 'gift-prompt';
+  Object.assign(el.style, {
+    position: 'fixed',
+    bottom: '140px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: 'rgba(10, 5, 0, 0.92)',
+    border: '2px solid #8a6a3a',
+    borderRadius: '12px',
+    padding: '14px 22px',
+    color: '#ffeaa7',
+    fontFamily: "'Work Sans', system-ui, sans-serif",
+    fontSize: '14px',
+    textAlign: 'center',
+    display: 'none',
+    flexDirection: 'column',
+    gap: '6px',
+    zIndex: '9994',
+    backdropFilter: 'blur(6px)',
+    pointerEvents: 'none',
+    minWidth: '200px',
+  });
+
+  const main = document.createElement('div');
+  main.id = 'gift-prompt-text';
+  main.textContent = '';
+
+  const sub = document.createElement('div');
+  sub.id = 'gift-prompt-sub';
+  Object.assign(sub.style, { color: '#8a6a3a', fontSize: '11px', letterSpacing: '1px' });
+  sub.textContent = 'Press E to give';
+
+  el.appendChild(main);
+  el.appendChild(sub);
+  document.body.appendChild(el);
+  _giftPromptEl = el;
+}
+
+/**
+ * Show the "Give gift?" prompt near an NPC when the player has items they'd like.
+ * Call each frame when near an NPC with items in the bag.
+ * @param {string} npcName
+ * @param {string[]} bagItemIds - item IDs currently in player's bag
+ */
+export function updateGiftPrompt(npcName, bagItemIds) {
+  if (!_giftPromptEl) return;
+  if (!npcName || !bagItemIds || bagItemIds.length === 0) {
+    _giftPromptEl.style.display = 'none';
+    return;
+  }
+  const prefs = NPC_GIFT_PREFERENCES[npcName] || [];
+  const likedItems = bagItemIds.filter(id => prefs.includes(id));
+
+  const textEl = document.getElementById('gift-prompt-text');
+  if (textEl) {
+    if (likedItems.length > 0) {
+      textEl.textContent = `🎁 ${npcName} would love a gift!`;
+    } else {
+      textEl.textContent = `🎁 Give a gift to ${npcName}?`;
+    }
+  }
+  _giftPromptEl.style.display = 'flex';
+}
+
+export function hideGiftPrompt() {
+  if (_giftPromptEl) _giftPromptEl.style.display = 'none';
+}
+
+/**
+ * Returns the NPC's gift preference sentiment for a given item.
+ * 'loved' | 'liked' | 'neutral' | 'disliked'
+ */
+export function getGiftSentiment(npcName, itemId) {
+  const prefs = NPC_GIFT_PREFERENCES[npcName] || [];
+  if (prefs.includes(itemId)) return 'loved';
+  return 'neutral';
+}
+
+/**
+ * Get a personalised gift reaction line.
+ */
+export function getGiftReaction(npcName, itemId, itemName) {
+  const sentiment = getGiftSentiment(npcName, itemId);
+  if (sentiment === 'loved') {
+    const lines = [
+      `${itemName}! You remembered — this is exactly what I love!`,
+      `Oh! A ${itemName}! You're too kind, truly.`,
+      `I can't believe you brought me ${itemName}. This made my day!`,
+    ];
+    return lines[Math.floor(Math.random() * lines.length)];
+  }
+  const lines = [
+    `A ${itemName}? That's thoughtful, thank you.`,
+    `How kind of you to bring ${itemName}. I'll make good use of it.`,
+    `Thank you for the ${itemName}!`,
+  ];
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+
+// ---------------------------------------------------------------------------
 // Initialise
 // ---------------------------------------------------------------------------
 export function initRelationships() {
   _load();
   _buildUI();
+  _buildGiftPromptUI();
 
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyR') {
