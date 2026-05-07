@@ -550,7 +550,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   import { SchoolMinigame }  from './minigame_school.js';
   import { KartMinigame }    from './minigame_kart.js';
   import { BAG, ITEMS, initBagUI } from './bag.js';
-  import { initRelationships, recordTalk, recordGift, recordSubIn, getRelationship, getLevel } from './relationships.js';
+  import { initRelationships, recordTalk, recordGift, recordSubIn, getRelationship, getLevel, updateGiftPrompt, hideGiftPrompt, getGiftReaction } from './relationships.js';
   import { initNPCMemory, addMemory, getMemoryDialogue } from './npc_memory.js';
   import { initJournal, addEntry, hasEntry } from './journal.js';
   import { checkMilestoneScene, initMilestones } from './milestones.js';
@@ -984,6 +984,13 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       }
     }
 
+    // CAD-446: Gift prompt
+    if (nearbyNPC) {
+      updateGiftPrompt(nearbyNPC.name, BAG.items.map(i => i.id));
+    } else {
+      hideGiftPrompt();
+    }
+
     // Greeting toast when approaching an NPC
     if (nearbyNPC !== lastNearbyNPC) {
       if (nearbyNPC) {
@@ -1229,9 +1236,7 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
         const giftResult = recordGift(nearestNPC.name, giftItem.id);
         BAG.remove(giftItem.id, 1);
         addMemory(nearestNPC.name, giftResult.liked ? 'gift_liked' : 'gift_any', { itemName: giftItem.name });
-        const reaction = giftResult.liked
-          ? `Oh, ${giftItem.name}! I love these! Thank you so much!`
-          : `A ${giftItem.name}? That's thoughtful, thank you.`;
+        const reaction = getGiftReaction(nearestNPC.name, giftItem.id, giftItem.name);
         dialogueName.textContent = `🎁 ${nearestNPC.name}`;
         dialogueLine.textContent = reaction;
         dialogueBox.style.opacity = '1';
