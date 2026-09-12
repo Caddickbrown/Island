@@ -1,3 +1,6 @@
+import { BAG, ITEMS } from './bag.js';
+import { getDifficulty, recordCompletion } from './job_progression.js';
+
 export class BakeryMinigame {
   constructor(scene, camera) {
     this._scene = scene;
@@ -7,6 +10,7 @@ export class BakeryMinigame {
     this._highScore = 0;
     this._loavesBaked = 0;
     this._temperature = 0;
+    this._baseTempSpeed = 0.12;
     this._tempSpeed = 0.12; // % per second
     this._phase = 'baking'; // 'baking' | 'result'
     this._resultTimer = 0;
@@ -49,7 +53,7 @@ export class BakeryMinigame {
 
     // Title
     const title = document.createElement('div');
-    title.textContent = "BEA'S BAKERY";
+    title.textContent = "MABEL'S BAKERY";
     Object.assign(title.style, {
       color: '#ffaa33',
       fontSize: '26px',
@@ -333,6 +337,9 @@ export class BakeryMinigame {
     this._temperature = 0;
     this._phase = 'baking';
     this._resultTimer = 0;
+    // CAD-397: difficulty progression — temperature rises faster
+    const diff = getDifficulty('bakery');
+    this._tempSpeed = this._baseTempSpeed * diff.speedMult;
     this._clearResult();
     this._updateStats();
     this._setInstruction('[ SPACE ] BAKE AT THE RIGHT MOMENT!');
@@ -372,6 +379,11 @@ export class BakeryMinigame {
     this._score += points;
     if (this._score > this._highScore) this._highScore = this._score;
     this._loavesBaked += 1;
+    if (points > 0) {
+      BAG.add(ITEMS.bread, 1);
+      // CAD-398: record completion for rewards
+      recordCompletion('bakery', this._score);
+    }
     this._phase = 'result';
     this._resultTimer = 2.0;
     this._showResult(msg + (points > 0 ? `  +${points}` : ''), color);

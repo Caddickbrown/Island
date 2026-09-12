@@ -282,7 +282,7 @@
 <button id="map-btn" onclick="toggleMap()">🗺 Atlas <span style="opacity:0.55;font-size:11px">[M]</span></button>
 <div id="hud">
   <div id="pos">Position: 0, 0</div>
-  <div class="hint">WASD to move &middot; Shift to sprint &middot; Space to jump &middot; E to talk &middot; M for map &middot; click to lock mouse</div>
+  <div class="hint">WASD to move &middot; Shift to sprint &middot; Space to jump &middot; E to talk &middot; M for map &middot; B for bag &middot; click to lock mouse</div>
 </div>
 <div id="greeting-toast"></div>
 <div id="interact-hint">Press E to talk</div>
@@ -541,13 +541,28 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
            updateNotification, showNotification,
            createCafeHelpMiniGame } from './scene.js';
   import { PlayerController } from './player.js';
-  import { NPCManager, findOpenShift, startSubInShift, updateSubIn } from './npcs.js';
+  import { NPCManager, findOpenShift, startSubInShift, updateSubIn, subInGratitude, updateIslandSystems, getEnergyStatus, getLowEnergyDialogue } from './npcs.js';
   import { WildlifeManager } from './wildlife.js';
   import { AnimalManager } from './animals.js';
   import { BakeryMinigame }  from './minigame_bakery.js';
   import { FishingMinigame } from './minigame_fishing.js';
   import { PubMinigame }     from './minigame_pub.js';
   import { SchoolMinigame }  from './minigame_school.js';
+  import { KartMinigame }    from './minigame_kart.js';
+  import { BAG, ITEMS, initBagUI } from './bag.js';
+  import { initRelationships, recordTalk, recordGift, recordSubIn, getRelationship, getLevel, updateGiftPrompt, hideGiftPrompt, getGiftReaction } from './relationships.js';
+  import { initNPCMemory, addMemory, getMemoryDialogue } from './npc_memory.js';
+  import { initJournal, addEntry, hasEntry } from './journal.js';
+  import { checkMilestoneScene, initMilestones } from './milestones.js';
+  import { initJobProgression, getDifficulty, recordCompletion } from './job_progression.js';
+  import { BeachcombingManager } from './beachcombing.js';
+  import { initBeaCollection, beaWantsItem, giveItemToBea, getBeaCollectionDialogue } from './bea_collection.js';
+  import { initEvents, updateEvents, isStormActive, isAreaClosedByStorm, getStormDialogue, isMarketDay, getMarketDialogue, isProjectActive, getProjectDialogue, startProject, contributeToProject } from './events.js';
+  import { initSaveSystem, saveGame, loadGame, tickAutoSave, updateSaveHUD } from './save.js';
+  import { initSleep, isNearBed, sleep, isSleeping, updateSleep } from './sleep.js';
+  import { CafeMinigame } from './minigame_cafe.js';
+  import { PostOfficeMinigame } from './minigame_postoffice.js';
+  import { initRadioStation, toggleRadioStation, updateRadioStation } from './radio.js';
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -614,13 +629,35 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   const _fishingGame = new FishingMinigame(scene, camera);
   const _pubGame     = new PubMinigame();
   const _schoolGame  = new SchoolMinigame();
+  const _cafeGame = new CafeMinigame();
+  const _postOfficeGame = new PostOfficeMinigame();
   const BUILDING_MINIGAMES = {
-    bakery: _bakeryGame,
-    pub:    _pubGame,
-    school: _schoolGame,
+    bakery:     _bakeryGame,
+    pub:        _pubGame,
+    school:     _schoolGame,
+    cafe:       _cafeGame,
+    postOffice: _postOfficeGame,
   };
   // Fishing is triggered at the dock (location-based)
   const FISHING_TRIGGER = { x: 0, z: 370, radius: 18 };
+  // Kart race is triggered near the kart track (location-based)
+  const _kartGame = new KartMinigame();
+  const KART_TRIGGER = { x: 297, z: -222, radius: 25 };
+
+  // --- The Bag (Inventory) ---
+  initBagUI();
+
+  // --- New Systems (CAD-393 to CAD-405) ---
+  initRelationships();
+  initNPCMemory();
+  initJournal();
+  initMilestones();
+  initJobProgression();
+  initBeaCollection();
+  initEvents();
+  initSaveSystem();
+  initSleep();
+  initRadioStation();
 
   // --- NPCs ---
   const npcManager = new NPCManager(scene);
@@ -630,6 +667,9 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
 
   // --- Farm animals & apiary ---
   const animalManager = new AnimalManager(scene);
+
+  // --- Beachcombing (CAD-400) ---
+  const beachcombingManager = new BeachcombingManager(scene);
 
   // --- HUD ---
   const posEl = document.getElementById('pos');
@@ -645,6 +685,17 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
   // --- Day/night cycle ---
   // 1 real second = 3 game minutes (full day ~8 real minutes). Start at 8:00 AM.
   let gameHour = 8.0;
+
+  // CAD-442: Restore from save if available
+  {
+    const _sv = loadGame();
+    if (_sv) {
+      gameHour = _sv.gameHour;
+      if (_sv.playerPos) {
+        playerCtrl.player.position.set(_sv.playerPos.x, _sv.playerPos.y, _sv.playerPos.z);
+      }
+    }
+  }
 
   // Colour keyframes: [hour, skyHex, groundHex, ambientHex, sunHex, sunIntensity, fogHex, ambientIntensity]
   const dayPhases = [
@@ -828,24 +879,47 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       if (game.active && game.update) game.update(delta);
     }
     if (_fishingGame.active && _fishingGame.update) _fishingGame.update(delta);
+    if (_kartGame.active && _kartGame.update) _kartGame.update(delta);
     npcManager.update(delta, playerCtrl.player.position);
     wildlifeManager.update(delta);
     animalManager.update(delta);
+    beachcombingManager.update(delta);
+    updateEvents(delta, gameHour);
 
     // Sim time scalar: 1 real second = 3 game minutes (full day ~8 real minutes)
     const simDelta = delta / 20;
-    gameHour = (gameHour + simDelta) % 24;
+    if (!isSleeping()) {
+      gameHour = (gameHour + simDelta) % 24;
+    }
     updateDayNight(gameHour);
     clockTimeEl.textContent = formatGameTime(gameHour);
     clockPhaseEl.textContent = getPhaseEmoji(gameHour);
     updateSupplyChain(delta, simDelta);
     updateRadio(delta);
     updateNotification(delta);
+    // CAD-442: auto-save and HUD
+    tickAutoSave(simDelta, gameHour, playerCtrl.player.position);
+    updateSaveHUD(delta);
+    // CAD-443: sleep
+    updateSleep(delta);
+    // CAD-447: radio
+    updateRadioStation(delta, gameHour, isStormActive(), isMarketDay());
+    // CAD-451: timed wildlife
+    wildlifeManager.setGameHour(gameHour);
+    // CAD-436: Update island energy system each tick
+    const dayFraction = gameHour / 24;
+    const weather = isStormActive() ? 'stormy' : 'clear';
+    updateIslandSystems(delta, dayFraction, weather);
 
-    // Sub-in shift completion check
+    // Sub-in shift completion check (CAD-399: relationship bump on completion)
     const subInResult = updateSubIn(delta);
     if (subInResult) {
       showNotification(subInResult);
+      // Relationship bump for the NPC whose shift was covered
+      for (const name of Object.keys(subInGratitude)) {
+        recordSubIn(name);
+        addMemory(name, 'subin', {});
+      }
     }
 
     // Windmill blade rotation
@@ -910,6 +984,13 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       }
     }
 
+    // CAD-446: Gift prompt
+    if (nearbyNPC) {
+      updateGiftPrompt(nearbyNPC.name, BAG.items.map(i => i.id));
+    } else {
+      hideGiftPrompt();
+    }
+
     // Greeting toast when approaching an NPC
     if (nearbyNPC !== lastNearbyNPC) {
       if (nearbyNPC) {
@@ -931,12 +1012,22 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
     const _fdx = playerPos.x - FISHING_TRIGGER.x;
     const _fdz = playerPos.z - FISHING_TRIGGER.z;
     const _nearFishing = Math.sqrt(_fdx*_fdx + _fdz*_fdz) < FISHING_TRIGGER.radius;
-    if (_bGame && !_bGame.active) {
-      const _labels = { bakery: '🍞 Press E to bake bread', pub: '🍺 Press E to serve at The Anchor', school: '📚 Press E to teach the class' };
+    const _kdx = playerPos.x - KART_TRIGGER.x;
+    const _kdz = playerPos.z - KART_TRIGGER.z;
+    const _nearKart = Math.sqrt(_kdx*_kdx + _kdz*_kdz) < KART_TRIGGER.radius;
+    // CAD-443: Bed/sleep hint
+    if (!isSleeping() && isNearBed(playerPos)) {
+      interactHint.textContent = '🛏️ Press E to sleep (advances to 6am)';
+      interactHint.style.opacity = '1';
+    } else if (_bGame && !_bGame.active) {
+      const _labels = { bakery: '🍞 Press E to bake bread', pub: '🍺 Press E to serve at The Anchor', school: '📚 Press E to teach the class', cafe: '☕ Press E to work the café', postOffice: '📮 Press E to sort the mail' };
       interactHint.textContent = _labels[insideBuilding.buildingKey] || `Press E to play`;
       interactHint.style.opacity = '1';
     } else if (_nearFishing && !_fishingGame.active) {
       interactHint.textContent = '🎣 Press E to go fishing';
+      interactHint.style.opacity = '1';
+    } else if (_nearKart && !_kartGame.active) {
+      interactHint.textContent = '🏎️ Press E to race';
       interactHint.style.opacity = '1';
     } else {
       interactHint.style.opacity = nearbyNPC ? '1' : '0';
@@ -992,6 +1083,39 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       return;
     }
 
+    if (e.code === 'KeyB') {
+      BAG.toggle();
+      return;
+    }
+
+    if (e.code === 'KeyP') {
+      // Community project (CAD-405) — start or contribute
+      if (!isProjectActive()) {
+        const proj = startProject();
+        if (proj) showNotification(`🏗️ Community Project started: ${proj.name}\n${proj.description}`);
+      } else {
+        const result = contributeToProject();
+        if (result) {
+          showNotification(result.complete ? `🎉 Project complete! ${result.line}` : `🏗️ ${result.line}`);
+        } else {
+          showNotification('🏗️ You work on the community project...');
+        }
+      }
+      return;
+    }
+
+    // CAD-447: Radio toggle
+    if (e.code === 'KeyF') {
+      toggleRadioStation();
+      return;
+    }
+
+    // CAD-443: Sleep — press E near bed
+    if (e.code === 'KeyE' && isNearBed(playerCtrl.player.position) && !isSleeping()) {
+      sleep((targetHour) => { gameHour = targetHour; });
+      return;
+    }
+
     if (e.code !== 'KeyE') return;
 
     const playerPos = playerCtrl.player.position;
@@ -1023,24 +1147,65 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
         _fishingGame.start(); return;
       }
     }
+    // Kart race — triggered near the kart track
+    {
+      const kdx = playerPos.x - KART_TRIGGER.x;
+      const kdz = playerPos.z - KART_TRIGGER.z;
+      if (Math.sqrt(kdx*kdx + kdz*kdz) < KART_TRIGGER.radius && !_kartGame.active) {
+        _kartGame.start(); return;
+      }
+    }
     // Legacy mini-game (PlayerController owns this if it exists)
     if (playerCtrl.miniGame && playerCtrl.miniGame.tryOpen) {
       if (playerCtrl.miniGame.tryOpen(playerPos)) return;
     }
 
-    // 4. NPC dialogue
+    // 4. NPC dialogue (enhanced with relationships + memory)
     if (nearbyNPC) {
+      // Record the talk for relationship system
+      const talkResult = recordTalk(nearbyNPC.name);
+
+      // Check for level-up milestone scene
+      if (talkResult.levelUp) {
+        const scene = checkMilestoneScene(nearbyNPC.name, talkResult.newLevel);
+        if (scene) {
+          dialogueName.textContent = `⭐ ${nearbyNPC.name} — ${scene.title}`;
+          dialogueLine.textContent = scene.lines.join('\n');
+          dialogueBox.style.opacity = '1';
+          dialogueTimer = DIALOGUE_DURATION * 2;
+          return;
+        }
+      }
+
+      // Check for memory-based dialogue
+      const memLine = getMemoryDialogue(nearbyNPC.name);
+
+      // Check for storm/market/project/energy dialogue
+      let eventLine = null;
+      if (isStormActive()) eventLine = getStormDialogue();
+      else if (isMarketDay()) eventLine = getMarketDialogue();
+      else if (isProjectActive()) eventLine = getProjectDialogue();
+      // CAD-436: low-energy dialogue when island energy is low
+      if (!eventLine) { const eLine = getLowEnergyDialogue(); if (eLine) eventLine = eLine; }
+
+      // Bea's collection dialogue
+      if (nearbyNPC.name === 'Bea' && Math.random() < 0.3) {
+        eventLine = getBeaCollectionDialogue();
+      }
+
       const result = npcManager.getDialogue ? npcManager.getDialogue(nearbyNPC.name) : null;
       if (result) {
-        dialogueName.textContent = `${result.name} · ${result.job || ''}`;
-        dialogueLine.textContent = result.line;
+        const rel = getRelationship(nearbyNPC.name);
+        const levelInfo = getLevel(nearbyNPC.name);
+        dialogueName.textContent = `${levelInfo.emoji} ${result.name} · ${result.job || ''}`;
+        dialogueLine.textContent = memLine || eventLine || result.line;
         dialogueBox.style.opacity = '1';
         dialogueTimer = DIALOGUE_DURATION;
         return;
       }
     }
 
-    // 5. Near NPC — try to give an item
+    // 5. Near NPC — try to give an item (CAD-395: gift giving with relationship effects)
     let nearestNPC = null;
     let nearestDist = Infinity;
     for (const npc of npcManager.npcs) {
@@ -1048,10 +1213,54 @@ function renderMap() { buildMapSVG(); buildMapPanel(); }
       if (d < nearestDist) { nearestDist = d; nearestNPC = npc; }
     }
     if (nearestNPC && nearestDist < 8) {
+      // Check if near Bea and have something she wants
+      if (nearestNPC.name === 'Bea') {
+        const bagItems = BAG.items.filter(i => beaWantsItem(i.id));
+        if (bagItems.length > 0) {
+          const result = giveItemToBea(bagItems[0].id);
+          if (result) {
+            dialogueName.textContent = '🐚 Bea · Child';
+            let msg = result.response;
+            if (result.tradeItem) msg += `\n(Bea gives you a ${result.tradeItem.replace('_', ' ')} in return!)`;
+            dialogueLine.textContent = msg;
+            dialogueBox.style.opacity = '1';
+            dialogueTimer = DIALOGUE_DURATION;
+            if (result.tradeItem && ITEMS[result.tradeItem]) BAG.add(ITEMS[result.tradeItem], 1);
+            return;
+          }
+        }
+      }
+      // General gift giving — first item in bag
+      if (BAG.items.length > 0) {
+        const giftItem = BAG.items[0];
+        const giftResult = recordGift(nearestNPC.name, giftItem.id);
+        BAG.remove(giftItem.id, 1);
+        addMemory(nearestNPC.name, giftResult.liked ? 'gift_liked' : 'gift_any', { itemName: giftItem.name });
+        const reaction = getGiftReaction(nearestNPC.name, giftItem.id, giftItem.name);
+        dialogueName.textContent = `🎁 ${nearestNPC.name}`;
+        dialogueLine.textContent = reaction;
+        dialogueBox.style.opacity = '1';
+        dialogueTimer = DIALOGUE_DURATION;
+        if (giftResult.levelUp) {
+          const milestone = checkMilestoneScene(nearestNPC.name, giftResult.newLevel);
+          if (milestone) {
+            setTimeout(() => {
+              dialogueName.textContent = `⭐ ${nearestNPC.name} — ${milestone.title}`;
+              dialogueLine.textContent = milestone.lines.join('\n');
+              dialogueBox.style.opacity = '1';
+              dialogueTimer = DIALOGUE_DURATION * 2;
+            }, 2000);
+          }
+        }
+        return;
+      }
       if (tryGiveItem(nearestNPC.name, nearestNPC.group.position, playerPos)) return;
     }
 
-    // 6. Pick up item from world
+    // 6. Beachcombing pickup
+    if (beachcombingManager.tryPickup(playerPos)) return;
+
+    // 7. Pick up item from world
     tryPickupItem(playerPos);
   });
   window.addEventListener('keyup', e => { keyState[e.code] = false; });

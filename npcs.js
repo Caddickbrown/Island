@@ -56,6 +56,11 @@ const AREAS = {
   claraHome:   { x: 78,   z: -123 },
   rexHome:     { x: 84,   z: -90  },
   ottoHome:    { x: -141, z: 42   },
+  // Harbour zone — CAD-424/425
+  harbour:     { x: 0,    z: 360  },
+  fishMarket:  { x: 28,   z: 355  },
+  // CAD-433: General Store
+  generalStore:{ x: -30,  z: -72  },
   // New NPC homes (1.5x scaled from master)
   lighthouse:  { x: 63,   z: 372  },  // Lena's workplace and home
   treehouse:   { x: 282,  z: 192  },  // Petra's Treehouse
@@ -69,6 +74,13 @@ const AREAS = {
   lenaHome:    { x: 63,   z: 375  },  // Lena lives at lighthouse
   kaiHome:     { x: 225,  z: -225 },  // Kai's beach camp
   beaHome:     { x: -15,  z: -82  },  // Bea's family home near village
+  // CAD-424/425 homes
+  reedHome:    { x: -12,  z: 358  },  // Captain Reed's harbour cottage
+  morwenHome:  { x: 22,   z: 360  },  // Morwen's home near fish market
+  corwinHome:  { x: 35,   z: 362  },  // Corwin's home near fish market
+  // CAD-441: Elliot's Aquarium
+  aquarium:    { x: 225,  z: -120 },  // Elliot's Aquarium
+  elliotHome:  { x: 230,  z: -135 },  // Elliot lives near the aquarium
 };
 
 // ---------------------------------------------------------------------------
@@ -106,10 +118,12 @@ const SCHEDULES = {
     [20, 4,  'fernHome',    'Sleeping 💤'],
   ],
   Olive: [
-    [8,  18, 'townSquare', 'Tending shop 🛍️'],
-    [18, 20, 'hilltop',    'Evening walk 🌄'],
-    [20, 23, 'library',    'Reading 📖'],
-    [23, 8,  'oliveHome',  'Sleeping 💤'],
+    [8,  13, 'generalStore', 'Minding the store 🛍️'],
+    [13, 14, 'cafe',         'Lunch break ☕'],
+    [14, 18, 'townSquare',   'Tending shop 🛍️'],
+    [18, 20, 'hilltop',      'Evening walk 🌄'],
+    [20, 23, 'library',      'Reading 📖'],
+    [23, 8,  'oliveHome',    'Sleeping 💤'],
   ],
   Rosa: [
     [9,  19, 'library',     'Keeping the library 📚'],
@@ -217,6 +231,40 @@ const SCHEDULES = {
     [15, 18, 'forestPath',  'Adventure play 🌲'],
     [18, 20, 'village',     'Running around 🏃'],
     [20, 8,  'beaHome',     'Sleeping 💤'],
+  ],
+  // CAD-441: Elliot — child who runs the aquarium
+  Elliot: [
+    [8,  9,  'elliotHome',  'Breakfast 🥣'],
+    [9,  12, 'school',      'At school 📚'],
+    [12, 13, 'cafe',        'Lunch break ☕'],
+    [13, 18, 'aquarium',    'Feeding the fish 🐟'],
+    [18, 20, 'aquarium',    'Watching the tanks 🐠'],
+    [20, 8,  'elliotHome',  'Sleeping 💤'],
+  ],
+  // CAD-424: Harbour Master
+  'Captain Reed': [
+    [5,  7,  'harbour',     'Dawn inspection ⚓'],
+    [7,  12, 'dock',        'Managing the dock 🚢'],
+    [12, 13, 'cafe',        'Lunch break ☕'],
+    [13, 17, 'harbour',     'Afternoon watch ⚓'],
+    [17, 19, 'pub',         'Evening pint 🍺'],
+    [19, 5,  'reedHome',    'Sleeping 💤'],
+  ],
+  // CAD-425: Fish Market Vendors
+  Morwen: [
+    [4,  6,  'dock',        'Collecting catch 🐟'],
+    [6,  14, 'fishMarket',  'Selling fish 🐟'],
+    [14, 16, 'harbour',     'Cleaning up 🧹'],
+    [16, 18, 'townSquare',  'Afternoon stroll 🌇'],
+    [18, 20, 'pub',         'Relaxing 🍺'],
+    [20, 4,  'morwenHome',  'Sleeping 💤'],
+  ],
+  Corwin: [
+    [5,  7,  'harbour',     'Preparing stall 📦'],
+    [7,  15, 'fishMarket',  'Selling shellfish 🦐'],
+    [15, 17, 'dock',        'Mending nets 🪢'],
+    [17, 19, 'cafe',        'Evening coffee ☕'],
+    [19, 5,  'corwinHome',  'Sleeping 💤'],
   ],
 };
 
@@ -564,6 +612,24 @@ class NPC {
         beanie.position.set(0, 2.05, 0); this.group.add(beanie);
         const bobble = new THREE.Mesh(new THREE.SphereGeometry(0.10, 6, 5), m(0xfff176));
         bobble.position.set(0, 2.35, 0); this.group.add(bobble);
+        break;
+      }
+      case 'Harbour Master': {
+        // Navy captain's cap with gold badge
+        const hmCap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.36, 0.16, 10), m(0x1a2a4a));
+        hmCap.position.set(0, 2.13, 0); this.group.add(hmCap);
+        const hmPeak = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.05, 0.24), m(0x0d1b36));
+        hmPeak.position.set(0, 2.04, 0.30); this.group.add(hmPeak);
+        const hmBadge = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), m(0xffd700));
+        hmBadge.position.set(0, 2.20, 0.30); this.group.add(hmBadge);
+        break;
+      }
+      case 'Fishmonger': {
+        // White apron over clothes and a flat cap
+        const fmCap = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.35, 0.11, 10), m(0xeeeeee));
+        fmCap.position.set(0, 2.11, 0); this.group.add(fmCap);
+        const apron = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.55, 0.06), m(0xf0f0f0));
+        apron.position.set(0, 0.82, 0.24); this.group.add(apron);
         break;
       }
       default: break;
@@ -991,6 +1057,12 @@ const NPC_DEFS = [
   { name: 'Lena',     job: 'Keeper',     color: 0x80cbc4, skinTone: 0xe0a878, hairColor: 0xA0522D, schedule: SCHEDULES.Lena        },
   { name: 'Kai',      job: 'Newcomer',   color: 0xffcc80, skinTone: 0xc07848, hairColor: 0x4A2C0A, schedule: SCHEDULES.Kai         },
   { name: 'Bea',      job: 'Child',      color: 0xf06292, skinTone: 0xf8d4b0, hairColor: 0xFFD700, schedule: SCHEDULES.Bea         },
+  // CAD-441: Elliot — aquarium child
+  { name: 'Elliot',       job: 'Child',          color: 0x4dd0e1, skinTone: 0xf0c8a0, hairColor: 0x5C2E0A, schedule: SCHEDULES.Elliot   },
+  // CAD-424/425: Harbour NPCs
+  { name: 'Captain Reed', job: 'Harbour Master', color: 0x2c5f7c, skinTone: 0xc88060, hairColor: 0x8B8B8B, schedule: SCHEDULES['Captain Reed'] },
+  { name: 'Morwen',       job: 'Fishmonger',     color: 0x4a90a4, skinTone: 0xf0c8a0, hairColor: 0x5C2E0A, schedule: SCHEDULES.Morwen   },
+  { name: 'Corwin',       job: 'Fishmonger',     color: 0x5a8a6e, skinTone: 0xb87850, hairColor: 0x1a1a1a, schedule: SCHEDULES.Corwin   },
 ];
 
 export class NPCManager {
@@ -1016,24 +1088,112 @@ export class NPCManager {
     if (!npc) return null;
     const hour = getSimTime();
     const timeGreet = hour >= 5 && hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-    // Simple contextual lines based on job
+    // CAD-441: NPC-specific dialogue overrides
+    const npcOverrides = {
+      Elliot: ['Come see the jellyfish — they glow at night!', 'I named every fish in the aquarium. My favourite is Bubbles.', 'Did you know octopuses have three hearts?'],
+    };
+    if (npcOverrides[npc.name]) {
+      if (!npc._dialogueIndex) npc._dialogueIndex = 0;
+      const lines = npcOverrides[npc.name];
+      const line = lines[npc._dialogueIndex % lines.length];
+      npc._dialogueIndex++;
+      return { name: npc.name, job: npc.job, line };
+    }
+    const isMorning = hour >= 5 && hour < 12;
+    const isAfternoon = hour >= 12 && hour < 18;
+    const isEvening = hour >= 18 || hour < 5;
+    // Contextual lines varying by time of day (CAD-434)
     const jobLines = {
-      Baker:      ['The bread came out perfectly this morning!', 'I always start baking before sunrise.', "Try one of the cardamom buns — Rosa's recipe."],
-      Postman:    ['Letters from the mainland arrived today.', 'Always something new in the post bag.', 'The dock path is looking beautiful this time of year.'],
-      Farmer:     ['The crops are coming along nicely.', 'Up at dawn, that\'s the farmer\'s way.', 'The hens have been very productive lately.'],
-      Shopkeeper: ['We just got a fresh delivery in.', 'Can I help you find anything?', 'Business has been steady this week.'],
-      Librarian:  ['Have you read anything good lately?', 'The archives go back over two hundred years.', 'Silence is golden, as they say.'],
-      Fisherman:  ['Good haul this morning from the east side.', 'The tide was perfect at dawn.', 'Nothing like the smell of the sea.'],
-      Barkeeper:  ['The Anchor\'s always open for a friendly face.', 'A warm fire and a cold pint — what more do you need?', 'The regulars were in good form last night.'],
-      Barista:    ['Fresh coffee just came off the press.', 'The terrace is lovely at this hour.', 'Shall I put something on for you?'],
-      Teacher:    ['Learning never stops on this island.', 'The children asked such good questions today.', 'Education is the greatest gift we can give.'],
-      Engineer:   ['Always something to fix or improve.', 'The solar system is running perfectly.', 'Good tools make good work.'],
-      Artist:     ['Every painting starts with just looking.', 'The light here is extraordinary at dusk.', 'I\'m working on a new series of the harbour.'],
-      Botanist:   ['Found a fascinating specimen this morning.', 'The forest holds so many secrets.', 'I\'m cataloguing every plant on this island.'],
-      Elder:      ['I\'ve been here longer than anyone.', 'The island has changed, but its heart hasn\'t.', 'Sit a while — there\'s no hurry here.'],
-      Keeper:     ['The light was on all night — all safe.', 'You can see for miles from the lantern room.', 'The ships know this coast because of that light.'],
-      Newcomer:   ['Still finding my way around!', 'Everyone\'s been so welcoming here.', 'I never expected to stay, but now I can\'t imagine leaving.'],
-      Child:      ['I found a really cool stick today!', 'Can we go to the forest? It\'s the best.', 'Race you to the beach!'],
+      Baker: isMorning
+        ? ['The bread came out perfectly this morning!', 'I always start baking before sunrise.', `${timeGreet}! Fresh loaves are ready.`]
+        : isAfternoon
+        ? ['The afternoon batch is almost done.', "Try one of the cardamom buns — Rosa's recipe.", 'We sold out of sourdough by noon!']
+        : ['The ovens are cooling down for the night.', 'I prep the dough in the evening for tomorrow.', `${timeGreet}! The bakery smells best at this hour.`],
+      Postman: isMorning
+        ? ['Letters from the mainland arrived this morning.', `${timeGreet}! Early rounds today.`, 'The dock path is beautiful at dawn.']
+        : isAfternoon
+        ? ['Afternoon deliveries are all done.', 'Always something new in the post bag.', 'The dock path is looking beautiful this time of year.']
+        : ['No more deliveries tonight — feet up!', `${timeGreet}! Quiet evening for the post.`, 'I sort tomorrow\'s post in the evenings.'],
+      Farmer: isMorning
+        ? ['Up at dawn, that\'s the farmer\'s way.', `${timeGreet}! The crops are coming along nicely.`, 'The hens have been very productive this morning.']
+        : isAfternoon
+        ? ['The afternoon sun is doing wonders for the tomatoes.', 'The crops are coming along nicely.', 'Time to water the south field.']
+        : ['The animals are all settled for the night.', 'Evening\'s the best time to plan tomorrow\'s planting.', `${timeGreet}! Long day on the farm.`],
+      Shopkeeper: isMorning
+        ? [`${timeGreet}! We just got a fresh delivery in.`, 'Morning\'s the best time to browse.', 'Business has been steady this week.']
+        : isAfternoon
+        ? ['Can I help you find anything?', 'Afternoon rush should pick up soon.', 'We just restocked the shelves.']
+        : ['Nearly closing time — last chance to browse!', `${timeGreet}! Quiet evening in the shop.`, 'I do the accounts in the evening.'],
+      Librarian: isMorning
+        ? [`${timeGreet}! The reading room gets lovely morning light.`, 'Have you read anything good lately?', 'The archives go back over two hundred years.']
+        : isAfternoon
+        ? ['Quiet afternoons are perfect for reading.', 'The archives go back over two hundred years.', 'Silence is golden, as they say.']
+        : ['The library is especially peaceful in the evening.', `${timeGreet}! I\'m cataloguing new arrivals.`, 'I love reading by lamplight.'],
+      Fisherman: isMorning
+        ? ['Good haul this morning from the east side.', 'The tide was perfect at dawn.', `${timeGreet}! Nothing like early morning on the water.`]
+        : isAfternoon
+        ? ['The afternoon catch is always more relaxed.', 'Nothing like the smell of the sea.', 'Fish are lazier in the afternoon heat.']
+        : ['Nets are all packed away for the night.', `${timeGreet}! Time for a well-earned rest.`, 'The evening tide brings the big ones in.'],
+      Barkeeper: isMorning
+        ? ['Bit early for a pint, isn\'t it?', `${timeGreet}! I\'m just stocking up for tonight.`, 'The Anchor opens properly at noon.']
+        : isAfternoon
+        ? ['The Anchor\'s always open for a friendly face.', 'A warm fire and a cold pint — what more do you need?', 'The afternoon crowd is my favourite.']
+        : ['The regulars were in good form tonight.', `${timeGreet}! The Anchor\'s buzzing this evening.`, 'Evening is when this place really comes alive.'],
+      Barista: isMorning
+        ? [`${timeGreet}! Fresh coffee just came off the press.`, 'Morning rush is my favourite time.', 'The terrace is lovely at this hour.']
+        : isAfternoon
+        ? ['Iced coffee weather this afternoon.', 'Shall I put something on for you?', 'The terrace is lovely at this hour.']
+        : ['Switching to herbal teas for the evening.', `${timeGreet}! Last orders soon.`, 'The café is so cosy in the evening light.'],
+      Teacher: isMorning
+        ? [`${timeGreet}! The children will be arriving soon.`, 'Learning never stops on this island.', 'Morning lessons are when they\'re most alert.']
+        : isAfternoon
+        ? ['The children asked such good questions today.', 'Afternoon is for art and nature studies.', 'Education is the greatest gift we can give.']
+        : ['Marking homework this evening.', `${timeGreet}! School\'s out for the day.`, 'I plan tomorrow\'s lessons in the evening.'],
+      Engineer: isMorning
+        ? [`${timeGreet}! Morning checks on the solar panels.`, 'Always something to fix or improve.', 'Good tools make good work.']
+        : isAfternoon
+        ? ['The solar system is running perfectly this afternoon.', 'Afternoon\'s best for outdoor repairs.', 'Always something to fix or improve.']
+        : ['Shutting down the workshop for the night.', `${timeGreet}! Wind turbines are humming nicely.`, 'I review the energy logs each evening.'],
+      Artist: isMorning
+        ? ['The morning light is perfect for sketching.', `${timeGreet}! I\'m setting up my easel.`, 'Every painting starts with just looking.']
+        : isAfternoon
+        ? ['The light here is extraordinary this afternoon.', 'I\'m working on a new series of the harbour.', 'Afternoon shadows make everything more dramatic.']
+        : ['The light here is extraordinary at dusk.', `${timeGreet}! Evening colours are the hardest to capture.`, 'I paint by lantern light sometimes.'],
+      Botanist: isMorning
+        ? ['Found a fascinating specimen this morning.', `${timeGreet}! Early morning is best for field work.`, 'The forest holds so many secrets.']
+        : isAfternoon
+        ? ['I\'m cataloguing every plant on this island.', 'The afternoon warmth brings out the butterflies.', 'The forest holds so many secrets.']
+        : ['Evening dew reveals fungi you can\'t see by day.', `${timeGreet}! I\'m pressing today\'s samples.`, 'Night-blooming flowers are something special.'],
+      Elder: isMorning
+        ? [`${timeGreet}! Early riser, I see.`, 'I\'ve been here longer than anyone.', 'Mornings are for walking and thinking.']
+        : isAfternoon
+        ? ['Sit a while — there\'s no hurry here.', 'The island has changed, but its heart hasn\'t.', 'Lovely afternoon to just sit and watch.']
+        : ['The island is most itself in the evening.', `${timeGreet}! The stars are coming out.`, 'I\'ve been here longer than anyone — and I still love the sunsets.'],
+      Keeper: isMorning
+        ? ['The light was on all night — all safe.', `${timeGreet}! Quiet night at the lighthouse.`, 'Morning is when I finally rest.']
+        : isAfternoon
+        ? ['You can see for miles from the lantern room.', 'The ships know this coast because of that light.', 'Afternoon maintenance on the lens today.']
+        : ['Time to light the lamp for the night.', `${timeGreet}! My shift is just beginning.`, 'The lighthouse is most important after dark.'],
+      Newcomer: isMorning
+        ? ['Still finding my way around!', `${timeGreet}! What a beautiful morning.`, 'Everyone\'s been so welcoming here.']
+        : isAfternoon
+        ? ['I never expected to stay, but now I can\'t imagine leaving.', 'Exploring the island this afternoon.', 'Everyone\'s been so welcoming here.']
+        : ['The sunsets here are incredible.', `${timeGreet}! I\'m settling in nicely.`, 'Evening walks are my new favourite thing.'],
+      Child: isMorning
+        ? ['I found a really cool stick today!', 'Can we go to the forest? It\'s the best.', `${timeGreet}! Race you to the beach!`]
+        : isAfternoon
+        ? ['The rock pools are amazing this afternoon!', 'Can we go exploring?', 'I built the biggest sandcastle ever!']
+        : ['Mum says it\'s nearly bedtime...', 'Can we catch fireflies tonight?', 'I don\'t want to go inside yet!'],
+      'Harbour Master': isMorning
+        ? ['All vessels accounted for this morning.', `${timeGreet}! Early tide brought a few boats in.`, 'I\'ve been running this dock for fifteen years.']
+        : isAfternoon
+        ? ['The tide turns in an hour — best time to come in.', 'Afternoon is quiet at the harbour.', 'I\'ve been running this dock for fifteen years.']
+        : ['Harbour\'s locked down for the night.', `${timeGreet}! All boats are moored safely.`, 'I check the ropes one last time each evening.'],
+      Fishmonger: isMorning
+        ? ['Fresh catch this morning — mackerel and sea bass.', `${timeGreet}! Best selection is first thing.`, 'The lobster pots came in full today.']
+        : isAfternoon
+        ? ['Still got some good fillets left this afternoon.', 'Best fish on the island, right here.', 'The lobster pots came in full today.']
+        : ['Packing up the stall for the night.', `${timeGreet}! Last of today\'s catch going cheap.`, 'I smoke the leftovers in the evening.'],
     };
     const lines = jobLines[npc.job] || [`${timeGreet}! Lovely day on the island.`, 'It\'s good to see you around.', 'Take your time and enjoy the island.'];
     if (!npc._dialogueIndex) npc._dialogueIndex = 0;

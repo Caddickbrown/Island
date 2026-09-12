@@ -172,23 +172,185 @@ export class PlayerController {
 
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Touch support (basic)
-    let touchStart = null;
-    canvas.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    // CAD-440: Virtual joystick for mobile touch devices
+    this._setupVirtualJoystick(canvas);
+  }
+
+  // CAD-440: Virtual joystick for mobile
+  _setupVirtualJoystick(canvas) {
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) return;
+
+    // Create joystick container CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      .vjoystick-zone { position:fixed; bottom:0; width:50%; height:45%;
+        z-index:9000; touch-action:none; pointer-events:auto; }
+      .vjoystick-zone.left { left:0; }
+      .vjoystick-zone.right { right:0; }
+      .vjoystick-base { position:absolute; width:120px; height:120px;
+        border-radius:50%; background:rgba(255,255,255,0.12);
+        border:2px solid rgba(255,255,255,0.25); display:none;
+        pointer-events:none; transform:translate(-50%,-50%); }
+      .vjoystick-knob { position:absolute; width:50px; height:50px;
+        border-radius:50%; background:rgba(255,255,255,0.35);
+        pointer-events:none; transform:translate(-50%,-50%);
+        left:50%; top:50%; }
+      #vjoystick-interact { position:fixed; bottom:20px; right:20px;
+        width:64px; height:64px; border-radius:50%;
+        background:rgba(255,200,100,0.25); border:2px solid rgba(255,200,100,0.5);
+        color:rgba(255,255,255,0.8); font-size:14px; font-weight:bold;
+        display:flex; align-items:center; justify-content:center;
+        z-index:9001; touch-action:none; font-family:sans-serif; }
+    `;
+    document.head.appendChild(style);
+
+    // Left zone (movement joystick)
+    const leftZone = document.createElement('div');
+    leftZone.className = 'vjoystick-zone left';
+    const leftBase = document.createElement('div');
+    leftBase.className = 'vjoystick-base';
+    const leftKnob = document.createElement('div');
+    leftKnob.className = 'vjoystick-knob';
+    leftBase.appendChild(leftKnob);
+    leftZone.appendChild(leftBase);
+    document.body.appendChild(leftZone);
+
+    // Right zone (camera joystick)
+    const rightZone = document.createElement('div');
+    rightZone.className = 'vjoystick-zone right';
+    const rightBase = document.createElement('div');
+    rightBase.className = 'vjoystick-base';
+    const rightKnob = document.createElement('div');
+    rightKnob.className = 'vjoystick-knob';
+    rightBase.appendChild(rightKnob);
+    rightZone.appendChild(rightBase);
+    document.body.appendChild(rightZone);
+
+    // Interact button
+    const interactBtn = document.createElement('div');
+    interactBtn.id = 'vjoystick-interact';
+    interactBtn.textContent = 'E';
+    document.body.appendChild(interactBtn);
+
+    // Joystick state
+    this._vjMove = { active: false, id: null, cx: 0, cy: 0 };
+    this._vjCam = { active: false, id: null, cx: 0, cy: 0 };
+    const RADIUS = 50;
+
+    const startJoystick = (vj, base, knob, touch) => {
+      vj.active = true;
+      vj.id = touch.identifier;
+      vj.cx = touch.clientX;
+      vj.cy = touch.clientY;
+      base.style.display = 'block';
+      base.style.left = touch.clientX + 'px';
+      base.style.top = touch.clientY + 'px';
+      knob.style.left = '50%';
+      knob.style.top = '50%';
+    };
+
+    const moveJoystick = (vj, knob, touch) => {
+      const dx = touch.clientX - vj.cx;
+      const dy = touch.clientY - vj.cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const clampDist = Math.min(dist, RADIUS);
+      const angle = Math.atan2(dy, dx);
+      const nx = Math.cos(angle) * clampDist;
+      const ny = Math.sin(angle) * clampDist;
+      knob.style.left = `calc(50% + ${nx}px)`;
+      knob.style.top = `calc(50% + ${ny}px)`;
+      return { x: nx / RADIUS, y: ny / RADIUS };
+    };
+
+    const endJoystick = (vj, base, knob) => {
+      vj.active = false;
+      vj.id = null;
+      base.style.display = 'none';
+      knob.style.left = '50%';
+      knob.style.top = '50%';
+    };
+
+    // Left zone — movement
+    leftZone.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (!this._vjMove.active) startJoystick(this._vjMove, leftBase, leftKnob, t);
+      }
+    }, { passive: false });
+
+    leftZone.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (t.identifier === this._vjMove.id) {
+          const n = moveJoystick(this._vjMove, leftKnob, t);
+          // Map joystick to movement keys
+          this.keys.forward  = n.y < -0.3;
+          this.keys.backward = n.y > 0.3;
+          this.keys.left     = n.x < -0.3;
+          this.keys.right    = n.x > 0.3;
+          this.keys.sprint   = Math.abs(n.x) > 0.85 || Math.abs(n.y) > 0.85;
+        }
+      }
+    }, { passive: false });
+
+    leftZone.addEventListener('touchend', (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === this._vjMove.id) {
+          endJoystick(this._vjMove, leftBase, leftKnob);
+          this.keys.forward = this.keys.backward = this.keys.left = this.keys.right = this.keys.sprint = false;
+        }
       }
     });
-    canvas.addEventListener('touchmove', (e) => {
-      if (!touchStart || e.touches.length !== 1) return;
-      const dx = e.touches[0].clientX - touchStart.x;
-      const dy = e.touches[0].clientY - touchStart.y;
-      this.yaw -= dx * this.mouseSensitivity;
-      this.pitch += dy * this.mouseSensitivity;
-      this.pitch = Math.max(this.pitchMin, Math.min(this.pitchMax, this.pitch));
-      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    leftZone.addEventListener('touchcancel', (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === this._vjMove.id) {
+          endJoystick(this._vjMove, leftBase, leftKnob);
+          this.keys.forward = this.keys.backward = this.keys.left = this.keys.right = this.keys.sprint = false;
+        }
+      }
     });
-    canvas.addEventListener('touchend', () => { touchStart = null; });
+
+    // Right zone — camera
+    rightZone.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (!this._vjCam.active) startJoystick(this._vjCam, rightBase, rightKnob, t);
+      }
+    }, { passive: false });
+
+    rightZone.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (t.identifier === this._vjCam.id) {
+          const n = moveJoystick(this._vjCam, rightKnob, t);
+          this.yaw -= n.x * 0.04;
+          this.pitch += n.y * 0.02;
+          this.pitch = Math.max(this.pitchMin, Math.min(this.pitchMax, this.pitch));
+        }
+      }
+    }, { passive: false });
+
+    rightZone.addEventListener('touchend', (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === this._vjCam.id) endJoystick(this._vjCam, rightBase, rightKnob);
+      }
+    });
+    rightZone.addEventListener('touchcancel', (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === this._vjCam.id) endJoystick(this._vjCam, rightBase, rightKnob);
+      }
+    });
+
+    // Interact button — dispatches 'E' keydown
+    interactBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', key: 'e', bubbles: true }));
+    }, { passive: false });
+    interactBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', key: 'e', bubbles: true }));
+    }, { passive: false });
   }
 
   _onKey(e, pressed) {
